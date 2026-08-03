@@ -616,6 +616,98 @@ input.error, textarea.error { border-color: var(--danger); }
   color: var(--ink);
   letter-spacing: -0.01em;
 }
+
+/* ═══════════════════════════════════════
+   ANHANG (Erweiterung)
+═══════════════════════════════════════ */
+.anhang-upload-area {
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg);
+}
+.anhang-upload-area.has-file {
+  border-color: var(--accent-mid);
+  background: var(--accent-lt);
+}
+.anhang-upload-label {
+  font-size: 13px;
+  color: var(--ink-mid);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.anhang-upload-label.has-file { color: var(--accent); font-weight: 500; }
+.anhang-choose-btn {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--ink-mid);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.anhang-choose-btn:hover { background: var(--surface); }
+.anhang-remove-btn {
+  background: none;
+  border: none;
+  color: var(--ink-light);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.anhang-remove-btn:hover { color: var(--danger); }
+/* Anhang im Detail */
+.anhang-detail {
+  margin: 0 20px;
+  border-top: 1px solid var(--rule);
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.anhang-detail-info { flex: 1; min-width: 0; }
+.anhang-detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 3px;
+}
+.anhang-detail-name {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.anhang-open-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.anhang-open-btn:hover { background: #234a32; }
 </style>
 </head>
 <body>
@@ -744,6 +836,15 @@ input.error, textarea.error { border-color: var(--danger); }
         <span class="char-count"><span id="create-cc">0</span>/1200</span>
       </div>
     </div>
+    <div class="form-group">
+      <div class="form-label">Anhang <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);">— optional, PDF oder Bild</span></div>
+      <div class="anhang-upload-area" id="create-anhang-area">
+        <span class="anhang-upload-label" id="create-anhang-label">Kein Anhang</span>
+        <input type="file" id="create-anhang-input" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf"
+               style="display:none;" onchange="onAnhangChosen('create')">
+        <button class="anhang-choose-btn" onclick="document.getElementById('create-anhang-input').click()">Datei wählen</button>
+      </div>
+    </div>
     <div class="toggle-row">
       <div class="toggle-label-wrap">
         <div class="toggle-label">Besonders wichtig</div>
@@ -796,6 +897,18 @@ input.error, textarea.error { border-color: var(--danger); }
         <span class="char-count"><span id="edit-cc">0</span>/1200</span>
       </div>
     </div>
+    <div class="form-group">
+      <div class="form-label">Anhang <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);">— optional, PDF oder Bild</span></div>
+      <div class="anhang-upload-area" id="edit-anhang-area">
+        <span class="anhang-upload-label" id="edit-anhang-label">Kein Anhang</span>
+        <input type="file" id="edit-anhang-input" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf"
+               style="display:none;" onchange="onAnhangChosen('edit')">
+        <button class="anhang-choose-btn" id="edit-anhang-choose-btn"
+                onclick="document.getElementById('edit-anhang-input').click()">Datei wählen</button>
+        <button class="anhang-remove-btn" id="edit-anhang-remove-btn"
+                style="display:none;" onclick="removeAnhang('edit')" title="Anhang entfernen">&#x2715;</button>
+      </div>
+    </div>
     <div class="toggle-row">
       <div class="toggle-label-wrap">
         <div class="toggle-label">Besonders wichtig</div>
@@ -825,6 +938,8 @@ input.error, textarea.error { border-color: var(--danger); }
     <div style="padding:16px 20px 0;" id="detail-header-meta"></div>
     <!-- Body: Inhalt -->
     <div id="detail-body-content"></div>
+    <!-- Anhang (wenn vorhanden) -->
+    <div id="detail-anhang"></div>
     <!-- Rückmeldebereich: wird je Rolle gesetzt -->
     <div id="detail-reaction"></div>
     <!-- Lesestand (nur Inhaberin): wird je Rolle gesetzt -->
@@ -1529,6 +1644,9 @@ async function openDetail(eintragId, isInhaber) {
     paras.map(p => `<p style="font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:10px;">${escHtml(p)}</p>`).join('') +
     '</div>';
 
+  // ── Anhang ──
+  renderDetailAnhang(e);
+
   // ── Rückmeldebereich ──
   await renderDetailReaction(eintragId, isInhaber, session ? session.id : null);
 
@@ -1884,6 +2002,10 @@ function openCreateScreen() {
   document.getElementById('create-inhalt').value = '';
   document.getElementById('create-cc').textContent = '0';
   document.getElementById('create-wichtig').classList.remove('on');
+  _createAnhangFile = null;
+  const cai = document.getElementById('create-anhang-input');
+  if (cai) cai.value = '';
+  setAnhangUI('create', '', false);
   // Fehler zurücksetzen
   ['create-type-err','create-titel-err','create-inhalt-err'].forEach(id =>
     document.getElementById(id).classList.remove('visible'));
@@ -1949,6 +2071,17 @@ async function doCreateEintrag() {
   };
 
   const db = loadDB();
+  // Anhang hochladen wenn gewählt
+  if (_createAnhangFile) {
+    try {
+      const a = await uploadAnhang(_createAnhangFile);
+      eintrag.anhang_url  = a.url;
+      eintrag.anhang_name = a.name;
+      eintrag.anhang_typ  = a.typ;
+    } catch(e) {
+      showToast('Anhang konnte nicht hochgeladen werden.');
+    }
+  }
   await dbCreateEintrag(eintrag);
   notifyNeuerEintrag(titel);
   showToast('Eintrag veröffentlicht.');
@@ -1982,6 +2115,16 @@ function openEditScreen(eintragId) {
 
   // Inhaltsart vorauswählen
   editSelectType(_editSelectedType, true);
+  // Anhang-State zurücksetzen
+  _editAnhangFile   = null;
+  _editAnhangRemove = false;
+  const eai = document.getElementById('edit-anhang-input');
+  if (eai) eai.value = '';
+  if (e.anhang_name) {
+    setAnhangUI('edit', e.anhang_name, true);
+  } else {
+    setAnhangUI('edit', '', false);
+  }
 
   // Fehler zurücksetzen
   ['edit-type-err','edit-titel-err','edit-inhalt-err'].forEach(id =>
@@ -2047,11 +2190,27 @@ async function doSaveEintrag() {
   if (!e) return;
 
   // Felder aktualisieren — Bestätigungen und Rückmeldungen bleiben unberührt
-  await dbUpdateEintrag(_editEintragId, {
+  const editFields = {
     inhaltsart: inhaltsartMap[_editSelectedType],
     titel, inhalt, wichtig,
     bearbeitet_am: new Date().toISOString()
-  });
+  };
+  // Neuer Anhang hochladen
+  if (_editAnhangFile) {
+    try {
+      const a = await uploadAnhang(_editAnhangFile);
+      editFields.anhang_url  = a.url;
+      editFields.anhang_name = a.name;
+      editFields.anhang_typ  = a.typ;
+    } catch(e) {
+      showToast('Anhang konnte nicht hochgeladen werden.');
+    }
+  } else if (_editAnhangRemove) {
+    editFields.anhang_url  = null;
+    editFields.anhang_name = null;
+    editFields.anhang_typ  = null;
+  }
+  await dbUpdateEintrag(_editEintragId, editFields);
   notifyEintragAktualisiert(titel);
   showToast('Eintrag aktualisiert.');
   openDetail(_editEintragId, true);
@@ -2180,6 +2339,115 @@ function closeReactivateModal(e) {
 async function doReactivate() {
   await dbUpdatePersonAktiv(_reactivateId, true);
   closeReactivateModal(); await renderTeam(); showToast('Account reaktiviert.'); _reactivateId = null;
+}
+
+/* ═══════════════════════════════════════════════════
+   ANHANG-LOGIK (Erweiterung)
+═══════════════════════════════════════════════════ */
+
+// State: gewählte Datei für Create und Edit
+let _createAnhangFile = null;
+let _editAnhangFile   = null;
+let _editAnhangRemove = false;  // true = bestehenden Anhang entfernen
+
+function onAnhangChosen(ctx) {
+  const input = document.getElementById(ctx + '-anhang-input');
+  const file  = input.files[0];
+  if (!file) return;
+
+  if (ctx === 'create') {
+    _createAnhangFile = file;
+  } else {
+    _editAnhangFile   = file;
+    _editAnhangRemove = false;
+  }
+  setAnhangUI(ctx, file.name, true);
+}
+
+function setAnhangUI(ctx, label, hasFile) {
+  const area      = document.getElementById(ctx + '-anhang-area');
+  const labelEl   = document.getElementById(ctx + '-anhang-label');
+  const removeBtn = document.getElementById(ctx + '-anhang-remove-btn');
+
+  if (hasFile) {
+    area.classList.add('has-file');
+    labelEl.classList.add('has-file');
+    labelEl.textContent = label;
+    if (removeBtn) removeBtn.style.display = '';
+  } else {
+    area.classList.remove('has-file');
+    labelEl.classList.remove('has-file');
+    labelEl.textContent = 'Kein Anhang';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+function removeAnhang(ctx) {
+  if (ctx === 'edit') {
+    _editAnhangFile   = null;
+    _editAnhangRemove = true;
+  }
+  const input = document.getElementById(ctx + '-anhang-input');
+  if (input) input.value = '';
+  setAnhangUI(ctx, '', false);
+}
+
+// Datei zu Supabase Storage hochladen
+async function uploadAnhang(file) {
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = 'eintraege/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+  const url  = SUPA_URL + '/storage/v1/object/teamapp-anhaenge/' + path;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  file.type,
+      'x-upsert':      'true'
+    },
+    body: file
+  });
+
+  if (!res.ok) throw new Error('Upload fehlgeschlagen');
+
+  // Öffentliche URL zusammensetzen
+  const publicUrl = SUPA_URL + '/storage/v1/object/public/teamapp-anhaenge/' + path;
+  return { url: publicUrl, name: file.name, typ: file.type };
+}
+
+// Anhang-Bereich im Detail rendern
+function renderDetailAnhang(e) {
+  const el = document.getElementById('detail-anhang');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!e.anhang_url) return;
+
+  const area = document.createElement('div');
+  area.className = 'anhang-detail';
+
+  const info = document.createElement('div');
+  info.className = 'anhang-detail-info';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'anhang-detail-label';
+  lbl.textContent = 'Anhang';
+
+  const name = document.createElement('div');
+  name.className = 'anhang-detail-name';
+  name.textContent = e.anhang_name || 'Datei';
+
+  info.appendChild(lbl);
+  info.appendChild(name);
+
+  const btn = document.createElement('button');
+  btn.className = 'anhang-open-btn';
+  btn.textContent = 'Anhang öffnen';
+  btn.onclick = function() { window.open(e.anhang_url, '_blank'); };
+
+  area.appendChild(info);
+  area.appendChild(btn);
+  el.appendChild(area);
 }
 
 /* ═══════════════════════════════════════════════════
