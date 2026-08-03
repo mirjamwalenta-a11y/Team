@@ -1129,6 +1129,35 @@ async function supa(table, method='GET', body=null, params='') {
   return res.ok;
 }
 
+// ── Saubere Update/Delete Helfer ──
+async function supaUpdate(table, filter, body) {
+  const url = SUPA_URL + '/rest/v1/' + table + '?' + filter;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  'application/json',
+      'Prefer':        'return=minimal'
+    },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+async function supaDelete(table, filter) {
+  const url = SUPA_URL + '/rest/v1/' + table + '?' + filter;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  'application/json'
+    }
+  });
+  return res.ok;
+}
+
 // ── DB-Funktionen: ersetzt loadDB/saveDB ──
 
 async function dbGetPerson(email) {
@@ -1150,7 +1179,7 @@ async function dbCreatePerson(person) {
 }
 
 async function dbUpdatePersonAktiv(id, aktiv) {
-  return supa('teamapp_persons?id=eq.' + id, 'PATCH', {aktiv});
+  return supaUpdate('teamapp_persons', 'id=eq.' + id, {aktiv});
 }
 
 async function dbGetInvite(token) {
@@ -1175,7 +1204,7 @@ async function dbCreateEintrag(e) {
 }
 
 async function dbUpdateEintrag(id, fields) {
-  return supa('teamapp_eintraege?id=eq.' + id, 'PATCH', fields);
+  return supaUpdate('teamapp_eintraege', 'id=eq.' + id, fields);
 }
 
 async function dbGetBestaetigungen(personId) {
@@ -1201,7 +1230,7 @@ async function dbCreateRueckmeldung(r) {
 }
 
 async function dbMarkRueckmeldungGesehen(id) {
-  return supa('teamapp_rueckmeldungen?id=eq.' + id, 'PATCH', {gesehen: true});
+  return supaUpdate('teamapp_rueckmeldungen', 'id=eq.' + id, {gesehen: true});
 }
 
 
@@ -2299,7 +2328,7 @@ async function doSetPin() {
   }
   if (!ok) return;
 
-  await supa('teamapp_persons?id=eq.' + _setPinPersonId, 'PATCH', { pw_hash: pw1 });
+  await supaUpdate('teamapp_persons', 'id=eq.' + _setPinPersonId, { pw_hash: pw1 });
   closeSetPinModal();
   showToast('Passwort gespeichert.');
   _setPinPersonId = null;
@@ -2325,7 +2354,7 @@ function closeDeletePersonModal(e) {
 
 async function doDeletePerson() {
   if (!_deletePersonId) return;
-  await supa('teamapp_persons?id=eq.' + _deletePersonId, 'DELETE');
+  await supaDelete('teamapp_persons', 'id=eq.' + _deletePersonId);
   closeDeletePersonModal();
   await renderTeam();
   await renderInHome();
@@ -2641,8 +2670,7 @@ async function doChangePw() {
   }
 
   // Neues Passwort speichern
-  await supa('teamapp_persons?id=eq.' + session.id, 'PATCH', { pw_hash: pw1 });
-  // Session-Passwort lokal nicht gecacht — kein weiterer Update nötig
+  await supaUpdate('teamapp_persons', 'id=eq.' + session.id, { pw_hash: pw1 });
   showToast('Passwort gespeichert.');
 
   // Zurück zum Home
