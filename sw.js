@@ -1,5 +1,5 @@
-const CACHE = 'teamapp-v1-final';
-const ASSETS = ['/', '/team.html', '/manifest.json', '/icon.png'];
+const CACHE = 'teamapp-v1-v2';
+const ASSETS = ['/Team/team.html', '/Team/manifest.json', '/Team/icon.png', '/Team/sw.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
