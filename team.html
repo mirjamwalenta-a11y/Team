@@ -892,6 +892,110 @@ input.error, textarea.error { border-color: var(--danger); }
 'use strict';
 
 /* ═══════════════════════════════════════════════════
+   SUPABASE BACKEND (ersetzt localStorage Data Layer)
+   URL und Key sind für diesen Prototyp inline.
+   Produktion: Umgebungsvariablen verwenden.
+═══════════════════════════════════════════════════ */
+const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
+
+// Supabase REST-Hilfsfunktion
+async function supa(table, method='GET', body=null, params='') {
+  const url = SUPA_URL + '/rest/v1/' + table + (params ? '?' + params : '');
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+  };
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null
+  });
+  if (method === 'GET' || (method === 'POST' && headers.Prefer === 'return=representation')) {
+    return res.ok ? res.json() : [];
+  }
+  return res.ok;
+}
+
+// ── DB-Funktionen: ersetzt loadDB/saveDB ──
+
+async function dbGetPerson(email) {
+  const rows = await supa('teamapp_persons', 'GET', null, 'email=eq.' + encodeURIComponent(email) + '&aktiv=eq.true');
+  return rows[0] || null;
+}
+
+async function dbGetPersonById(id) {
+  const rows = await supa('teamapp_persons', 'GET', null, 'id=eq.' + id);
+  return rows[0] || null;
+}
+
+async function dbGetAllPersons() {
+  return supa('teamapp_persons', 'GET', null, 'order=name.asc');
+}
+
+async function dbCreatePerson(person) {
+  return supa('teamapp_persons', 'POST', person);
+}
+
+async function dbUpdatePersonAktiv(id, aktiv) {
+  return supa('teamapp_persons?id=eq.' + id, 'PATCH', {aktiv});
+}
+
+async function dbGetInvite(token) {
+  const rows = await supa('teamapp_invites', 'GET', null, 'token=eq.' + token);
+  return rows[0] || null;
+}
+
+async function dbCreateInvite(invite) {
+  return supa('teamapp_invites', 'POST', invite);
+}
+
+async function dbDeleteInvite(token) {
+  return supa('teamapp_invites?token=eq.' + token, 'DELETE');
+}
+
+async function dbGetEintraege() {
+  return supa('teamapp_eintraege', 'GET', null, 'order=erstellt_am.desc');
+}
+
+async function dbCreateEintrag(e) {
+  return supa('teamapp_eintraege', 'POST', e);
+}
+
+async function dbUpdateEintrag(id, fields) {
+  return supa('teamapp_eintraege?id=eq.' + id, 'PATCH', fields);
+}
+
+async function dbGetBestaetigungen(personId) {
+  const params = personId ? 'person_id=eq.' + personId : '';
+  return supa('teamapp_bestaetigungen', 'GET', null, params);
+}
+
+async function dbCreateBestaetigung(b) {
+  return supa('teamapp_bestaetigungen', 'POST', b);
+}
+
+async function dbGetRueckmeldungen(eintragId) {
+  const params = eintragId ? 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc' : 'order=erstellt_am.desc';
+  return supa('teamapp_rueckmeldungen', 'GET', null, params);
+}
+
+async function dbGetAlleRueckmeldungen() {
+  return supa('teamapp_rueckmeldungen', 'GET', null, 'order=erstellt_am.desc');
+}
+
+async function dbCreateRueckmeldung(r) {
+  return supa('teamapp_rueckmeldungen', 'POST', r);
+}
+
+async function dbMarkRueckmeldungGesehen(id) {
+  return supa('teamapp_rueckmeldungen?id=eq.' + id, 'PATCH', {gesehen: true});
+}
+
+
+/* ═══════════════════════════════════════════════════
    DATA LAYER
    Lokaler localStorage-Stand für Schritt 1–2.
    Backend-Anbindung ersetzt loadDB/saveDB — alle
@@ -1009,15 +1113,15 @@ function doLogin() {
   routeAfterLogin(p);
 }
 
-function routeAfterLogin(p) {
+async function routeAfterLogin(p) {
   requestPushPermission();
   if (p.rolle === 'inhaberin') {
-    renderInHome();
+    await renderInHome();
     navTo('screen-in-home');
     updateTabBadge(null);
   } else {
     updateTabBadge(p.id);
-    renderMaFeed();
+    await renderMaFeed();
     navTo('screen-ma-home');
   }
 }
@@ -1033,12 +1137,11 @@ function doLogout() {
 /* ═══════════════════════════════════════════════════
    ONBOARDING
 ═══════════════════════════════════════════════════ */
-function checkInviteParam() {
+async function checkInviteParam() {
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('invite');
   if (!token) return false;
-  const db = loadDB();
-  const inv = db.invites[token];
+  const inv = await dbGetInvite(token);
   if (!inv) { showToast('Dieser Einladungslink ist nicht mehr gültig.'); return false; }
   sessionStorage.setItem('pending_invite', JSON.stringify({ token, ...inv }));
   history.replaceState({}, '', window.location.pathname);
@@ -1046,7 +1149,7 @@ function checkInviteParam() {
   return true;
 }
 
-function doSetPassword() {
+async function doSetPassword() {
   const pw  = document.getElementById('setpw-pw').value;
   const pw2 = document.getElementById('setpw-pw2').value;
   let ok = true;
@@ -1057,15 +1160,13 @@ function doSetPassword() {
   if (!ok) return;
   const pending = JSON.parse(sessionStorage.getItem('pending_invite') || 'null');
   if (!pending) { showToast('Etwas ist schiefgelaufen. Bitte Link erneut öffnen.'); return; }
-  const db = loadDB();
-  const newP = { id: 'p-' + Date.now(), name: pending.name, email: pending.email, rolle: 'mitarbeiter', aktiv: true, pw };
-  db.persons.push(newP);
-  delete db.invites[pending.token];
-  saveDB(db);
+  const newP = { id: 'p-' + Date.now(), name: pending.name, email: pending.email, rolle: 'mitarbeiter', aktiv: true, pw_hash: pw };
+  await dbCreatePerson(newP);
+  await dbDeleteInvite(pending.token);
   sessionStorage.removeItem('pending_invite');
   setSession(newP);
   showToast('Willkommen, ' + newP.name + '!');
-  renderMaFeed();
+  await renderMaFeed();
   navTo('screen-ma-home');
 }
 
@@ -1074,29 +1175,24 @@ function doSetPassword() {
    Feed-Logik ist in reinen Datenfunktionen isoliert,
    damit Backend-Anbindung nur diese ersetzt.
 ═══════════════════════════════════════════════════ */
-function getMaFeedItems(personId) {
-  const db = loadDB();
-  const eintraege = [...db.eintraege];
-
-  // Bestätigungen dieser Person (Schritt 3 füllt db.bestaetigungen)
-  const confirmed = new Set(
-    db.bestaetigungen.filter(b => b.person_id === personId).map(b => b.eintrag_id)
-  );
-
-  // Feed-Sortierung: wichtige + unbestätigte → ganz oben; Rest chronologisch ↓
-  const important  = eintraege.filter(e => e.wichtig && !confirmed.has(e.id)).sort((a,b) => b.erstellt_am.localeCompare(a.erstellt_am));
-  const rest       = eintraege.filter(e => !(e.wichtig && !confirmed.has(e.id))).sort((a,b) => b.erstellt_am.localeCompare(a.erstellt_am));
-
+async function getMaFeedItems(personId) {
+  const [eintraege, bestaetigungen] = await Promise.all([
+    dbGetEintraege(),
+    dbGetBestaetigungen(personId)
+  ]);
+  const confirmed = new Set(bestaetigungen.map(b => b.eintrag_id));
+  const important = eintraege.filter(e => e.wichtig && !confirmed.has(e.id));
+  const rest      = eintraege.filter(e => !(e.wichtig && !confirmed.has(e.id)));
   return { items: [...important, ...rest], confirmed };
 }
 
-function renderMaFeed() {
+async function renderMaFeed() {
   const session = getSession();
   const container = document.getElementById('ma-feed-scroll');
   container.innerHTML = '';
 
   if (!session) return;
-  const { items, confirmed } = getMaFeedItems(session.id);
+  const { items, confirmed } = await getMaFeedItems(session.id);
 
   if (items.length === 0) {
     const empty = document.createElement('div');
@@ -1146,26 +1242,23 @@ function appendLogout(container) {
 /* ═══════════════════════════════════════════════════
    FEED — INHABERIN
 ═══════════════════════════════════════════════════ */
-function getInFeedItems() {
-  const db = loadDB();
-  return [...db.eintraege].sort((a,b) => b.erstellt_am.localeCompare(a.erstellt_am));
+async function getInFeedItems() {
+  return dbGetEintraege();
 }
 
-function getLesestand(eintragId) {
-  const db = loadDB();
-  const mitarbeiter = db.persons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
-  const confirmed   = db.bestaetigungen.filter(b => b.eintrag_id === eintragId).map(b => b.person_id);
+async function getLesestand(eintragId, allPersons, allBest) {
+  const mitarbeiter = allPersons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
+  const confirmed   = allBest.filter(b => b.eintrag_id === eintragId).map(b => b.person_id);
   return { total: mitarbeiter.length, done: confirmed.length };
 }
 
-function getOffeneRueckmeldungen(eintragId) {
-  const db = loadDB();
-  return db.rueckmeldungen.filter(r => r.eintrag_id === eintragId && !r.gesehen).length;
+async function getOffeneRueckmeldungen(eintragId, allRm) {
+  return allRm.filter(r => r.eintrag_id === eintragId && !r.gesehen).length;
 }
 
-function getAlleOffeneRueckmeldungen() {
-  const db = loadDB();
-  return db.rueckmeldungen.filter(r => !r.gesehen).length;
+async function getAlleOffeneRueckmeldungen() {
+  const rm = await dbGetAlleRueckmeldungen();
+  return rm.filter(r => !r.gesehen).length;
 }
 
 function renderInHome() {
@@ -1200,7 +1293,7 @@ function renderInHome() {
   container.appendChild(newBtn);
 
   // Hinweisband für offene Rückmeldungen
-  const alleOffene = getAlleOffeneRueckmeldungen();
+  const alleOffene = await getAlleOffeneRueckmeldungen();
   if (alleOffene > 0) {
     const band = document.createElement('div');
     band.className = 'notice-band';
@@ -1212,7 +1305,7 @@ function renderInHome() {
   }
 
   // Feed
-  const items = getInFeedItems();
+  const [items, allPersons, allBest, allRm] = await Promise.all([getInFeedItems(), dbGetAllPersons(), dbGetBestaetigungen(null), dbGetAlleRueckmeldungen()]);
 
   if (items.length === 0) {
     const empty = document.createElement('div');
@@ -1224,11 +1317,11 @@ function renderInHome() {
     feedLabel.textContent = 'Veröffentlichte Einträge';
     container.appendChild(feedLabel);
 
-    items.forEach(e => {
-      const ls = getLesestand(e.id);
-      const offene = getOffeneRueckmeldungen(e.id);
+    for (const e of items) {
+      const ls = await getLesestand(e.id, allPersons, allBest);
+      const offene = await getOffeneRueckmeldungen(e.id, allRm);
       container.appendChild(buildInEntryCard(e, ls, offene));
-    });
+    }
   }
 
   // Abmelden
@@ -1368,7 +1461,7 @@ function openDetail(eintragId, isInhaber) {
     '</div>';
 
   // ── Rückmeldebereich ──
-  renderDetailReaction(eintragId, isInhaber, session ? session.id : null);
+  await renderDetailReaction(eintragId, isInhaber, session ? session.id : null);
 
   // ── Lesestand (nur Inhaberin) ──
   renderDetailLesestand(eintragId, isInhaber);
@@ -1380,15 +1473,13 @@ function openDetail(eintragId, isInhaber) {
    RÜCKMELDEBEREICH (Schritt 4 — vollständig)
    Zustände A / B / D / E
 ═══════════════════════════════════════════════════ */
-function renderDetailReaction(eintragId, isInhaber, personId) {
+async function renderDetailReaction(eintragId, isInhaber, personId) {
   const el = document.getElementById('detail-reaction');
   el.innerHTML = '';
   if (isInhaber || !personId) return;
 
-  const db = loadDB();
-  const hatBestaetigt = db.bestaetigungen.some(
-    b => b.eintrag_id === eintragId && b.person_id === personId
-  );
+  const bestRows = await supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
+  const hatBestaetigt = bestRows.length > 0;
 
   const area = document.createElement('div');
   area.className = 'reaction-area';
@@ -1409,9 +1500,7 @@ function renderDetailReaction(eintragId, isInhaber, personId) {
   }
 
   // Gesendete Rückmeldungen dieser Person zu diesem Eintrag
-  const gesendete = db.rueckmeldungen.filter(
-    r => r.eintrag_id === eintragId && r.person_id === personId
-  );
+  const gesendete = await supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
   const hatFrage      = gesendete.some(r => r.typ === 'frage');
   const hatRueckmeld  = gesendete.some(r => r.typ === 'rueckmeldung');
 
@@ -1511,34 +1600,17 @@ function openRmForm(eintragId, personId, typ) {
 }
 
 /* Rückmeldung absenden */
-function doSendRueckmeldung(eintragId, personId, typ, text) {
-  if (!text) {
-    showToast('Bitte kurz etwas eingeben.');
-    return;
-  }
-  const db = loadDB();
-
-  // Defensive Prüfung: max. 1 pro Typ
-  const schonDa = db.rueckmeldungen.some(
-    r => r.eintrag_id === eintragId && r.person_id === personId && r.typ === typ
-  );
-  if (schonDa) { showToast('Diese Art wurde bereits gesendet.'); return; }
-
-  db.rueckmeldungen.push({
-    id:          'r-' + Date.now(),
-    eintrag_id:  eintragId,
-    person_id:   personId,
-    typ,
-    text,
-    erstellt_am: new Date().toISOString(),
-    gesehen:     false
+async function doSendRueckmeldung(eintragId, personId, typ, text) {
+  if (!text) { showToast('Bitte kurz etwas eingeben.'); return; }
+  await dbCreateRueckmeldung({
+    id: 'r-' + Date.now(),
+    eintrag_id: eintragId, person_id: personId,
+    typ, text, erstellt_am: new Date().toISOString(), gesehen: false
   });
-  saveDB(db);
-
-  const sender = db.persons.find(p => p.id === personId);
-  if (sender) notifyNeueRueckmeldung(sender.name, typ);
+  const person = await dbGetPersonById(personId);
+  if (person) notifyNeueRueckmeldung(person.name, typ);
   showToast('Deine Rückmeldung ist angekommen.');
-  renderDetailReaction(eintragId, false, personId);
+  await renderDetailReaction(eintragId, false, personId);
 }
 
 /* Bestätigung speichern + Feed aktualisieren */
@@ -1562,23 +1634,25 @@ function doBestaetigen(eintragId, personId) {
   updateTabBadge(personId);
 
   // Rückmeldebereich auf Zustand B wechseln (kein Screen-Reload)
-  renderDetailReaction(eintragId, false, personId);
+  await renderDetailReaction(eintragId, false, personId);
 
   // Lesestand-Panel (MA sieht keines, aber Funktion ist idempotent)
   renderDetailLesestand(eintragId, false);
 }
 
 /* Lesestand-Panel (nur für Inhaberin befüllt) */
-function renderDetailLesestand(eintragId, isInhaber) {
+async function renderDetailLesestand(eintragId, isInhaber) {
   const panel = document.getElementById('detail-lesestand');
   panel.innerHTML = '';
   if (!isInhaber) return;
 
-  const db          = loadDB();
-  const mitarbeiter = db.persons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
-  const confirmed   = new Set(
-    db.bestaetigungen.filter(b => b.eintrag_id === eintragId).map(b => b.person_id)
-  );
+  const [allPersons, bestRows, rmRows] = await Promise.all([
+    dbGetAllPersons(),
+    supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId),
+    supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc')
+  ]);
+  const mitarbeiter = allPersons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
+  const confirmed   = new Set(bestRows.map(b => b.person_id));
 
   const box = document.createElement('div');
   box.className = 'lesestand-box';
@@ -1604,9 +1678,7 @@ function renderDetailLesestand(eintragId, isInhaber) {
   rmLabel.textContent = 'Rückmeldungen';
   panel.appendChild(rmLabel);
 
-  const rueckmeldungen = db.rueckmeldungen
-    .filter(r => r.eintrag_id === eintragId)
-    .sort((a,b) => b.erstellt_am.localeCompare(a.erstellt_am));
+  const rueckmeldungen = rmRows;
 
   if (rueckmeldungen.length === 0) {
     const empty = document.createElement('div');
@@ -1615,7 +1687,7 @@ function renderDetailLesestand(eintragId, isInhaber) {
     panel.appendChild(empty);
   } else {
     rueckmeldungen.forEach(r => {
-      const person = db.persons.find(p => p.id === r.person_id);
+      const person = allPersons.find(p => p.id === r.person_id);
       const name   = person ? person.name : '—';
       panel.appendChild(buildRmItem(r, name, eintragId));
     });
@@ -1649,34 +1721,23 @@ function buildRmItem(r, name, eintragId) {
 /* ═══════════════════════════════════════════════════
    RÜCKMELDUNG ALS GESEHEN MARKIEREN
 ═══════════════════════════════════════════════════ */
-function doMarkGesehen(rmId, eintragId, fromDetail) {
-  const db = loadDB();
-  const r  = db.rueckmeldungen.find(x => x.id === rmId);
-  if (!r) return;
-  r.gesehen = true;
-  saveDB(db);
+async function doMarkGesehen(rmId, eintragId, fromDetail) {
+  await dbMarkRueckmeldungGesehen(rmId);
   showToast('Als gesehen markiert.');
-  if (fromDetail) {
-    // Detail-Panel neu rendern ohne Screen-Wechsel
-    renderDetailLesestand(eintragId, true);
-    // IN-Home Badge aktualisieren wenn noch offen
-  } else {
-    // Übersicht neu rendern
-    renderResponsesScreen();
-  }
+  if (fromDetail) { await renderDetailLesestand(eintragId, true); }
+  else { await renderResponsesScreen(); }
 }
 
 /* ═══════════════════════════════════════════════════
    RÜCKMELDUNGSÜBERSICHT (Inhaberin)
 ═══════════════════════════════════════════════════ */
-function renderResponsesScreen() {
+async function renderResponsesScreen() {
   const container = document.getElementById('responses-scroll');
   if (!container) return;
   container.innerHTML = '';
-
-  const db = loadDB();
-  const alle = [...db.rueckmeldungen]
-    .sort((a,b) => b.erstellt_am.localeCompare(a.erstellt_am));
+  const [alle, allPersons, allEintraege] = await Promise.all([
+    dbGetAlleRueckmeldungen(), dbGetAllPersons(), dbGetEintraege()
+  ]);
 
   const ungesehen = alle.filter(r => !r.gesehen).length;
   const statusLine = document.createElement('div');
@@ -1702,9 +1763,9 @@ function renderResponsesScreen() {
   }
 
   alle.forEach(r => {
-    const person  = db.persons.find(p => p.id === r.person_id);
+    const person  = allPersons.find(p => p.id === r.person_id);
     const name    = person ? person.name : '—';
-    const eintrag = db.eintraege.find(e => e.id === r.eintrag_id);
+    const eintrag = allEintraege.find(e => e.id === r.eintrag_id);
     const titel   = eintrag ? eintrag.titel : '(Eintrag nicht gefunden)';
 
     const item = document.createElement('div');
@@ -1780,7 +1841,7 @@ function selectType(t) {
   document.getElementById('create-type-err').classList.remove('visible');
 }
 
-function doCreateEintrag() {
+async function doCreateEintrag() {
   const titel  = document.getElementById('create-titel').value.trim();
   const inhalt = document.getElementById('create-inhalt').value.trim();
   const wichtig = document.getElementById('create-wichtig').classList.contains('on');
@@ -1825,12 +1886,10 @@ function doCreateEintrag() {
   };
 
   const db = loadDB();
-  db.eintraege.push(eintrag);
-  saveDB(db);
-
+  await dbCreateEintrag(eintrag);
   notifyNeuerEintrag(titel);
   showToast('Eintrag veröffentlicht.');
-  renderInHome();
+  await renderInHome();
   navTo('screen-in-home');
 }
 
@@ -1925,29 +1984,25 @@ function doSaveEintrag() {
   if (!e) return;
 
   // Felder aktualisieren — Bestätigungen und Rückmeldungen bleiben unberührt
-  e.inhaltsart   = inhaltsartMap[_editSelectedType];
-  e.titel        = titel;
-  e.inhalt       = inhalt;
-  e.wichtig      = wichtig;
-  e.bearbeitet_am = new Date().toISOString();
-  saveDB(db);
-
+  await dbUpdateEintrag(_editEintragId, {
+    inhaltsart: inhaltsartMap[_editSelectedType],
+    titel, inhalt, wichtig,
+    bearbeitet_am: new Date().toISOString()
+  });
   notifyEintragAktualisiert(titel);
   showToast('Eintrag aktualisiert.');
-
-  // Zurück zum Detail mit aktualisiertem Stand
   openDetail(_editEintragId, true);
 }
 
 /* ═══════════════════════════════════════════════════
    TEAMVERWALTUNG (Schritt 1 — unverändert)
 ═══════════════════════════════════════════════════ */
-function renderTeam() {
-  const db   = loadDB();
+async function renderTeam() {
   const list = document.getElementById('team-list');
   if (!list) return;
   list.innerHTML = '';
-  const sorted = [...db.persons].sort((a,b) => {
+  const persons = await dbGetAllPersons();
+  const sorted = [...persons].sort((a,b) => {
     if (a.rolle === 'inhaberin') return -1;
     if (b.rolle === 'inhaberin') return 1;
     return a.name.localeCompare(b.name, 'de');
@@ -1998,7 +2053,7 @@ function closeInviteModal(e) {
   document.getElementById('modal-invite').classList.remove('open');
   renderTeam();
 }
-function doCreateInvite() {
+async function doCreateInvite() {
   const name  = document.getElementById('invite-name').value.trim();
   const email = document.getElementById('invite-email').value.trim();
   let ok = true;
@@ -2022,9 +2077,7 @@ function doCreateInvite() {
   }
   if (!ok) return;
   const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const db = loadDB();
-  db.invites[token] = { name, email, erstellt: new Date().toISOString() };
-  saveDB(db);
+  await dbCreateInvite({ token, name, email, erstellt_am: new Date().toISOString() });
   const link = window.location.origin + window.location.pathname + '?invite=' + token;
   document.getElementById('invite-link-text').textContent = link;
   document.getElementById('invite-result').style.display  = '';
@@ -2046,10 +2099,9 @@ function closeDeactivateModal(e) {
   if (e && e.target !== document.getElementById('modal-deactivate')) return;
   document.getElementById('modal-deactivate').classList.remove('open');
 }
-function doDeactivate() {
-  const db = loadDB(); const p = db.persons.find(x => x.id === _deactivateId);
-  if (p) { p.aktiv = false; saveDB(db); }
-  closeDeactivateModal(); renderTeam(); showToast('Account deaktiviert.'); _deactivateId = null;
+async function doDeactivate() {
+  await dbUpdatePersonAktiv(_deactivateId, false);
+  closeDeactivateModal(); await renderTeam(); showToast('Account deaktiviert.'); _deactivateId = null;
 }
 
 let _reactivateId = null;
@@ -2062,10 +2114,9 @@ function closeReactivateModal(e) {
   if (e && e.target !== document.getElementById('modal-reactivate')) return;
   document.getElementById('modal-reactivate').classList.remove('open');
 }
-function doReactivate() {
-  const db = loadDB(); const p = db.persons.find(x => x.id === _reactivateId);
-  if (p) { p.aktiv = true; saveDB(db); }
-  closeReactivateModal(); renderTeam(); showToast('Account reaktiviert.'); _reactivateId = null;
+async function doReactivate() {
+  await dbUpdatePersonAktiv(_reactivateId, true);
+  closeReactivateModal(); await renderTeam(); showToast('Account reaktiviert.'); _reactivateId = null;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2158,16 +2209,17 @@ document.getElementById('login-email').addEventListener('keydown', e => { if (e.
 /* ═══════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════ */
-function init() {
+async function init() {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   const session = getSession();
   if (session) {
-    const db = loadDB();
-    const p  = db.persons.find(x => x.id === session.id && x.aktiv);
-    if (p) { routeAfterLogin(p); return; }
-    else clearSession();
+    try {
+      const rows = await supa('teamapp_persons', 'GET', null, 'id=eq.' + session.id + '&aktiv=eq.true');
+      if (rows[0]) { await routeAfterLogin(rows[0]); return; }
+    } catch(e) {}
+    clearSession();
   }
-  if (checkInviteParam()) return;
+  if (await checkInviteParam()) return;
   navTo('screen-login');
 }
 
