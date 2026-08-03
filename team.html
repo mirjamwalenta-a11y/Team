@@ -1325,31 +1325,54 @@ function fmtDate(iso) {
 /* ═══════════════════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════════════════ */
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw    = document.getElementById('login-pw').value;
   let ok = true;
   ['login-email','login-pw'].forEach(id => document.getElementById(id).classList.remove('error'));
-  ['login-email-err','login-pw-err','login-general-err'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  ['login-email-err','login-pw-err','login-general-err'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
   if (!email) { document.getElementById('login-email').classList.add('error'); document.getElementById('login-email-err').classList.add('visible'); ok = false; }
   if (!pw)    { document.getElementById('login-pw').classList.add('error');    document.getElementById('login-pw-err').classList.add('visible');    ok = false; }
   if (!ok) return;
-  const db = loadDB();
-  const pFound = db.persons.find(x => x.email.toLowerCase() === email.toLowerCase() && x.pw === pw);
-  if (!pFound) {
-    document.getElementById('login-general-err').classList.add('visible');
-    document.getElementById('login-pw').classList.add('error');
-    return;
-  }
-  if (!pFound.aktiv) {
+
+  const btn = document.querySelector('#screen-login .btn-primary');
+  if (btn) btn.disabled = true;
+
+  try {
+    const persons = await supa('teamapp_persons', 'GET', null,
+      'email=eq.' + encodeURIComponent(email));
+
+    if (!Array.isArray(persons) || persons.length === 0) {
+      document.getElementById('login-general-err').classList.add('visible');
+      document.getElementById('login-pw').classList.add('error');
+      return;
+    }
+
+    const pFound = persons.find(x => x.pw_hash === pw);
+
+    if (!pFound) {
+      document.getElementById('login-general-err').classList.add('visible');
+      document.getElementById('login-pw').classList.add('error');
+      return;
+    }
+    if (!pFound.aktiv) {
+      const errEl = document.getElementById('login-general-err');
+      errEl.textContent = 'Dieser Account wurde deaktiviert. Bitte wende dich an Mirjam.';
+      errEl.classList.add('visible');
+      return;
+    }
+    setSession(pFound);
+    await routeAfterLogin(pFound);
+  } catch(e) {
     const errEl = document.getElementById('login-general-err');
-    errEl.textContent = 'Dieser Account wurde deaktiviert. Bitte wende dich an Mirjam.';
+    errEl.textContent = 'Verbindungsfehler. Bitte nochmal versuchen.';
     errEl.classList.add('visible');
-    return;
+  } finally {
+    if (btn) btn.disabled = false;
   }
-  const p = pFound;
-  setSession(p);
-  routeAfterLogin(p);
 }
 
 async function routeAfterLogin(p) {
