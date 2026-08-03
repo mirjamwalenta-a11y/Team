@@ -1261,7 +1261,7 @@ async function getAlleOffeneRueckmeldungen() {
   return rm.filter(r => !r.gesehen).length;
 }
 
-function renderInHome() {
+async function renderInHome() {
   const container = document.getElementById('in-feed-scroll');
   container.innerHTML = '';
 
@@ -1332,7 +1332,7 @@ function renderInHome() {
   logoutBtn.onclick = doLogout;
   container.appendChild(logoutBtn);
 
-  renderTeam();
+  await renderTeam();
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1410,7 +1410,7 @@ function buildInEntryCard(e, ls, offeneRueckmeldungen) {
 /* ═══════════════════════════════════════════════════
    EINTRAGSDETAIL (Schritt 3 — vollständig)
 ═══════════════════════════════════════════════════ */
-function openDetail(eintragId, isInhaber) {
+async function openDetail(eintragId, isInhaber) {
   const session = getSession();
   const db  = loadDB();
   const e   = db.eintraege.find(x => x.id === eintragId);
@@ -1464,7 +1464,7 @@ function openDetail(eintragId, isInhaber) {
   await renderDetailReaction(eintragId, isInhaber, session ? session.id : null);
 
   // ── Lesestand (nur Inhaberin) ──
-  renderDetailLesestand(eintragId, isInhaber);
+  await renderDetailLesestand(eintragId, isInhaber);
 
   navTo('screen-detail');
 }
@@ -1614,7 +1614,7 @@ async function doSendRueckmeldung(eintragId, personId, typ, text) {
 }
 
 /* Bestätigung speichern + Feed aktualisieren */
-function doBestaetigen(eintragId, personId) {
+async function doBestaetigen(eintragId, personId) {
   const db = loadDB();
 
   // Doppel-Bestätigung verhindern (defensive Prüfung)
@@ -1628,16 +1628,10 @@ function doBestaetigen(eintragId, personId) {
     person_id:     personId,
     bestaetigt_am: new Date().toISOString()
   });
-  saveDB(db);
-
   showToast('Danke — notiert.');
   updateTabBadge(personId);
-
-  // Rückmeldebereich auf Zustand B wechseln (kein Screen-Reload)
   await renderDetailReaction(eintragId, false, personId);
-
-  // Lesestand-Panel (MA sieht keines, aber Funktion ist idempotent)
-  renderDetailLesestand(eintragId, false);
+  await renderDetailLesestand(eintragId, false);
 }
 
 /* Lesestand-Panel (nur für Inhaberin befüllt) */
@@ -1947,7 +1941,7 @@ function editSelectType(t, silent) {
   }
 }
 
-function doSaveEintrag() {
+async function doSaveEintrag() {
   const titel  = document.getElementById('edit-titel').value.trim();
   const inhalt = document.getElementById('edit-inhalt').value.trim();
   const wichtig = document.getElementById('edit-wichtig').classList.contains('on');
@@ -2223,7 +2217,7 @@ async function init() {
   navTo('screen-login');
 }
 
-init();
+(async () => { await init(); })();
 </script>
 </body>
 </html>
