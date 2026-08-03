@@ -708,6 +708,13 @@ input.error, textarea.error { border-color: var(--danger); }
   flex-shrink: 0;
 }
 .anhang-open-btn:hover { background: #234a32; }
+
+/* PIN-Vergabe Modal */
+.pin-info {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}
 </style>
 </head>
 <body>
@@ -987,7 +994,7 @@ input.error, textarea.error { border-color: var(--danger); }
       <div class="form-group">
         <label class="form-label" for="cpw-new">Neues Passwort</label>
         <input type="password" id="cpw-new" placeholder="Min. 8 Zeichen" autocomplete="new-password">
-        <span class="field-error" id="cpw-new-err">Passwort muss mindestens 8 Zeichen haben.</span>
+        <span class="field-error" id="cpw-new-err">Mindestens 4 Zeichen erforderlich.</span>
       </div>
       <div class="form-group">
         <label class="form-label" for="cpw-new2">Neues Passwort wiederholen</label>
@@ -998,6 +1005,39 @@ input.error, textarea.error { border-color: var(--danger); }
       <button class="btn-primary" onclick="doChangePw()">Passwort speichern</button>
       <button class="btn-text" id="cpw-cancel-btn">Abbrechen</button>
     </div>
+  </div>
+</div>
+
+
+<!-- PIN für Mitarbeiter:in setzen (Inhaberin) -->
+<div class="modal-overlay" id="modal-setpin" onclick="closeSetPinModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">PIN festlegen</div>
+    <div class="pin-info" id="setpin-desc"></div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="setpin-pw">Neues Passwort</label>
+        <input type="password" id="setpin-pw" placeholder="Min. 8 Zeichen" autocomplete="new-password">
+        <span class="field-error" id="setpin-pw-err">Passwort muss mindestens 8 Zeichen haben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setpin-pw2">Wiederholen</label>
+        <input type="password" id="setpin-pw2" placeholder="••••••••" autocomplete="new-password">
+        <span class="field-error" id="setpin-pw2-err">Passwörter stimmen nicht überein.</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doSetPin()">Passwort speichern</button>
+    <button class="btn-text" onclick="closeSetPinModal()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Mitarbeiter:in löschen -->
+<div class="modal-overlay" id="modal-delete-person" onclick="closeDeletePersonModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">Person löschen</div>
+    <div class="modal-desc" id="delete-person-desc"></div>
+    <button class="btn-danger" onclick="doDeletePerson()">Endgültig löschen</button>
+    <button class="btn-text" onclick="closeDeletePersonModal()">Abbrechen</button>
   </div>
 </div>
 
@@ -2217,6 +2257,83 @@ async function doSaveEintrag() {
 }
 
 /* ═══════════════════════════════════════════════════
+   PIN FÜR MITARBEITENDE (Inhaberin)
+═══════════════════════════════════════════════════ */
+let _setPinPersonId = null;
+
+function openSetPinModal(id, name) {
+  _setPinPersonId = id;
+  document.getElementById('setpin-desc').textContent =
+    'Neues Passwort für ' + name + ' festlegen. Die Person kann sich danach damit anmelden.';
+  ['setpin-pw','setpin-pw2'].forEach(fid => {
+    document.getElementById(fid).value = '';
+    document.getElementById(fid).classList.remove('error');
+  });
+  ['setpin-pw-err','setpin-pw2-err'].forEach(fid =>
+    document.getElementById(fid).classList.remove('visible'));
+  document.getElementById('modal-setpin').classList.add('open');
+}
+
+function closeSetPinModal(e) {
+  if (e && e.target !== document.getElementById('modal-setpin')) return;
+  document.getElementById('modal-setpin').classList.remove('open');
+}
+
+async function doSetPin() {
+  const pw1 = document.getElementById('setpin-pw').value;
+  const pw2 = document.getElementById('setpin-pw2').value;
+  let ok = true;
+
+  ['setpin-pw','setpin-pw2'].forEach(fid => document.getElementById(fid).classList.remove('error'));
+  ['setpin-pw-err','setpin-pw2-err'].forEach(fid => document.getElementById(fid).classList.remove('visible'));
+
+  if (pw1.length < 4) {
+    document.getElementById('setpin-pw').classList.add('error');
+    document.getElementById('setpin-pw-err').classList.add('visible');
+    ok = false;
+  }
+  if (pw1 !== pw2) {
+    document.getElementById('setpin-pw2').classList.add('error');
+    document.getElementById('setpin-pw2-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  await supa('teamapp_persons?id=eq.' + _setPinPersonId, 'PATCH', { pw_hash: pw1 });
+  closeSetPinModal();
+  showToast('Passwort gespeichert.');
+  _setPinPersonId = null;
+}
+
+/* ═══════════════════════════════════════════════════
+   PERSON LÖSCHEN (Inhaberin)
+═══════════════════════════════════════════════════ */
+let _deletePersonId = null;
+
+function openDeletePersonModal(id, name) {
+  _deletePersonId = id;
+  document.getElementById('delete-person-desc').innerHTML =
+    '<strong>' + escHtml(name) + '</strong> wird endgültig gelöscht. ' +
+    'Lesebestätigungen und Rückmeldungen dieser Person bleiben im System erhalten.';
+  document.getElementById('modal-delete-person').classList.add('open');
+}
+
+function closeDeletePersonModal(e) {
+  if (e && e.target !== document.getElementById('modal-delete-person')) return;
+  document.getElementById('modal-delete-person').classList.remove('open');
+}
+
+async function doDeletePerson() {
+  if (!_deletePersonId) return;
+  await supa('teamapp_persons?id=eq.' + _deletePersonId, 'DELETE');
+  closeDeletePersonModal();
+  await renderTeam();
+  await renderInHome();
+  showToast('Person gelöscht.');
+  _deletePersonId = null;
+}
+
+/* ═══════════════════════════════════════════════════
    TEAMVERWALTUNG (Schritt 1 — unverändert)
 ═══════════════════════════════════════════════════ */
 async function renderTeam() {
@@ -2237,9 +2354,18 @@ async function renderTeam() {
     const dc = p.aktiv ? 'active' : 'inactive';
     let actions = '';
     if (p.rolle !== 'inhaberin') {
-      actions = p.aktiv
-        ? `<button class="icon-btn danger" title="Deaktivieren" onclick="openDeactivateModal('${p.id}','${escHtml(p.name)}')">&#x2715;</button>`
-        : `<button class="icon-btn" title="Reaktivieren" onclick="openReactivateModal('${p.id}','${escHtml(p.name)}')">&#x21BA;</button>`;
+      const safeName = escHtml(p.name);
+      const safeId   = p.id;
+
+      const deactBtn = p.aktiv
+        ? '<button class="icon-btn danger" title="Deaktivieren" onclick="openDeactivateModal(\'' + safeId + '\',\'' + safeName + '\')">&#x2715;</button>'
+        : '<button class="icon-btn" title="Reaktivieren"  onclick="openReactivateModal(\'' + safeId + '\',\'' + safeName + '\')">&#x21BA;</button>';
+
+      const pinBtn = '<button class="icon-btn" title="PIN ändern" style="font-size:12px;font-weight:700;" onclick="openSetPinModal(\'' + safeId + '\',\'' + safeName + '\')">PIN</button>';
+
+      const delBtn = '<button class="icon-btn danger" title="Löschen" onclick="openDeletePersonModal(\'' + safeId + '\',\'' + safeName + '\')">&#x1F5D1;</button>';
+
+      actions = pinBtn + ' ' + deactBtn + ' ' + delBtn;
     }
     row.innerHTML = `
       <div class="person-info">
@@ -2493,7 +2619,7 @@ async function doChangePw() {
     document.getElementById('cpw-current-err').classList.add('visible');
     ok = false;
   }
-  if (pw1.length < 8) {
+  if (pw1.length < 4) {
     document.getElementById('cpw-new').classList.add('error');
     document.getElementById('cpw-new-err').classList.add('visible');
     ok = false;
@@ -2516,6 +2642,7 @@ async function doChangePw() {
 
   // Neues Passwort speichern
   await supa('teamapp_persons?id=eq.' + session.id, 'PATCH', { pw_hash: pw1 });
+  // Session-Passwort lokal nicht gecacht — kein weiterer Update nötig
   showToast('Passwort gespeichert.');
 
   // Zurück zum Home
