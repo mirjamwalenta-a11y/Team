@@ -1048,17 +1048,23 @@ input.error, textarea.error { border-color: var(--danger); }
 ════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-invite" onclick="closeInviteModal(event)">
   <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-title">Mitarbeiter:in einladen</div>
+    <div class="modal-title">Mitarbeiter:in hinzufügen</div>
     <div class="login-form">
       <div class="form-group">
         <label class="form-label" for="invite-name">Name</label>
-        <input type="text" id="invite-name" placeholder="z.B. Mazen">
+        <input type="text" id="invite-name" placeholder="z.B. Alina">
         <span class="field-error" id="invite-name-err">Bitte Name eingeben.</span>
       </div>
       <div class="form-group">
-        <label class="form-label" for="invite-email">E-Mail</label>
-        <input type="email" id="invite-email" placeholder="email@beispiel.at" inputmode="email">
-        <span class="field-error" id="invite-email-err">Bitte E-Mail eingeben.</span>
+        <label class="form-label" for="invite-pw">Passwort festlegen</label>
+        <input type="text" id="invite-pw" placeholder="Min. 4 Zeichen" autocomplete="off">
+        <span class="field-error" id="invite-pw-err">Mindestens 4 Zeichen erforderlich.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="invite-email" style="display:flex;align-items:center;gap:6px;">
+          E-Mail <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);font-size:11px;">— optional</span>
+        </label>
+        <input type="email" id="invite-email" placeholder="optional" inputmode="email">
       </div>
     </div>
     <div id="invite-result" style="display:none;">
@@ -1069,10 +1075,10 @@ input.error, textarea.error { border-color: var(--danger); }
           <button class="copy-btn" onclick="copyInviteLink()">Kopieren</button>
         </div>
       </div>
-      <div class="info-box">Schick diesen Link per SMS oder E-Mail. Beim ersten Öffnen legt die Person ihr Passwort fest.</div>
+      <div class="info-box" id="invite-info-box"></div>
     </div>
     <div id="invite-actions">
-      <button class="btn-primary" onclick="doCreateInvite()">Einladungslink erstellen</button>
+      <button class="btn-primary" onclick="doCreateInvite()">Hinzufügen</button>
       <button class="btn-text" onclick="closeInviteModal()">Abbrechen</button>
     </div>
   </div>
@@ -2434,11 +2440,11 @@ async function renderTeam() {
 }
 
 function openInviteModal() {
-  ['invite-name','invite-email'].forEach(id => {
+  ['invite-name','invite-email','invite-pw'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('error'); }
   });
-  ['invite-name-err','invite-email-err'].forEach(id => {
+  ['invite-name-err','invite-email-err','invite-pw-err'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
@@ -2455,33 +2461,51 @@ function closeInviteModal(e) {
 }
 async function doCreateInvite() {
   const name  = document.getElementById('invite-name').value.trim();
+  const pw    = document.getElementById('invite-pw').value.trim();
   const email = document.getElementById('invite-email').value.trim();
   let ok = true;
-  ['invite-name','invite-email'].forEach(id => {
+
+  ['invite-name','invite-pw'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('error');
   });
-  ['invite-name-err','invite-email-err'].forEach(id => {
+  ['invite-name-err','invite-pw-err'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
+
   if (!name) {
     document.getElementById('invite-name').classList.add('error');
     document.getElementById('invite-name-err').classList.add('visible');
     ok = false;
   }
-  if (!email || !email.includes('@')) {
-    document.getElementById('invite-email').classList.add('error');
-    document.getElementById('invite-email-err').classList.add('visible');
+  if (pw.length < 4) {
+    document.getElementById('invite-pw').classList.add('error');
+    document.getElementById('invite-pw-err').classList.add('visible');
     ok = false;
   }
   if (!ok) return;
-  const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  await dbCreateInvite({ token, name, email, erstellt_am: new Date().toISOString() });
-  const link = window.location.origin + window.location.pathname + '?invite=' + token;
+
+  // Person direkt anlegen — kein Einladungslink-Flow mehr nötig
+  const newP = {
+    id:      'p-' + Date.now(),
+    name,
+    email:   email || (name.toLowerCase().replace(/\s+/g,'.') + '@team.lokal'),
+    rolle:   'mitarbeiter',
+    aktiv:   true,
+    pw_hash: pw
+  };
+  await dbCreatePerson(newP);
+
+  // Link zum direkten Einloggen (kein Registrierungsscreen)
+  const link = window.location.origin + window.location.pathname;
   document.getElementById('invite-link-text').textContent = link;
+  document.getElementById('invite-info-box').innerHTML =
+    'Person angelegt. Schick <strong>' + escHtml(name) + '</strong> diesen Link und das Passwort: <strong>' + escHtml(pw) + '</strong>';
   document.getElementById('invite-result').style.display  = '';
   document.getElementById('invite-actions').style.display = 'none';
+
+  await renderTeam();
 }
 function copyInviteLink() {
   const link = document.getElementById('invite-link-text').textContent;
