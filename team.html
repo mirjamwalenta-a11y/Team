@@ -1710,15 +1710,24 @@ async function openDetail(eintragId, isInhaber) {
     else { renderMaFeed(); navTo('screen-ma-home'); }
   };
 
-  // Bearbeiten — nur Inhaberin
+  // Bearbeiten + Löschen — nur Inhaberin
   const actionEl2 = document.getElementById('detail-header-action');
   if (isInhaber) {
     const editBtn = document.createElement('button');
     editBtn.className = 'header-action';
     editBtn.textContent = 'Bearbeiten';
     editBtn.onclick = () => openEditScreen(eintragId);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'header-action';
+    delBtn.textContent = 'Löschen';
+    delBtn.style.color = 'var(--danger)';
+    delBtn.style.marginLeft = '12px';
+    delBtn.onclick = () => confirmDeleteEintrag(eintragId, e.titel);
+
     actionEl2.innerHTML = '';
     actionEl2.appendChild(editBtn);
+    actionEl2.appendChild(delBtn);
   } else {
     actionEl2.innerHTML = '';
   }
@@ -2655,6 +2664,31 @@ function renderDetailAnhang(e) {
   area.appendChild(info);
   area.appendChild(btn);
   el.appendChild(area);
+}
+
+/* ═══════════════════════════════════════════════════
+   EINTRAG LÖSCHEN
+═══════════════════════════════════════════════════ */
+function confirmDeleteEintrag(eintragId, titel) {
+  if (confirm('Eintrag „' + titel + '" wirklich löschen?\nDieser Vorgang kann nicht rückgängig gemacht werden.')) {
+    doDeleteEintrag(eintragId);
+  }
+}
+
+async function doDeleteEintrag(eintragId) {
+  try {
+    // Bestätigungen löschen
+    await supaDelete('teamapp_bestaetigungen', 'eintrag_id=eq.' + eintragId);
+    // Rückmeldungen löschen
+    await supaDelete('teamapp_rueckmeldungen', 'eintrag_id=eq.' + eintragId);
+    // Eintrag löschen
+    await supaDelete('teamapp_eintraege', 'id=eq.' + eintragId);
+    showToast('Eintrag gelöscht.');
+    await renderInHome();
+    navTo('screen-in-home');
+  } catch(e) {
+    showToast('Fehler beim Löschen.');
+  }
 }
 
 /* ═══════════════════════════════════════════════════
