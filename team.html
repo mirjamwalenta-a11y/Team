@@ -1694,8 +1694,8 @@ function buildInEntryCard(e, ls, offeneRueckmeldungen) {
 ═══════════════════════════════════════════════════ */
 async function openDetail(eintragId, isInhaber) {
   const session = getSession();
-  const db  = loadDB();
-  const e   = db.eintraege.find(x => x.id === eintragId);
+  const rows = await supa('teamapp_eintraege', 'GET', null, 'id=eq.' + encodeURIComponent(eintragId));
+  const e = rows && rows[0];
   if (!e) return;
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || '';
@@ -1909,21 +1909,18 @@ async function doSendRueckmeldung(eintragId, personId, typ, text) {
 
 /* Bestätigung speichern + Feed aktualisieren */
 async function doBestaetigen(eintragId, personId) {
-  const db = loadDB();
+  // Doppel-Bestätigung verhindern
+  const existing = await supa('teamapp_bestaetigungen', 'GET', null,
+    'eintrag_id=eq.' + encodeURIComponent(eintragId) + '&person_id=eq.' + encodeURIComponent(personId));
+  if (existing && existing.length > 0) return;
 
-  // Doppel-Bestätigung verhindern (defensive Prüfung)
-  const schonDa = db.bestaetigungen.some(
-    b => b.eintrag_id === eintragId && b.person_id === personId
-  );
-  if (schonDa) return;
-
-  db.bestaetigungen.push({
+  await supa('teamapp_bestaetigungen', 'POST', {
     eintrag_id:    eintragId,
     person_id:     personId,
     bestaetigt_am: new Date().toISOString()
   });
   showToast('Danke — notiert.');
-  updateTabBadge(personId);
+  await updateTabBadge(personId);
   await renderDetailReaction(eintragId, false, personId);
   await renderDetailLesestand(eintragId, false);
 }
@@ -2177,7 +2174,6 @@ async function doCreateEintrag() {
     bearbeitet_am: null
   };
 
-  const db = loadDB();
   // Anhang hochladen wenn gewählt
   if (_createAnhangFile) {
     try {
@@ -2205,9 +2201,9 @@ let _editSelectedType = null;
 const TYPE_KEY = { besprechung: 'b', produktinfo: 'p', mitteilung: 'm' };
 const TYPE_LABEL = { b: 'Besprechung', p: 'Produktinfo', m: 'Mitteilung' };
 
-function openEditScreen(eintragId) {
-  const db = loadDB();
-  const e  = db.eintraege.find(x => x.id === eintragId);
+async function openEditScreen(eintragId) {
+  const rows = await supa('teamapp_eintraege', 'GET', null, 'id=eq.' + encodeURIComponent(eintragId));
+  const e = rows && rows[0];
   if (!e) return;
 
   _editEintragId   = eintragId;
@@ -2292,10 +2288,6 @@ async function doSaveEintrag() {
   if (!ok) return;
 
   const inhaltsartMap = { b: 'besprechung', p: 'produktinfo', m: 'mitteilung' };
-  const db = loadDB();
-  const e  = db.eintraege.find(x => x.id === _editEintragId);
-  if (!e) return;
-
   // Felder aktualisieren — Bestätigungen und Rückmeldungen bleiben unberührt
   const editFields = {
     inhaltsart: inhaltsartMap[_editSelectedType],
@@ -2829,13 +2821,14 @@ function notifyNeueRueckmeldung(name, typ) {
 
 /* In-App-Badge: Tab-Titel zeigt Anzahl ungelesener Einträge
    für Mitarbeiter:in — verlässliche Sichtbarkeit ohne Push */
-function updateTabBadge(personId) {
+async function updateTabBadge(personId) {
   if (!personId) { document.title = 'Team · Mirjam Walenta'; return; }
-  const db = loadDB();
-  const confirmed = new Set(
-    db.bestaetigungen.filter(b => b.person_id === personId).map(b => b.eintrag_id)
-  );
-  const unread = db.eintraege.filter(e => !confirmed.has(e.id)).length;
+  const [eintraege, bestaetigungen] = await Promise.all([
+    supa('teamapp_eintraege', 'GET', null, 'order=erstellt_am.desc'),
+    supa('teamapp_bestaetigungen', 'GET', null, 'person_id=eq.' + encodeURIComponent(personId))
+  ]);
+  const confirmed = new Set((bestaetigungen || []).map(b => b.eintrag_id));
+  const unread = (eintraege || []).filter(e => !confirmed.has(e.id)).length;
   document.title = unread > 0
     ? '(' + unread + ') Team · Mirjam Walenta'
     : 'Team · Mirjam Walenta';
