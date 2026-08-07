@@ -1,0 +1,2911 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Team">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Mirjam Walenta – A great hair day · Team</title>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --ink:        #1a1a1a;
+  --ink-mid:    #5a5a5a;
+  --ink-light:  #9a9a9a;
+  --bg:         #f7f6f3;
+  --surface:    #ffffff;
+  --rule:       #e4e2dc;
+  --accent:     #2d5a3d;
+  --accent-lt:  #e8f0eb;
+  --accent-mid: #b8d4c0;
+  --blue:       #1a3a5c;
+  --blue-lt:    #e6ecf3;
+  --warn:       #8b4513;
+  --warn-lt:    #f5ede6;
+  --gold:       #b8a800;
+  --gold-lt:    #fffbdc;
+  --gold-bd:    #d4c97a;
+  --danger:     #c0392b;
+  --danger-lt:  #fdf0ee;
+  --font-head:  'Georgia', 'Times New Roman', serif;
+  --font-body:  -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --r:          10px;
+  --r-sm:       6px;
+  --safe-top:   env(safe-area-inset-top, 0px);
+  --safe-bot:   env(safe-area-inset-bottom, 0px);
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ═══════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.app-header {
+  background: var(--surface);
+  padding: calc(var(--safe-top) + 16px) 20px 14px;
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+.header-row { display: flex; align-items: center; justify-content: space-between; }
+.app-name {
+  font-family: var(--font-head);
+  font-size: 17px; font-weight: normal;
+  color: var(--ink); letter-spacing: -0.01em; line-height: 1.2;
+}
+.app-sub { font-size: 11px; color: var(--ink-light); margin-top: 2px; }
+.role-chip {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-light);
+  background: var(--bg); border: 1px solid var(--rule);
+  padding: 3px 8px; border-radius: 100px;
+}
+.back-btn {
+  background: none; border: none; color: var(--accent);
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  cursor: pointer; padding: 0; display: flex; align-items: center; gap: 3px;
+}
+.header-action {
+  background: none; border: none; color: var(--accent);
+  font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; padding: 0;
+}
+.header-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+/* ═══════════════════════════════════════
+   SCROLL AREA
+═══════════════════════════════════════ */
+.scroll-area {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 16px 20px calc(var(--safe-bot) + 24px);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════ */
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--ink-mid);
+}
+input[type="text"], input[type="email"], input[type="password"], textarea {
+  border: 1px solid var(--rule); border-radius: var(--r-sm);
+  padding: 12px 14px; font-size: 16px; font-family: var(--font-body);
+  color: var(--ink); background: var(--surface);
+  outline: none; width: 100%; transition: border-color 0.15s; -webkit-appearance: none;
+}
+textarea { resize: none; line-height: 1.5; font-size: 15px; }
+input:focus, textarea:focus { border-color: var(--accent); }
+input.error, textarea.error { border-color: var(--danger); }
+.field-error { font-size: 12px; color: var(--danger); display: none; }
+.field-error.visible { display: block; }
+.char-count { font-size: 11px; color: var(--ink-light); text-align: right; }
+
+/* ═══════════════════════════════════════
+   TYPE SELECTOR (Inhaltsart)
+═══════════════════════════════════════ */
+.type-selector { display: flex; gap: 6px; }
+.type-btn {
+  flex: 1; padding: 11px 4px; border: 1px solid var(--rule);
+  border-radius: var(--r-sm); background: var(--surface);
+  font-size: 12px; font-weight: 600; font-family: var(--font-body);
+  cursor: pointer; text-align: center; color: var(--ink-mid);
+  transition: all 0.15s; letter-spacing: 0.01em;
+}
+.type-btn.sel-b { background: var(--accent-lt); border-color: var(--accent); color: var(--accent); }
+.type-btn.sel-p { background: var(--blue-lt);   border-color: var(--blue);   color: var(--blue);   }
+.type-btn.sel-m { background: var(--warn-lt);   border-color: var(--warn);   color: var(--warn);   }
+.type-btn.error-ring { border-color: var(--danger); }
+
+/* ═══════════════════════════════════════
+   TOGGLE
+═══════════════════════════════════════ */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-top: 1px solid var(--rule);
+}
+.toggle-label-wrap .toggle-label { font-size: 14px; color: var(--ink); }
+.toggle-label-wrap .toggle-sub   { font-size: 12px; color: var(--ink-light); margin-top: 2px; }
+.toggle {
+  width: 44px; height: 26px; background: var(--rule); border-radius: 100px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+  flex-shrink: 0; border: none; -webkit-appearance: none;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: ''; position: absolute; width: 20px; height: 20px;
+  background: #fff; border-radius: 50%; top: 3px; left: 3px;
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle.on::after { transform: translateX(18px); }
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn-primary {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 14px 20px;
+  font-size: 15px; font-weight: 600; font-family: var(--font-body);
+  cursor: pointer; width: 100%; text-align: center;
+  letter-spacing: 0.01em; transition: background 0.15s; -webkit-appearance: none;
+}
+.btn-primary:hover  { background: #234a32; }
+.btn-primary:active { background: #1a3826; }
+.btn-primary:disabled { background: var(--rule); color: var(--ink-light); cursor: default; }
+.btn-secondary {
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent-mid); border-radius: var(--r-sm);
+  padding: 12px 20px; font-size: 14px; font-weight: 500;
+  font-family: var(--font-body); cursor: pointer; width: 100%;
+  text-align: center; transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--accent-lt); }
+.btn-ghost {
+  background: transparent; color: var(--ink-mid);
+  border: 1px solid var(--rule); border-radius: var(--r-sm);
+  padding: 12px 20px; font-size: 14px; font-weight: 500;
+  font-family: var(--font-body); cursor: pointer; width: 100%;
+  text-align: center; transition: background 0.15s;
+}
+.btn-ghost:hover { background: var(--bg); }
+.btn-danger {
+  background: transparent; color: var(--danger);
+  border: 1px solid #e8b4b0; border-radius: var(--r-sm);
+  padding: 11px 20px; font-size: 13px; font-weight: 500;
+  font-family: var(--font-body); cursor: pointer; width: 100%;
+  text-align: center; transition: background 0.15s;
+}
+.btn-danger:hover { background: var(--danger-lt); }
+.btn-text {
+  background: none; border: none; color: var(--accent); font-size: 14px;
+  font-family: var(--font-body); cursor: pointer; padding: 8px 0;
+  font-weight: 500; text-align: center;
+}
+.btn-new {
+  background: var(--ink); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 14px 20px;
+  font-size: 15px; font-weight: 600; font-family: var(--font-body);
+  cursor: pointer; width: 100%; text-align: center;
+  letter-spacing: 0.01em; transition: background 0.15s;
+}
+.btn-new:hover { background: #333; }
+
+/* ═══════════════════════════════════════
+   ENTRY CARDS
+═══════════════════════════════════════ */
+.entry-card {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 14px 16px;
+  cursor: pointer; transition: box-shadow 0.15s;
+}
+.entry-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+.entry-card.unread { border-left: 3px solid var(--accent); }
+.entry-card.important {
+  background: var(--gold-lt); border-color: var(--gold-bd);
+}
+.entry-card.important.unread { border-left: 3px solid var(--gold); }
+
+.card-top { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.tag {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 100px;
+}
+.tag-b { background: var(--accent-lt); color: var(--accent); }
+.tag-p { background: var(--blue-lt);   color: var(--blue);   }
+.tag-m { background: var(--warn-lt);   color: var(--warn);   }
+.important-dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; flex-shrink: 0; }
+.unread-dot    { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+.card-date { font-size: 11px; color: var(--ink-light); margin-left: auto; white-space: nowrap; }
+.card-title { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.3; margin-bottom: 4px; }
+.card-preview {
+  font-size: 13px; color: var(--ink-mid); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule);
+  font-size: 12px; flex-wrap: wrap; gap: 4px;
+}
+.read-ok    { color: var(--accent); font-weight: 500; }
+.read-part  { color: var(--ink-mid); }
+.edited-note { color: var(--ink-light); font-style: italic; }
+.response-badge {
+  background: var(--warn-lt); color: var(--warn);
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px;
+}
+
+/* ═══════════════════════════════════════
+   IMPORTANT BANNER (über dem Feed)
+═══════════════════════════════════════ */
+.important-banner {
+  background: var(--gold-lt); border: 1px solid var(--gold-bd);
+  border-radius: var(--r-sm); padding: 9px 12px;
+  font-size: 12px; color: #7a6800; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ═══════════════════════════════════════
+   NOTICE BAND
+═══════════════════════════════════════ */
+.notice-band {
+  background: var(--accent-lt); border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm); padding: 10px 14px;
+  font-size: 13px; color: var(--accent); font-weight: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: default;
+}
+
+/* ═══════════════════════════════════════
+   SECTION LABEL & DIVIDER
+═══════════════════════════════════════ */
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-light); padding: 4px 0 2px;
+}
+.divider { height: 1px; background: var(--rule); margin: 4px 0; }
+
+/* ═══════════════════════════════════════
+   INFO BOX
+═══════════════════════════════════════ */
+.info-box {
+  background: var(--bg); border: 1px solid var(--rule);
+  border-radius: var(--r-sm); padding: 12px 14px;
+  font-size: 13px; color: var(--ink-mid); line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════
+   PERSON ROW (Schritt 1 — unverändert)
+═══════════════════════════════════════ */
+.person-row {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.person-row.inactive { opacity: 0.5; }
+.person-info { flex: 1; min-width: 0; }
+.person-name { font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person-meta { font-size: 12px; color: var(--ink-light); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+.role-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; border-radius: 100px; }
+.role-inhaberin  { background: var(--ink); color: #fff; }
+.role-mitarbeiter{ background: var(--accent-lt); color: var(--accent); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.active   { background: var(--accent); }
+.status-dot.inactive { background: var(--ink-light); }
+.person-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  background: none; border: none; cursor: pointer; padding: 6px;
+  border-radius: var(--r-sm); color: var(--ink-light); font-size: 16px;
+  transition: color 0.15s, background 0.15s; line-height: 1;
+}
+.icon-btn:hover        { color: var(--ink);    background: var(--bg);        }
+.icon-btn.danger:hover { color: var(--danger); background: var(--danger-lt); }
+
+/* ═══════════════════════════════════════
+   INVITE BOX
+═══════════════════════════════════════ */
+.invite-box { background: var(--accent-lt); border: 1px solid var(--accent-mid); border-radius: var(--r); padding: 14px 16px; }
+.invite-box-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.invite-link-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--accent-mid); border-radius: var(--r-sm); padding: 10px 12px; }
+.invite-link-text { flex: 1; font-size: 13px; color: var(--ink-mid); font-family: 'Courier New', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.copy-btn { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; font-family: var(--font-body); cursor: pointer; white-space: nowrap; padding: 0; }
+
+/* ═══════════════════════════════════════
+   LOGIN / ONBOARDING
+═══════════════════════════════════════ */
+.login-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 28px calc(var(--safe-bot) + 32px); gap: 24px; }
+.login-brand { text-align: center; }
+.login-brand-name { font-family: var(--font-head); font-size: 22px; font-weight: normal; color: var(--ink); letter-spacing: -0.02em; line-height: 1.2; }
+.login-brand-sub  { font-size: 13px; color: var(--ink-light); margin-top: 4px; }
+.login-form { display: flex; flex-direction: column; gap: 14px; }
+.login-hint { font-size: 13px; color: var(--ink-light); text-align: center; line-height: 1.4; }
+.setpw-wrap { flex: 1; display: flex; flex-direction: column; padding: 32px 28px calc(var(--safe-bot) + 32px); gap: 20px; }
+.setpw-desc { font-size: 14px; color: var(--ink-mid); line-height: 1.5; }
+
+/* ═══════════════════════════════════════
+   LEERSTAND
+═══════════════════════════════════════ */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 28px; gap: 8px; text-align: center;
+}
+.empty-state-title { font-family: var(--font-head); font-size: 18px; color: var(--ink); letter-spacing: -0.01em; }
+.empty-state-sub   { font-size: 14px; color: var(--ink-light); }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: calc(var(--safe-bot) + 20px); left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--ink); color: #fff; padding: 10px 20px;
+  border-radius: 100px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none; white-space: nowrap; z-index: 999;
+  max-width: calc(100vw - 48px); text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════
+   MODAL
+═══════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 200; align-items: flex-end;
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  background: var(--surface); border-radius: 16px 16px 0 0;
+  padding: 20px 24px calc(var(--safe-bot) + 24px);
+  width: 100%; display: flex; flex-direction: column; gap: 16px;
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+.modal-desc  { font-size: 14px; color: var(--ink-mid); line-height: 1.5; }
+
+/* ═══════════════════════════════════════
+   PLACEHOLDER (Schritt 3–6)
+═══════════════════════════════════════ */
+.placeholder-screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 28px; gap: 12px; text-align: center;
+}
+.placeholder-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-light); }
+.placeholder-title { font-family: var(--font-head); font-size: 20px; color: var(--ink); letter-spacing: -0.01em; }
+.placeholder-desc  { font-size: 14px; color: var(--ink-mid); line-height: 1.5; }
+
+/* ═══════════════════════════════════════
+   RÜCKMELDEBEREICH (Schritt 3)
+═══════════════════════════════════════ */
+.reaction-area {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--rule);
+}
+.reaction-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+.btn-confirmed {
+  background: var(--accent-lt);
+  color: var(--accent);
+  border: 1px solid var(--accent-mid);
+  border-radius: var(--r-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.reaction-actions {
+  display: flex;
+  gap: 8px;
+}
+.reaction-actions .btn-secondary {
+  flex: 1;
+  font-size: 13px;
+  padding: 11px 8px;
+}
+/* Lesestand (Inhaberin) */
+.lesestand-box {
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lesestand-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-light);
+  margin-bottom: 2px;
+}
+.lesestand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 3px 0;
+}
+.lesestand-ok      { color: var(--accent); font-weight: 500; font-size: 13px; }
+.lesestand-pending { color: var(--ink-light); font-size: 13px; }
+
+/* ═══════════════════════════════════════
+   RÜCKMELDUNGEN (Schritt 4)
+═══════════════════════════════════════ */
+.rm-form {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rm-form .form-label { margin-bottom: 2px; }
+.rm-box {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+}
+.rm-box-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 4px;
+}
+.rm-box-text {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+/* Inhaberin: Rückmeldungskarte im Detail */
+.rm-item {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rm-item.gesehen { opacity: 0.5; }
+.rm-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rm-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rm-type-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 100px;
+}
+.rm-type-frage      { background: var(--blue-lt); color: var(--blue); }
+.rm-type-rueckmeldung { background: var(--warn-lt); color: var(--warn); }
+.rm-item-text { font-size: 13px; color: var(--ink); line-height: 1.4; }
+.rm-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.rm-item-time { font-size: 11px; color: var(--ink-light); }
+.rm-gesehen-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  padding: 0;
+}
+.rm-gesehen-btn:disabled { color: var(--ink-light); cursor: default; }
+/* Übersicht-Item */
+.rm-ov-item {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rm-ov-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+.rm-ov-item.ungesehen { border-left: 3px solid var(--warn); }
+.rm-ov-ref {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.rm-ov-text {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rm-ov-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════
+   PASSWORT ÄNDERN
+═══════════════════════════════════════ */
+.pw-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px calc(var(--safe-bot) + 24px);
+  gap: 16px;
+}
+.pw-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: normal;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════
+   ANHANG (Erweiterung)
+═══════════════════════════════════════ */
+.anhang-upload-area {
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg);
+}
+.anhang-upload-area.has-file {
+  border-color: var(--accent-mid);
+  background: var(--accent-lt);
+}
+.anhang-upload-label {
+  font-size: 13px;
+  color: var(--ink-mid);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.anhang-upload-label.has-file { color: var(--accent); font-weight: 500; }
+.anhang-choose-btn {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--ink-mid);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.anhang-choose-btn:hover { background: var(--surface); }
+.anhang-remove-btn {
+  background: none;
+  border: none;
+  color: var(--ink-light);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.anhang-remove-btn:hover { color: var(--danger); }
+/* Anhang im Detail */
+.anhang-detail {
+  margin: 0 20px;
+  border-top: 1px solid var(--rule);
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.anhang-detail-info { flex: 1; min-width: 0; }
+.anhang-detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 3px;
+}
+.anhang-detail-name {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.anhang-open-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.anhang-open-btn:hover { background: #234a32; }
+
+/* PIN-Vergabe Modal */
+.pin-info {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════════════════════════════
+     SCREEN: LOGIN
+════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-brand-name">Mirjam Walenta</div>
+      <div class="login-brand-sub">A great hair day</div>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="login-email">E-Mail</label>
+        <input type="email" id="login-email" placeholder="deine@email.at" autocomplete="email" inputmode="email">
+        <span class="field-error" id="login-email-err">Bitte E-Mail eingeben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-pw">Passwort</label>
+        <input type="password" id="login-pw" placeholder="••••••••" autocomplete="current-password">
+        <span class="field-error" id="login-pw-err">Bitte Passwort eingeben.</span>
+      </div>
+      <span class="field-error" id="login-general-err" style="text-align:center;">E-Mail oder Passwort nicht korrekt.</span>
+      <button class="btn-primary" onclick="doLogin()">Anmelden</button>
+    </div>
+    <p class="login-hint">Noch kein Zugang?<br>Du erhältst einen Einladungslink von Mirjam.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: PASSWORT SETZEN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-setpw">
+  <div class="setpw-wrap">
+    <div class="login-brand" style="text-align:left;">
+      <div class="login-brand-name">Willkommen im Team.</div>
+    </div>
+    <p class="setpw-desc">Mirjam hat dich eingeladen. Bitte leg jetzt dein Passwort fest, damit du dich künftig direkt anmelden kannst.</p>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="setpw-pw">Neues Passwort</label>
+        <input type="password" id="setpw-pw" placeholder="Min. 8 Zeichen" autocomplete="new-password">
+        <span class="field-error" id="setpw-pw-err">Passwort muss mindestens 8 Zeichen haben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setpw-pw2">Passwort wiederholen</label>
+        <input type="password" id="setpw-pw2" placeholder="••••••••" autocomplete="new-password">
+        <span class="field-error" id="setpw-pw2-err">Passwörter stimmen nicht überein.</span>
+      </div>
+      <button class="btn-primary" onclick="doSetPassword()">Passwort festlegen &amp; loslegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: HOME MITARBEITER:IN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-ma-home">
+  <div class="app-header">
+    <div class="header-row">
+      <div>
+        <div class="app-name">Mirjam Walenta</div>
+        <div class="app-sub">A great hair day</div>
+      </div>
+      <span class="role-chip">Team</span>
+    </div>
+  </div>
+  <div class="scroll-area" id="ma-feed-scroll">
+    <!-- befüllt durch renderMaFeed() -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: HOME INHABERIN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-in-home">
+  <div class="app-header">
+    <div class="header-row">
+      <div>
+        <div class="app-name">Mirjam Walenta</div>
+        <div class="app-sub">A great hair day</div>
+      </div>
+      <span class="role-chip">Inhaberin</span>
+    </div>
+  </div>
+  <div class="scroll-area" id="in-feed-scroll">
+    <!-- befüllt durch renderInHome() -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: EINTRAG ERSTELLEN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-create">
+  <div class="app-header">
+    <div class="header-row">
+      <button class="back-btn" onclick="navTo('screen-in-home')">&#8249; Verwerfen</button>
+      <span class="header-title">Neuer Eintrag</span>
+      <div style="width:72px;"></div>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div class="form-group">
+      <div class="form-label">Inhaltsart</div>
+      <div class="type-selector" id="create-type-sel">
+        <button class="type-btn" id="tb-b" onclick="selectType('b')">Besprechung</button>
+        <button class="type-btn" id="tb-p" onclick="selectType('p')">Produktinfo</button>
+        <button class="type-btn" id="tb-m" onclick="selectType('m')">Mitteilung</button>
+      </div>
+      <span class="field-error" id="create-type-err">Bitte Inhaltsart wählen.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="create-titel">Titel</label>
+      <input type="text" id="create-titel" placeholder="Was soll das Team wissen?" maxlength="80">
+      <span class="field-error" id="create-titel-err">Bitte Titel eingeben.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="create-inhalt">Inhalt</label>
+      <textarea id="create-inhalt" rows="7" placeholder="Kurz und klar — nur was wirklich wichtig ist." maxlength="1200"
+                oninput="document.getElementById('create-cc').textContent=this.value.length"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="field-error" id="create-inhalt-err">Bitte Inhalt eingeben.</span>
+        <span class="char-count"><span id="create-cc">0</span>/1200</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Anhang <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);">— optional, PDF oder Bild</span></div>
+      <div class="anhang-upload-area" id="create-anhang-area">
+        <span class="anhang-upload-label" id="create-anhang-label">Kein Anhang</span>
+        <input type="file" id="create-anhang-input" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf"
+               style="display:none;" onchange="onAnhangChosen('create')">
+        <button class="anhang-choose-btn" onclick="document.getElementById('create-anhang-input').click()">Datei wählen</button>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label-wrap">
+        <div class="toggle-label">Besonders wichtig</div>
+        <div class="toggle-sub">Steht im Feed oben, bis jede Person bestätigt hat</div>
+      </div>
+      <button class="toggle" id="create-wichtig" onclick="this.classList.toggle('on')" aria-label="Besonders wichtig"></button>
+    </div>
+    <button class="btn-primary" onclick="doCreateEintrag()">Veröffentlichen</button>
+    <button class="btn-ghost" onclick="navTo('screen-in-home')">Verwerfen</button>
+    <div style="height:8px;"></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN: EINTRAG BEARBEITEN (Schritt 5)
+════════════════════════════════════════ -->
+<div class="screen" id="screen-edit">
+  <div class="app-header">
+    <div class="header-row">
+      <button class="back-btn" id="edit-back-btn">&#8249; Abbrechen</button>
+      <span class="header-title">Eintrag bearbeiten</span>
+      <div style="width:72px;"></div>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div class="info-box" style="border-left:3px solid var(--ink-light);">
+      Lesebestätigungen bleiben erhalten.
+    </div>
+    <div class="form-group">
+      <div class="form-label">Inhaltsart</div>
+      <div class="type-selector" id="edit-type-sel">
+        <button class="type-btn" id="eb-b" onclick="editSelectType('b')">Besprechung</button>
+        <button class="type-btn" id="eb-p" onclick="editSelectType('p')">Produktinfo</button>
+        <button class="type-btn" id="eb-m" onclick="editSelectType('m')">Mitteilung</button>
+      </div>
+      <span class="field-error" id="edit-type-err">Bitte Inhaltsart wählen.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="edit-titel">Titel</label>
+      <input type="text" id="edit-titel" maxlength="80">
+      <span class="field-error" id="edit-titel-err">Bitte Titel eingeben.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="edit-inhalt">Inhalt</label>
+      <textarea id="edit-inhalt" rows="7" maxlength="1200"
+                oninput="document.getElementById('edit-cc').textContent=this.value.length"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="field-error" id="edit-inhalt-err">Bitte Inhalt eingeben.</span>
+        <span class="char-count"><span id="edit-cc">0</span>/1200</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Anhang <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);">— optional, PDF oder Bild</span></div>
+      <div class="anhang-upload-area" id="edit-anhang-area">
+        <span class="anhang-upload-label" id="edit-anhang-label">Kein Anhang</span>
+        <input type="file" id="edit-anhang-input" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf"
+               style="display:none;" onchange="onAnhangChosen('edit')">
+        <button class="anhang-choose-btn" id="edit-anhang-choose-btn"
+                onclick="document.getElementById('edit-anhang-input').click()">Datei wählen</button>
+        <button class="anhang-remove-btn" id="edit-anhang-remove-btn"
+                style="display:none;" onclick="removeAnhang('edit')" title="Anhang entfernen">&#x2715;</button>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label-wrap">
+        <div class="toggle-label">Besonders wichtig</div>
+        <div class="toggle-sub">Steht im Feed oben, bis jede Person bestätigt hat</div>
+      </div>
+      <button class="toggle" id="edit-wichtig" onclick="this.classList.toggle('on')" aria-label="Besonders wichtig"></button>
+    </div>
+    <button class="btn-primary" onclick="doSaveEintrag()">Speichern</button>
+    <button class="btn-ghost" id="edit-cancel-btn">Abbrechen</button>
+    <div style="height:8px;"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: EINTRAGSDETAIL (Schritt 3)
+════════════════════════════════════════ -->
+<div class="screen" id="screen-detail">
+  <div class="app-header">
+    <div class="header-row">
+      <button class="back-btn" id="detail-back-btn">&#8249; Zurück</button>
+      <div id="detail-header-action"></div>
+    </div>
+  </div>
+  <!-- Inhalt wird vollständig durch openDetail() gerendert -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="detail-scroll">
+    <!-- Kopf: Meta + Titel -->
+    <div style="padding:16px 20px 0;" id="detail-header-meta"></div>
+    <!-- Body: Inhalt -->
+    <div id="detail-body-content"></div>
+    <!-- Anhang (wenn vorhanden) -->
+    <div id="detail-anhang"></div>
+    <!-- Rückmeldebereich: wird je Rolle gesetzt -->
+    <div id="detail-reaction"></div>
+    <!-- Lesestand (nur Inhaberin): wird je Rolle gesetzt -->
+    <div id="detail-lesestand" style="padding:0 20px 32px;display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN: RÜCKMELDUNGSÜBERSICHT (Schritt 4)
+════════════════════════════════════════ -->
+<div class="screen" id="screen-responses">
+  <div class="app-header">
+    <div class="header-row">
+      <button class="back-btn" onclick="renderInHome();navTo('screen-in-home')">&#8249; Zurück</button>
+      <span class="header-title">Rückmeldungen</span>
+      <div style="width:60px;"></div>
+    </div>
+  </div>
+  <div class="scroll-area" id="responses-scroll">
+    <!-- befüllt durch renderResponsesScreen() -->
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SCREEN: PASSWORT ÄNDERN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-changepw">
+  <div class="app-header">
+    <div class="header-row">
+      <button class="back-btn" id="changepw-back-btn">&#8249; Zurück</button>
+      <span class="header-title">Passwort ändern</span>
+      <div style="width:60px;"></div>
+    </div>
+  </div>
+  <div class="pw-wrap">
+    <div class="pw-title">Neues Passwort festlegen</div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="cpw-current">Aktuelles Passwort</label>
+        <input type="password" id="cpw-current" placeholder="••••••••" autocomplete="current-password">
+        <span class="field-error" id="cpw-current-err">Bitte aktuelles Passwort eingeben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cpw-new">Neues Passwort</label>
+        <input type="password" id="cpw-new" placeholder="Min. 8 Zeichen" autocomplete="new-password">
+        <span class="field-error" id="cpw-new-err">Mindestens 4 Zeichen erforderlich.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cpw-new2">Neues Passwort wiederholen</label>
+        <input type="password" id="cpw-new2" placeholder="••••••••" autocomplete="new-password">
+        <span class="field-error" id="cpw-new2-err">Passwörter stimmen nicht überein.</span>
+      </div>
+      <span class="field-error" id="cpw-general-err" style="text-align:center;">Aktuelles Passwort nicht korrekt.</span>
+      <button class="btn-primary" onclick="doChangePw()">Passwort speichern</button>
+      <button class="btn-text" id="cpw-cancel-btn">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- PIN für Mitarbeiter:in setzen (Inhaberin) -->
+<div class="modal-overlay" id="modal-setpin" onclick="closeSetPinModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">PIN festlegen</div>
+    <div class="pin-info" id="setpin-desc"></div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="setpin-pw">Neues Passwort</label>
+        <input type="password" id="setpin-pw" placeholder="Min. 8 Zeichen" autocomplete="new-password">
+        <span class="field-error" id="setpin-pw-err">Passwort muss mindestens 8 Zeichen haben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setpin-pw2">Wiederholen</label>
+        <input type="password" id="setpin-pw2" placeholder="••••••••" autocomplete="new-password">
+        <span class="field-error" id="setpin-pw2-err">Passwörter stimmen nicht überein.</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doSetPin()">Passwort speichern</button>
+    <button class="btn-text" onclick="closeSetPinModal()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Mitarbeiter:in löschen -->
+<div class="modal-overlay" id="modal-delete-person" onclick="closeDeletePersonModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">Person löschen</div>
+    <div class="modal-desc" id="delete-person-desc"></div>
+    <button class="btn-danger" onclick="doDeletePerson()">Endgültig löschen</button>
+    <button class="btn-text" onclick="closeDeletePersonModal()">Abbrechen</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ════════════════════════════════════════
+     MODALS — SCHRITT 1 (Teamverwaltung)
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-invite" onclick="closeInviteModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">Mitarbeiter:in hinzufügen</div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="invite-name">Name</label>
+        <input type="text" id="invite-name" placeholder="z.B. Alina">
+        <span class="field-error" id="invite-name-err">Bitte Name eingeben.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="invite-pw">Passwort festlegen</label>
+        <input type="text" id="invite-pw" placeholder="Min. 4 Zeichen" autocomplete="off">
+        <span class="field-error" id="invite-pw-err">Mindestens 4 Zeichen erforderlich.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="invite-email" style="display:flex;align-items:center;gap:6px;">
+          E-Mail <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-light);font-size:11px;">— optional</span>
+        </label>
+        <input type="email" id="invite-email" placeholder="optional" inputmode="email">
+      </div>
+    </div>
+    <div id="invite-result" style="display:none;">
+      <div class="invite-box">
+        <div class="invite-box-label">Einladungslink</div>
+        <div class="invite-link-row">
+          <span class="invite-link-text" id="invite-link-text"></span>
+          <button class="copy-btn" onclick="copyInviteLink()">Kopieren</button>
+        </div>
+      </div>
+      <div class="info-box" id="invite-info-box"></div>
+    </div>
+    <div id="invite-actions">
+      <button class="btn-primary" onclick="doCreateInvite()">Hinzufügen</button>
+      <button class="btn-text" onclick="closeInviteModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-deactivate" onclick="closeDeactivateModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">Account deaktivieren</div>
+    <div class="modal-desc" id="deactivate-desc"></div>
+    <button class="btn-danger" onclick="doDeactivate()">Deaktivieren</button>
+    <button class="btn-text" onclick="closeDeactivateModal()">Abbrechen</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-reactivate" onclick="closeReactivateModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">Account reaktivieren</div>
+    <div class="modal-desc" id="reactivate-desc"></div>
+    <button class="btn-primary" onclick="doReactivate()">Reaktivieren</button>
+    <button class="btn-text" onclick="closeReactivateModal()">Abbrechen</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════
+   SUPABASE BACKEND (ersetzt localStorage Data Layer)
+   URL und Key sind für diesen Prototyp inline.
+   Produktion: Umgebungsvariablen verwenden.
+═══════════════════════════════════════════════════ */
+const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
+
+// Supabase REST-Hilfsfunktion
+async function supa(table, method='GET', body=null, params='') {
+  const url = SUPA_URL + '/rest/v1/' + table + (params ? '?' + params : '');
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+  };
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null
+  });
+  if (method === 'GET' || (method === 'POST' && headers.Prefer === 'return=representation')) {
+    return res.ok ? res.json() : [];
+  }
+  return res.ok;
+}
+
+// ── Saubere Update/Delete Helfer ──
+async function supaUpdate(table, filter, body) {
+  const url = SUPA_URL + '/rest/v1/' + table + '?' + filter;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  'application/json',
+      'Prefer':        'return=minimal'
+    },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+async function supaDelete(table, filter) {
+  const url = SUPA_URL + '/rest/v1/' + table + '?' + filter;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  'application/json'
+    }
+  });
+  return res.ok;
+}
+
+// ── DB-Funktionen: ersetzt loadDB/saveDB ──
+
+async function dbGetPerson(email) {
+  const rows = await supa('teamapp_persons', 'GET', null, 'email=eq.' + encodeURIComponent(email) + '&aktiv=eq.true');
+  return rows[0] || null;
+}
+
+async function dbGetPersonById(id) {
+  const rows = await supa('teamapp_persons', 'GET', null, 'id=eq.' + id);
+  return rows[0] || null;
+}
+
+async function dbGetAllPersons() {
+  return supa('teamapp_persons', 'GET', null, 'order=name.asc');
+}
+
+async function dbCreatePerson(person) {
+  return supa('teamapp_persons', 'POST', person);
+}
+
+async function dbUpdatePersonAktiv(id, aktiv) {
+  return supaUpdate('teamapp_persons', 'id=eq.' + id, {aktiv});
+}
+
+async function dbGetInvite(token) {
+  const rows = await supa('teamapp_invites', 'GET', null, 'token=eq.' + token);
+  return rows[0] || null;
+}
+
+async function dbCreateInvite(invite) {
+  return supa('teamapp_invites', 'POST', invite);
+}
+
+async function dbDeleteInvite(token) {
+  return supa('teamapp_invites?token=eq.' + token, 'DELETE');
+}
+
+async function dbGetEintraege() {
+  return supa('teamapp_eintraege', 'GET', null, 'order=erstellt_am.desc');
+}
+
+async function dbCreateEintrag(e) {
+  return supa('teamapp_eintraege', 'POST', e);
+}
+
+async function dbUpdateEintrag(id, fields) {
+  return supaUpdate('teamapp_eintraege', 'id=eq.' + id, fields);
+}
+
+async function dbGetBestaetigungen(personId) {
+  const params = personId ? 'person_id=eq.' + personId : '';
+  return supa('teamapp_bestaetigungen', 'GET', null, params);
+}
+
+async function dbCreateBestaetigung(b) {
+  return supa('teamapp_bestaetigungen', 'POST', b);
+}
+
+async function dbGetRueckmeldungen(eintragId) {
+  const params = eintragId ? 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc' : 'order=erstellt_am.desc';
+  return supa('teamapp_rueckmeldungen', 'GET', null, params);
+}
+
+async function dbGetAlleRueckmeldungen() {
+  return supa('teamapp_rueckmeldungen', 'GET', null, 'order=erstellt_am.desc');
+}
+
+async function dbCreateRueckmeldung(r) {
+  return supa('teamapp_rueckmeldungen', 'POST', r);
+}
+
+async function dbMarkRueckmeldungGesehen(id) {
+  return supaUpdate('teamapp_rueckmeldungen', 'id=eq.' + id, {gesehen: true});
+}
+
+
+/* ═══════════════════════════════════════════════════
+   DATA LAYER
+   Lokaler localStorage-Stand für Schritt 1–2.
+   Backend-Anbindung ersetzt loadDB/saveDB — alle
+   Produktlogik bleibt davon unberührt.
+═══════════════════════════════════════════════════ */
+const DB_KEY = 'teamapp_v1';
+
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || initDB(); }
+  catch(e) { return initDB(); }
+}
+
+function initDB() {
+  const db = {
+    persons: [{
+      id: 'p-inhaberin',
+      name: 'Mirjam',
+      email: 'mirjam.walenta@gmail.com',
+      rolle: 'inhaberin',
+      aktiv: true,
+      pw: 'salon2026'       // Prototyp — Produktion: gehashtes PW im Backend
+    }],
+    invites:        {},     // token → {name, email, erstellt}
+    eintraege:      [],     // Eintrag-Objekte
+    bestaetigungen: [],     // {eintrag_id, person_id, bestaetigt_am} — Schritt 3
+    rueckmeldungen: []      // {id, eintrag_id, person_id, typ, text, erstellt_am, gesehen} — Schritt 4
+  };
+  saveDB(db);
+  return db;
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+/* ═══════════════════════════════════════════════════
+   SESSION
+═══════════════════════════════════════════════════ */
+function getSession() {
+  try { return JSON.parse(sessionStorage.getItem('teamapp_session')); }
+  catch(e) { return null; }
+}
+function setSession(p) {
+  sessionStorage.setItem('teamapp_session', JSON.stringify({ id: p.id, name: p.name, rolle: p.rolle }));
+}
+function clearSession() { sessionStorage.removeItem('teamapp_session'); }
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════ */
+// _prevScreen merkt sich wohin "Zurück" führt
+let _prevScreen = null;
+
+function navTo(screenId, prevId) {
+  _prevScreen = prevId || null;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(screenId);
+  if (el) { el.classList.add('active'); el.querySelector('.scroll-area') && (el.querySelector('.scroll-area').scrollTop = 0); }
+}
+
+function showScreen(id) { navTo(id); }   // Alias für Schritt-1-Kompatibilität
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ═══════════════════════════════════════════════════
+   DATUM FORMATIEREN
+═══════════════════════════════════════════════════ */
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 86400000 && d.getDate() === now.getDate()) return 'Heute';
+  if (diff < 172800000) return 'Gestern';
+  return d.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' });
+}
+
+/* ═══════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════ */
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  let ok = true;
+  ['login-email','login-pw'].forEach(id => document.getElementById(id).classList.remove('error'));
+  ['login-email-err','login-pw-err','login-general-err'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  if (!email) { document.getElementById('login-email').classList.add('error'); document.getElementById('login-email-err').classList.add('visible'); ok = false; }
+  if (!pw)    { document.getElementById('login-pw').classList.add('error');    document.getElementById('login-pw-err').classList.add('visible');    ok = false; }
+  if (!ok) return;
+
+  const btn = document.querySelector('#screen-login .btn-primary');
+  if (btn) btn.disabled = true;
+
+  try {
+    const persons = await supa('teamapp_persons', 'GET', null,
+      'email=eq.' + encodeURIComponent(email));
+
+    if (!Array.isArray(persons) || persons.length === 0) {
+      document.getElementById('login-general-err').classList.add('visible');
+      document.getElementById('login-pw').classList.add('error');
+      return;
+    }
+
+    const pFound = persons.find(x => x.pw_hash === pw);
+
+    if (!pFound) {
+      document.getElementById('login-general-err').classList.add('visible');
+      document.getElementById('login-pw').classList.add('error');
+      return;
+    }
+    if (!pFound.aktiv) {
+      const errEl = document.getElementById('login-general-err');
+      errEl.textContent = 'Dieser Account wurde deaktiviert. Bitte wende dich an Mirjam.';
+      errEl.classList.add('visible');
+      return;
+    }
+    setSession(pFound);
+    await routeAfterLogin(pFound);
+  } catch(e) {
+    const errEl = document.getElementById('login-general-err');
+    errEl.textContent = 'Verbindungsfehler. Bitte nochmal versuchen.';
+    errEl.classList.add('visible');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function routeAfterLogin(p) {
+  requestPushPermission();
+  if (p.rolle === 'inhaberin') {
+    await renderInHome();
+    navTo('screen-in-home');
+    updateTabBadge(null);
+  } else {
+    updateTabBadge(p.id);
+    await renderMaFeed();
+    navTo('screen-ma-home');
+  }
+}
+
+function doLogout() {
+  clearSession();
+  document.getElementById('login-pw').value = '';
+  document.title = 'Team · Mirjam Walenta';
+  navTo('screen-login');
+  showToast('Du wurdest abgemeldet.');
+}
+
+/* ═══════════════════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════════════════ */
+async function checkInviteParam() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('invite');
+  if (!token) return false;
+  const inv = await dbGetInvite(token);
+  if (!inv) { showToast('Dieser Einladungslink ist nicht mehr gültig.'); return false; }
+  sessionStorage.setItem('pending_invite', JSON.stringify({ token, ...inv }));
+  history.replaceState({}, '', window.location.pathname);
+  navTo('screen-setpw');
+  return true;
+}
+
+async function doSetPassword() {
+  const pw  = document.getElementById('setpw-pw').value;
+  const pw2 = document.getElementById('setpw-pw2').value;
+  let ok = true;
+  ['setpw-pw','setpw-pw2'].forEach(id => document.getElementById(id).classList.remove('error'));
+  ['setpw-pw-err','setpw-pw2-err'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  if (pw.length < 8) { document.getElementById('setpw-pw').classList.add('error');  document.getElementById('setpw-pw-err').classList.add('visible');  ok = false; }
+  if (pw !== pw2)    { document.getElementById('setpw-pw2').classList.add('error'); document.getElementById('setpw-pw2-err').classList.add('visible'); ok = false; }
+  if (!ok) return;
+  const pending = JSON.parse(sessionStorage.getItem('pending_invite') || 'null');
+  if (!pending) { showToast('Etwas ist schiefgelaufen. Bitte Link erneut öffnen.'); return; }
+  const newP = { id: 'p-' + Date.now(), name: pending.name, email: pending.email, rolle: 'mitarbeiter', aktiv: true, pw_hash: pw };
+  await dbCreatePerson(newP);
+  await dbDeleteInvite(pending.token);
+  sessionStorage.removeItem('pending_invite');
+  setSession(newP);
+  showToast('Willkommen, ' + newP.name + '!');
+  await renderMaFeed();
+  navTo('screen-ma-home');
+}
+
+/* ═══════════════════════════════════════════════════
+   FEED — MITARBEITER:IN
+   Feed-Logik ist in reinen Datenfunktionen isoliert,
+   damit Backend-Anbindung nur diese ersetzt.
+═══════════════════════════════════════════════════ */
+async function getMaFeedItems(personId) {
+  const [eintraege, bestaetigungen] = await Promise.all([
+    dbGetEintraege(),
+    dbGetBestaetigungen(personId)
+  ]);
+  const confirmed = new Set(bestaetigungen.map(b => b.eintrag_id));
+  const important = eintraege.filter(e => e.wichtig && !confirmed.has(e.id));
+  const rest      = eintraege.filter(e => !(e.wichtig && !confirmed.has(e.id)));
+  return { items: [...important, ...rest], confirmed };
+}
+
+async function renderMaFeed() {
+  const session = getSession();
+  const container = document.getElementById('ma-feed-scroll');
+  container.innerHTML = '';
+
+  if (!session) return;
+  const { items, confirmed } = await getMaFeedItems(session.id);
+
+  if (items.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = '<div class="empty-state-title">Alles auf dem neuesten Stand.</div><div class="empty-state-sub">Es gibt keine ungelesenen Einträge.</div>';
+    container.appendChild(empty);
+    appendLogout(container);
+    return;
+  }
+
+  // Ungelesen-Zähler
+  const unreadCount = items.filter(e => !confirmed.has(e.id)).length;
+  if (unreadCount > 0) {
+    const band = document.createElement('div');
+    band.className = 'notice-band';
+    band.textContent = unreadCount === 1 ? '1 ungelesener Eintrag' : unreadCount + ' ungelesene Einträge';
+    container.appendChild(band);
+  }
+
+  // Wichtig-Banner wenn nötig
+  const hasImportantUnread = items.some(e => e.wichtig && !confirmed.has(e.id));
+  if (hasImportantUnread) {
+    const banner = document.createElement('div');
+    banner.className = 'important-banner';
+    banner.innerHTML = '<span>&#9873;</span><span>Besonders wichtig &middot; bitte bestätigen</span>';
+    container.appendChild(banner);
+  }
+
+  items.forEach(e => {
+    const isRead    = confirmed.has(e.id);
+    const isImportant = e.wichtig && !isRead;
+    container.appendChild(buildEntryCard(e, isRead, isImportant, false));
+  });
+
+  appendLogout(container);
+}
+
+function appendLogout(container) {
+  const pwBtn = document.createElement('button');
+  pwBtn.className = 'btn-text';
+  pwBtn.style.cssText = 'color:var(--ink-light);font-size:13px;margin-top:4px;';
+  pwBtn.textContent = 'Passwort ändern';
+  pwBtn.onclick = openChangePw;
+  container.appendChild(pwBtn);
+
+  const btn = document.createElement('button');
+  btn.className = 'btn-text';
+  btn.style.cssText = 'color:var(--ink-light);font-size:13px;';
+  btn.textContent = 'Abmelden';
+  btn.onclick = doLogout;
+  container.appendChild(btn);
+}
+
+/* ═══════════════════════════════════════════════════
+   FEED — INHABERIN
+═══════════════════════════════════════════════════ */
+async function getInFeedItems() {
+  return dbGetEintraege();
+}
+
+async function getLesestand(eintragId, allPersons, allBest) {
+  const mitarbeiter = allPersons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
+  const confirmed   = allBest.filter(b => b.eintrag_id === eintragId).map(b => b.person_id);
+  return { total: mitarbeiter.length, done: confirmed.length };
+}
+
+async function getOffeneRueckmeldungen(eintragId, allRm) {
+  return allRm.filter(r => r.eintrag_id === eintragId && !r.gesehen).length;
+}
+
+async function getAlleOffeneRueckmeldungen() {
+  const rm = await dbGetAlleRueckmeldungen();
+  return rm.filter(r => !r.gesehen).length;
+}
+
+async function renderInHome() {
+  const container = document.getElementById('in-feed-scroll');
+  container.innerHTML = '';
+
+  // Teamverwaltung (Schritt 1 — immer oben)
+  const teamSec = document.createElement('div');
+  teamSec.className = 'section-label';
+  teamSec.textContent = 'Team verwalten';
+  container.appendChild(teamSec);
+
+  const teamList = document.createElement('div');
+  teamList.id = 'team-list';
+  container.appendChild(teamList);
+
+  const inviteBtn = document.createElement('button');
+  inviteBtn.className = 'btn-secondary';
+  inviteBtn.textContent = '+ Mitarbeiter:in einladen';
+  inviteBtn.onclick = openInviteModal;
+  container.appendChild(inviteBtn);
+
+  const divider = document.createElement('div');
+  divider.className = 'divider';
+  container.appendChild(divider);
+
+  // Neuer Eintrag Button
+  const newBtn = document.createElement('button');
+  newBtn.className = 'btn-new';
+  newBtn.textContent = '+ Neuer Eintrag';
+  newBtn.onclick = openCreateScreen;
+  container.appendChild(newBtn);
+
+  // Hinweisband für offene Rückmeldungen
+  const alleOffene = await getAlleOffeneRueckmeldungen();
+  if (alleOffene > 0) {
+    const band = document.createElement('div');
+    band.className = 'notice-band';
+    band.style.cssText = 'cursor:pointer;border-left-color:var(--warn);background:var(--warn-lt);color:var(--warn);';
+    const label = alleOffene === 1 ? '1 offene Rückmeldung' : alleOffene + ' offene Rückmeldungen';
+    band.innerHTML = `<span>${label}</span><span style="font-size:14px;">›</span>`;
+    band.onclick = () => { renderResponsesScreen(); navTo('screen-responses'); };
+    container.appendChild(band);
+  }
+
+  // Feed
+  const [items, allPersons, allBest, allRm] = await Promise.all([getInFeedItems(), dbGetAllPersons(), dbGetBestaetigungen(null), dbGetAlleRueckmeldungen()]);
+
+  if (items.length === 0) {
+    const empty = document.createElement('div');
+    empty.innerHTML = '<div class="empty-state" style="padding:24px 0;align-items:flex-start;text-align:left;"><div class="empty-state-title" style="font-size:17px;">Noch keine Einträge.</div><div class="empty-state-sub" style="font-size:13px;">Erstelle den ersten Eintrag für dein Team.</div></div>';
+    container.appendChild(empty);
+  } else {
+    const feedLabel = document.createElement('div');
+    feedLabel.className = 'section-label';
+    feedLabel.textContent = 'Veröffentlichte Einträge';
+    container.appendChild(feedLabel);
+
+    for (const e of items) {
+      const ls = await getLesestand(e.id, allPersons, allBest);
+      const offene = await getOffeneRueckmeldungen(e.id, allRm);
+      container.appendChild(buildInEntryCard(e, ls, offene));
+    }
+  }
+
+  // Abmelden
+  const pwBtn2 = document.createElement('button');
+  pwBtn2.className = 'btn-text';
+  pwBtn2.style.cssText = 'color:var(--ink-light);font-size:13px;margin-top:4px;';
+  pwBtn2.textContent = 'Passwort ändern';
+  pwBtn2.onclick = openChangePw;
+  container.appendChild(pwBtn2);
+
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className = 'btn-text';
+  logoutBtn.style.cssText = 'color:var(--ink-light);font-size:13px;';
+  logoutBtn.textContent = 'Abmelden';
+  logoutBtn.onclick = doLogout;
+  container.appendChild(logoutBtn);
+
+  await renderTeam();
+}
+
+/* ═══════════════════════════════════════════════════
+   CARD BUILDER — MA
+═══════════════════════════════════════════════════ */
+function buildEntryCard(e, isRead, isImportant, isInhaber) {
+  const card = document.createElement('div');
+  let cls = 'entry-card';
+  if (!isRead)      cls += ' unread';
+  if (isImportant)  cls += ' important';
+  card.className = cls;
+  card.onclick = () => openDetail(e.id, false);
+
+  const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
+  const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
+
+  let topHtml = `<span class="tag ${tagClass}">${tagText}</span>`;
+  if (isImportant) topHtml += '<div class="important-dot"></div>';
+  if (!isRead)     topHtml += '<div class="unread-dot"></div>';
+  topHtml += `<span class="card-date">${fmtDate(e.erstellt_am)}</span>`;
+
+  let metaHtml = '';
+  if (isRead || e.bearbeitet_am) {
+    metaHtml = '<div class="card-meta">';
+    if (isRead) metaHtml += '<span class="read-ok">&#10003; Bestätigt</span>';
+    else         metaHtml += '<span></span>';
+    if (e.bearbeitet_am) metaHtml += `<span class="edited-note">Bearbeitet: ${fmtDate(e.bearbeitet_am)}</span>`;
+    metaHtml += '</div>';
+  }
+
+  const preview = (e.inhalt || '').substring(0, 120);
+  card.innerHTML = `
+    <div class="card-top">${topHtml}</div>
+    <div class="card-title">${escHtml(e.titel)}</div>
+    <div class="card-preview">${escHtml(preview)}</div>
+    ${metaHtml}
+  `;
+  return card;
+}
+
+/* ═══════════════════════════════════════════════════
+   CARD BUILDER — INHABERIN
+═══════════════════════════════════════════════════ */
+function buildInEntryCard(e, ls, offeneRueckmeldungen) {
+  const card = document.createElement('div');
+  card.className = 'entry-card' + (e.wichtig ? ' important' : '');
+  card.onclick = () => openDetail(e.id, true);
+
+  const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
+  const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
+
+  let topHtml = `<span class="tag ${tagClass}">${tagText}</span>`;
+  if (e.wichtig) topHtml += '<div class="important-dot"></div>';
+  topHtml += `<span class="card-date">${fmtDate(e.erstellt_am)}</span>`;
+
+  const leseText = ls.total === 0 ? '—' : `${ls.done} von ${ls.total} bestätigt`;
+  const leseClass = ls.total > 0 && ls.done === ls.total ? 'read-ok' : 'read-part';
+
+  let metaHtml = `<div class="card-meta"><span class="${leseClass}">${leseText}</span>`;
+  if (offeneRueckmeldungen > 0) {
+    const label = offeneRueckmeldungen === 1 ? '1 Rückmeldung' : offeneRueckmeldungen + ' Rückmeldungen';
+    metaHtml += `<span class="response-badge">${label}</span>`;
+  }
+  if (e.bearbeitet_am) metaHtml += `<span class="edited-note">Bearbeitet: ${fmtDate(e.bearbeitet_am)}</span>`;
+  metaHtml += '</div>';
+
+  card.innerHTML = `
+    <div class="card-top">${topHtml}</div>
+    <div class="card-title">${escHtml(e.titel)}</div>
+    ${metaHtml}
+  `;
+  return card;
+}
+
+/* ═══════════════════════════════════════════════════
+   EINTRAGSDETAIL (Schritt 3 — vollständig)
+═══════════════════════════════════════════════════ */
+async function openDetail(eintragId, isInhaber) {
+  const session = getSession();
+  const db  = loadDB();
+  const e   = db.eintraege.find(x => x.id === eintragId);
+  if (!e) return;
+
+  const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || '';
+  const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
+
+  // Scroll zurücksetzen
+  document.getElementById('detail-scroll').scrollTop = 0;
+
+  // Zurück-Button
+  document.getElementById('detail-back-btn').onclick = () => {
+    if (isInhaber) { renderInHome(); navTo('screen-in-home'); }
+    else { renderMaFeed(); navTo('screen-ma-home'); }
+  };
+
+  // Bearbeiten + Löschen — nur Inhaberin
+  const actionEl2 = document.getElementById('detail-header-action');
+  if (isInhaber) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'header-action';
+    editBtn.textContent = 'Bearbeiten';
+    editBtn.onclick = () => openEditScreen(eintragId);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'header-action';
+    delBtn.textContent = 'Löschen';
+    delBtn.style.color = 'var(--danger)';
+    delBtn.style.marginLeft = '12px';
+    delBtn.onclick = () => confirmDeleteEintrag(eintragId, e.titel);
+
+    actionEl2.innerHTML = '';
+    actionEl2.appendChild(editBtn);
+    actionEl2.appendChild(delBtn);
+  } else {
+    actionEl2.innerHTML = '';
+  }
+
+  // ── Kopf: Meta + Titel ──
+  const metaEl = document.getElementById('detail-header-meta');
+  let mh = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+    <span class="tag ${tagClass}">${tagText}</span>`;
+  if (e.wichtig) mh += '<div class="important-dot"></div><span style="font-size:11px;color:#7a6800;font-weight:600;">Besonders wichtig</span>';
+  mh += `<span style="font-size:12px;color:var(--ink-light);margin-left:auto;">${fmtDate(e.erstellt_am)}</span></div>`;
+  if (e.bearbeitet_am) mh += `<div style="font-size:12px;color:var(--ink-light);font-style:italic;margin-bottom:8px;">Bearbeitet: ${fmtDate(e.bearbeitet_am)}</div>`;
+  mh += `<div style="font-family:var(--font-head);font-size:21px;font-weight:normal;color:var(--ink);letter-spacing:-0.02em;line-height:1.3;padding-bottom:16px;">${escHtml(e.titel)}</div>`;
+  metaEl.innerHTML = mh;
+
+  // ── Body: Inhalt ──
+  const bodyEl = document.getElementById('detail-body-content');
+  const paras  = (e.inhalt || '').split('\n').filter(l => l.trim());
+  bodyEl.innerHTML =
+    '<div style="height:1px;background:var(--rule);margin:0 20px;"></div>' +
+    '<div style="padding:16px 20px 0;">' +
+    paras.map(p => `<p style="font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:10px;">${escHtml(p)}</p>`).join('') +
+    '</div>';
+
+  // ── Anhang ──
+  renderDetailAnhang(e);
+
+  // ── Rückmeldebereich ──
+  await renderDetailReaction(eintragId, isInhaber, session ? session.id : null);
+
+  // ── Lesestand (nur Inhaberin) ──
+  await renderDetailLesestand(eintragId, isInhaber);
+
+  navTo('screen-detail');
+}
+
+/* ═══════════════════════════════════════════════════
+   RÜCKMELDEBEREICH (Schritt 4 — vollständig)
+   Zustände A / B / D / E
+═══════════════════════════════════════════════════ */
+async function renderDetailReaction(eintragId, isInhaber, personId) {
+  const el = document.getElementById('detail-reaction');
+  el.innerHTML = '';
+  if (isInhaber || !personId) return;
+
+  const bestRows = await supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
+  const hatBestaetigt = bestRows.length > 0;
+
+  const area = document.createElement('div');
+  area.className = 'reaction-area';
+
+  if (!hatBestaetigt) {
+    // ── Zustand A ──
+    const lbl = document.createElement('div');
+    lbl.className = 'reaction-label';
+    lbl.textContent = 'Deine Rückmeldung';
+    area.appendChild(lbl);
+    const btn = document.createElement('button');
+    btn.className = 'btn-primary';
+    btn.textContent = 'Gelesen & verstanden';
+    btn.onclick = () => doBestaetigen(eintragId, personId);
+    area.appendChild(btn);
+    el.appendChild(area);
+    return;
+  }
+
+  // Gesendete Rückmeldungen dieser Person zu diesem Eintrag
+  const gesendete = await supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
+  const hatFrage      = gesendete.some(r => r.typ === 'frage');
+  const hatRueckmeld  = gesendete.some(r => r.typ === 'rueckmeldung');
+
+  // Bestätigt-Zeile immer sichtbar
+  const confirmed = document.createElement('div');
+  confirmed.className = 'btn-confirmed';
+  confirmed.innerHTML = '&#10003; Du hast diesen Eintrag bestätigt.';
+  area.appendChild(confirmed);
+
+  if (hatFrage && hatRueckmeld) {
+    // ── Zustand E: beide gesendet ──
+    area.appendChild(buildRmBox(gesendete.find(r => r.typ === 'frage')));
+    area.appendChild(buildRmBox(gesendete.find(r => r.typ === 'rueckmeldung')));
+  } else if (hatFrage || hatRueckmeld) {
+    // ── Zustand D: eine gesendet ──
+    const sent = gesendete[0];
+    area.appendChild(buildRmBox(sent));
+    // Andere Art noch verfügbar
+    const other     = sent.typ === 'frage' ? 'rueckmeldung' : 'frage';
+    const otherLabel= other === 'frage' ? 'Frage stellen' : 'Rückmeldung geben';
+    const acts = document.createElement('div');
+    acts.className = 'reaction-actions';
+    const otherBtn = document.createElement('button');
+    otherBtn.className = 'btn-secondary';
+    otherBtn.textContent = otherLabel;
+    otherBtn.onclick = () => openRmForm(eintragId, personId, other);
+    acts.appendChild(otherBtn);
+    area.appendChild(acts);
+  } else {
+    // ── Zustand B: bestätigt, noch keine Rückmeldung ──
+    const acts = document.createElement('div');
+    acts.className = 'reaction-actions';
+    ['frage','rueckmeldung'].forEach(typ => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.textContent = typ === 'frage' ? 'Frage stellen' : 'Rückmeldung geben';
+      btn.onclick = () => openRmForm(eintragId, personId, typ);
+      acts.appendChild(btn);
+    });
+    area.appendChild(acts);
+  }
+
+  el.appendChild(area);
+}
+
+/* Graubox für gesendete Rückmeldung */
+function buildRmBox(r) {
+  const box = document.createElement('div');
+  box.className = 'rm-box';
+  const label = r.typ === 'frage' ? 'Deine Frage' : 'Deine Rückmeldung';
+  box.innerHTML = `<div class="rm-box-label">${label}</div><div class="rm-box-text">${escHtml(r.text)}</div>`;
+  return box;
+}
+
+/* Rückmeldeformular öffnen (inline in reaction-area) */
+function openRmForm(eintragId, personId, typ) {
+  const el = document.getElementById('detail-reaction');
+  const area = el.querySelector('.reaction-area');
+  // Buttons entfernen, Formular einsetzen
+  const acts = area.querySelector('.reaction-actions');
+  if (acts) acts.remove();
+
+  const formLabel = typ === 'frage' ? 'Deine Frage' : 'Deine Rückmeldung';
+  const form = document.createElement('div');
+  form.className = 'rm-form';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'form-label';
+  lbl.textContent = formLabel;
+  form.appendChild(lbl);
+
+  const ta = document.createElement('textarea');
+  ta.rows = 3;
+  ta.maxLength = 200;
+  ta.placeholder = 'Max. 200 Zeichen …';
+  const cc = document.createElement('div');
+  cc.className = 'char-count';
+  cc.innerHTML = '<span id="rm-cc">0</span>/200';
+  ta.addEventListener('input', () => { document.getElementById('rm-cc').textContent = ta.value.length; });
+  form.appendChild(ta);
+  form.appendChild(cc);
+
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'btn-primary';
+  sendBtn.textContent = 'Absenden';
+  sendBtn.onclick = () => doSendRueckmeldung(eintragId, personId, typ, ta.value.trim());
+  form.appendChild(sendBtn);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-text';
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.onclick = () => renderDetailReaction(eintragId, false, personId);
+  form.appendChild(cancelBtn);
+
+  area.appendChild(form);
+  ta.focus();
+}
+
+/* Rückmeldung absenden */
+async function doSendRueckmeldung(eintragId, personId, typ, text) {
+  if (!text) { showToast('Bitte kurz etwas eingeben.'); return; }
+  await dbCreateRueckmeldung({
+    id: 'r-' + Date.now(),
+    eintrag_id: eintragId, person_id: personId,
+    typ, text, erstellt_am: new Date().toISOString(), gesehen: false
+  });
+  const person = await dbGetPersonById(personId);
+  if (person) notifyNeueRueckmeldung(person.name, typ);
+  showToast('Deine Rückmeldung ist angekommen.');
+  await renderDetailReaction(eintragId, false, personId);
+}
+
+/* Bestätigung speichern + Feed aktualisieren */
+async function doBestaetigen(eintragId, personId) {
+  const db = loadDB();
+
+  // Doppel-Bestätigung verhindern (defensive Prüfung)
+  const schonDa = db.bestaetigungen.some(
+    b => b.eintrag_id === eintragId && b.person_id === personId
+  );
+  if (schonDa) return;
+
+  db.bestaetigungen.push({
+    eintrag_id:    eintragId,
+    person_id:     personId,
+    bestaetigt_am: new Date().toISOString()
+  });
+  showToast('Danke — notiert.');
+  updateTabBadge(personId);
+  await renderDetailReaction(eintragId, false, personId);
+  await renderDetailLesestand(eintragId, false);
+}
+
+/* Lesestand-Panel (nur für Inhaberin befüllt) */
+async function renderDetailLesestand(eintragId, isInhaber) {
+  const panel = document.getElementById('detail-lesestand');
+  panel.innerHTML = '';
+  if (!isInhaber) return;
+
+  const [allPersons, bestRows, rmRows] = await Promise.all([
+    dbGetAllPersons(),
+    supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId),
+    supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc')
+  ]);
+  const mitarbeiter = allPersons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
+  const confirmed   = new Set(bestRows.map(b => b.person_id));
+
+  const box = document.createElement('div');
+  box.className = 'lesestand-box';
+
+  let html = '<div class="lesestand-title">Lesestand</div>';
+  if (mitarbeiter.length === 0) {
+    html += '<div class="lesestand-row"><span style="color:var(--ink-light);font-size:13px;">Noch keine Mitarbeitenden im Team.</span></div>';
+  } else {
+    mitarbeiter.forEach(p => {
+      const done = confirmed.has(p.id);
+      html += `<div class="lesestand-row">
+        <span>${escHtml(p.name)}</span>
+        <span class="${done ? 'lesestand-ok' : 'lesestand-pending'}">${done ? '&#10003; Bestätigt' : 'Ausstehend'}</span>
+      </div>`;
+    });
+  }
+  box.innerHTML = html;
+  panel.appendChild(box);
+
+  // Rückmeldungen (Schritt 4 — vollständig)
+  const rmLabel = document.createElement('div');
+  rmLabel.className = 'section-label';
+  rmLabel.textContent = 'Rückmeldungen';
+  panel.appendChild(rmLabel);
+
+  const rueckmeldungen = rmRows;
+
+  if (rueckmeldungen.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:13px;color:var(--ink-light);padding:4px 0;';
+    empty.textContent = 'Noch keine Rückmeldungen.';
+    panel.appendChild(empty);
+  } else {
+    rueckmeldungen.forEach(r => {
+      const person = allPersons.find(p => p.id === r.person_id);
+      const name   = person ? person.name : '—';
+      panel.appendChild(buildRmItem(r, name, eintragId));
+    });
+  }
+}
+
+function buildRmItem(r, name, eintragId) {
+  const item = document.createElement('div');
+  item.className = 'rm-item' + (r.gesehen ? ' gesehen' : '');
+  item.id = 'rm-item-' + r.id;
+
+  const typClass = r.typ === 'frage' ? 'rm-type-frage' : 'rm-type-rueckmeldung';
+  const typLabel = r.typ === 'frage' ? 'Frage' : 'Rückmeldung';
+
+  item.innerHTML = `
+    <div class="rm-item-header">
+      <span class="rm-item-name">${escHtml(name)}</span>
+      <span class="rm-type-tag ${typClass}">${typLabel}</span>
+    </div>
+    <div class="rm-item-text">${escHtml(r.text)}</div>
+    <div class="rm-item-footer">
+      <span class="rm-item-time">${fmtDateTime(r.erstellt_am)}</span>
+      <button class="rm-gesehen-btn" id="rm-btn-${r.id}"
+        ${r.gesehen ? 'disabled' : ''}
+        onclick="doMarkGesehen('${r.id}', '${eintragId}', true)"
+      >${r.gesehen ? 'Gesehen' : 'Als gesehen markieren'}</button>
+    </div>`;
+  return item;
+}
+
+/* ═══════════════════════════════════════════════════
+   RÜCKMELDUNG ALS GESEHEN MARKIEREN
+═══════════════════════════════════════════════════ */
+async function doMarkGesehen(rmId, eintragId, fromDetail) {
+  await dbMarkRueckmeldungGesehen(rmId);
+  showToast('Als gesehen markiert.');
+  if (fromDetail) { await renderDetailLesestand(eintragId, true); }
+  else { await renderResponsesScreen(); }
+}
+
+/* ═══════════════════════════════════════════════════
+   RÜCKMELDUNGSÜBERSICHT (Inhaberin)
+═══════════════════════════════════════════════════ */
+async function renderResponsesScreen() {
+  const container = document.getElementById('responses-scroll');
+  if (!container) return;
+  container.innerHTML = '';
+  const [alle, allPersons, allEintraege] = await Promise.all([
+    dbGetAlleRueckmeldungen(), dbGetAllPersons(), dbGetEintraege()
+  ]);
+
+  const ungesehen = alle.filter(r => !r.gesehen).length;
+  const statusLine = document.createElement('div');
+  statusLine.style.cssText = 'font-size:13px;color:var(--ink-mid);padding:4px 0 4px;';
+  statusLine.textContent = alle.length === 0
+    ? ''
+    : `${alle.length} Rückmeldung${alle.length !== 1 ? 'en' : ''} · ${ungesehen} noch nicht gesehen`;
+  container.appendChild(statusLine);
+
+  if (alle.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = '<div class="empty-state-title">Noch keine Rückmeldungen.</div>';
+    container.appendChild(empty);
+    return;
+  }
+
+  if (ungesehen === 0) {
+    const allSeen = document.createElement('div');
+    allSeen.style.cssText = 'font-size:13px;color:var(--accent);font-weight:500;padding:2px 0 8px;';
+    allSeen.textContent = 'Alle Rückmeldungen gesehen.';
+    container.appendChild(allSeen);
+  }
+
+  alle.forEach(r => {
+    const person  = allPersons.find(p => p.id === r.person_id);
+    const name    = person ? person.name : '—';
+    const eintrag = allEintraege.find(e => e.id === r.eintrag_id);
+    const titel   = eintrag ? eintrag.titel : '(Eintrag nicht gefunden)';
+
+    const item = document.createElement('div');
+    item.className = 'rm-ov-item' + (r.gesehen ? '' : ' ungesehen');
+
+    const typClass = r.typ === 'frage' ? 'rm-type-frage' : 'rm-type-rueckmeldung';
+    const typLabel = r.typ === 'frage' ? 'Frage' : 'Rückmeldung';
+
+    item.innerHTML = `
+      <div class="rm-item-header">
+        <span class="rm-item-name">${escHtml(name)}</span>
+        <span class="rm-type-tag ${typClass}">${typLabel}</span>
+      </div>
+      <div class="rm-ov-ref">› ${escHtml(titel)}</div>
+      <div class="rm-ov-text">${escHtml(r.text)}</div>
+      <div class="rm-ov-footer">
+        <span class="rm-item-time">${fmtDateTime(r.erstellt_am)}</span>
+        <button class="rm-gesehen-btn" ${r.gesehen ? 'disabled' : ''}
+          onclick="event.stopPropagation();doMarkGesehen('${r.id}','${r.eintrag_id}',false)"
+        >${r.gesehen ? 'Gesehen' : 'Als gesehen markieren'}</button>
+      </div>`;
+
+    // Klick auf Karte → Detail dieses Eintrags
+    item.onclick = () => openDetail(r.eintrag_id, true);
+
+    container.appendChild(item);
+  });
+}
+
+/* Datum + Uhrzeit für Rückmeldungen */
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return 'Heute, ' + time + ' Uhr';
+  return d.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' }) + ', ' + time + ' Uhr';
+}
+
+/* ═══════════════════════════════════════════════════
+   EINTRAG ERSTELLEN
+═══════════════════════════════════════════════════ */
+let _selectedType = null;
+
+function openCreateScreen() {
+  // Formular zurücksetzen
+  _selectedType = null;
+  ['tb-b','tb-p','tb-m'].forEach(id => {
+    document.getElementById(id).className = 'type-btn';
+  });
+  document.getElementById('create-titel').value  = '';
+  document.getElementById('create-inhalt').value = '';
+  document.getElementById('create-cc').textContent = '0';
+  document.getElementById('create-wichtig').classList.remove('on');
+  _createAnhangFile = null;
+  const cai = document.getElementById('create-anhang-input');
+  if (cai) cai.value = '';
+  setAnhangUI('create', '', false);
+  // Fehler zurücksetzen
+  ['create-type-err','create-titel-err','create-inhalt-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+  ['create-titel','create-inhalt'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+  document.querySelectorAll('#create-type-sel .type-btn').forEach(b =>
+    b.classList.remove('error-ring'));
+  navTo('screen-create', 'screen-in-home');
+}
+
+function selectType(t) {
+  _selectedType = t;
+  document.getElementById('tb-b').className = 'type-btn' + (t === 'b' ? ' sel-b' : '');
+  document.getElementById('tb-p').className = 'type-btn' + (t === 'p' ? ' sel-p' : '');
+  document.getElementById('tb-m').className = 'type-btn' + (t === 'm' ? ' sel-m' : '');
+  // Fehlerring entfernen
+  ['tb-b','tb-p','tb-m'].forEach(id => document.getElementById(id).classList.remove('error-ring'));
+  document.getElementById('create-type-err').classList.remove('visible');
+}
+
+async function doCreateEintrag() {
+  const titel  = document.getElementById('create-titel').value.trim();
+  const inhalt = document.getElementById('create-inhalt').value.trim();
+  const wichtig = document.getElementById('create-wichtig').classList.contains('on');
+  let ok = true;
+
+  // Reset
+  ['create-type-err','create-titel-err','create-inhalt-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+  ['create-titel','create-inhalt'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+  document.querySelectorAll('#create-type-sel .type-btn').forEach(b =>
+    b.classList.remove('error-ring'));
+
+  if (!_selectedType) {
+    document.querySelectorAll('#create-type-sel .type-btn').forEach(b => b.classList.add('error-ring'));
+    document.getElementById('create-type-err').classList.add('visible');
+    ok = false;
+  }
+  if (!titel) {
+    document.getElementById('create-titel').classList.add('error');
+    document.getElementById('create-titel-err').classList.add('visible');
+    ok = false;
+  }
+  if (!inhalt) {
+    document.getElementById('create-inhalt').classList.add('error');
+    document.getElementById('create-inhalt-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  const inhaltsartMap = { b: 'besprechung', p: 'produktinfo', m: 'mitteilung' };
+
+  // Eintrag-Objekt — entspricht exakt dem Datenmodell der Bauvorlage
+  const eintrag = {
+    id:           'e-' + Date.now(),
+    inhaltsart:   inhaltsartMap[_selectedType],
+    titel,
+    inhalt,
+    wichtig,
+    erstellt_am:  new Date().toISOString(),
+    bearbeitet_am: null
+  };
+
+  const db = loadDB();
+  // Anhang hochladen wenn gewählt
+  if (_createAnhangFile) {
+    try {
+      const a = await uploadAnhang(_createAnhangFile);
+      eintrag.anhang_url  = a.url;
+      eintrag.anhang_name = a.name;
+      eintrag.anhang_path = a.path;
+      eintrag.anhang_typ  = a.typ;
+    } catch(e) {
+      showToast('Anhang konnte nicht hochgeladen werden.');
+    }
+  }
+  await dbCreateEintrag(eintrag);
+  notifyNeuerEintrag(titel);
+  showToast('Eintrag veröffentlicht.');
+  await renderInHome();
+  navTo('screen-in-home');
+}
+
+/* ═══════════════════════════════════════════════════
+   EINTRAG BEARBEITEN (Schritt 5)
+═══════════════════════════════════════════════════ */
+let _editEintragId = null;
+let _editSelectedType = null;
+
+const TYPE_KEY = { besprechung: 'b', produktinfo: 'p', mitteilung: 'm' };
+const TYPE_LABEL = { b: 'Besprechung', p: 'Produktinfo', m: 'Mitteilung' };
+
+function openEditScreen(eintragId) {
+  const db = loadDB();
+  const e  = db.eintraege.find(x => x.id === eintragId);
+  if (!e) return;
+
+  _editEintragId   = eintragId;
+  _editSelectedType = TYPE_KEY[e.inhaltsart] || null;
+
+  // Felder vorausfüllen
+  document.getElementById('edit-titel').value  = e.titel;
+  document.getElementById('edit-inhalt').value = e.inhalt;
+  document.getElementById('edit-cc').textContent = e.inhalt.length;
+  const wichtigBtn = document.getElementById('edit-wichtig');
+  e.wichtig ? wichtigBtn.classList.add('on') : wichtigBtn.classList.remove('on');
+
+  // Inhaltsart vorauswählen
+  editSelectType(_editSelectedType, true);
+  // Anhang-State zurücksetzen
+  _editAnhangFile   = null;
+  _editAnhangRemove = false;
+  const eai = document.getElementById('edit-anhang-input');
+  if (eai) eai.value = '';
+  if (e.anhang_name) {
+    setAnhangUI('edit', e.anhang_name, true);
+  } else {
+    setAnhangUI('edit', '', false);
+  }
+
+  // Fehler zurücksetzen
+  ['edit-type-err','edit-titel-err','edit-inhalt-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+  ['edit-titel','edit-inhalt'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+  document.querySelectorAll('#edit-type-sel .type-btn').forEach(b =>
+    b.classList.remove('error-ring'));
+
+  // Abbrechen-Buttons führen zurück zum Detail
+  const cancelFn = () => openDetail(eintragId, true);
+  document.getElementById('edit-back-btn').onclick   = cancelFn;
+  document.getElementById('edit-cancel-btn').onclick = cancelFn;
+
+  navTo('screen-edit');
+}
+
+function editSelectType(t, silent) {
+  _editSelectedType = t;
+  ['b','p','m'].forEach(x => {
+    document.getElementById('eb-' + x).className = 'type-btn' + (x === t ? ' sel-' + t : '');
+  });
+  if (!silent) {
+    document.querySelectorAll('#edit-type-sel .type-btn').forEach(b => b.classList.remove('error-ring'));
+    document.getElementById('edit-type-err').classList.remove('visible');
+  }
+}
+
+async function doSaveEintrag() {
+  const titel  = document.getElementById('edit-titel').value.trim();
+  const inhalt = document.getElementById('edit-inhalt').value.trim();
+  const wichtig = document.getElementById('edit-wichtig').classList.contains('on');
+  let ok = true;
+
+  // Reset Fehler
+  ['edit-type-err','edit-titel-err','edit-inhalt-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+  ['edit-titel','edit-inhalt'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+  document.querySelectorAll('#edit-type-sel .type-btn').forEach(b =>
+    b.classList.remove('error-ring'));
+
+  if (!_editSelectedType) {
+    document.querySelectorAll('#edit-type-sel .type-btn').forEach(b => b.classList.add('error-ring'));
+    document.getElementById('edit-type-err').classList.add('visible');
+    ok = false;
+  }
+  if (!titel) {
+    document.getElementById('edit-titel').classList.add('error');
+    document.getElementById('edit-titel-err').classList.add('visible');
+    ok = false;
+  }
+  if (!inhalt) {
+    document.getElementById('edit-inhalt').classList.add('error');
+    document.getElementById('edit-inhalt-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  const inhaltsartMap = { b: 'besprechung', p: 'produktinfo', m: 'mitteilung' };
+  const db = loadDB();
+  const e  = db.eintraege.find(x => x.id === _editEintragId);
+  if (!e) return;
+
+  // Felder aktualisieren — Bestätigungen und Rückmeldungen bleiben unberührt
+  const editFields = {
+    inhaltsart: inhaltsartMap[_editSelectedType],
+    titel, inhalt, wichtig,
+    bearbeitet_am: new Date().toISOString()
+  };
+  // Neuer Anhang hochladen
+  if (_editAnhangFile) {
+    try {
+      const a = await uploadAnhang(_editAnhangFile);
+      editFields.anhang_url  = a.url;
+      editFields.anhang_name = a.name;
+      editFields.anhang_path = a.path;
+      editFields.anhang_typ  = a.typ;
+    } catch(e) {
+      showToast('Anhang konnte nicht hochgeladen werden.');
+    }
+  } else if (_editAnhangRemove) {
+    editFields.anhang_url  = null;
+    editFields.anhang_name = null;
+    editFields.anhang_typ  = null;
+  }
+  await dbUpdateEintrag(_editEintragId, editFields);
+  notifyEintragAktualisiert(titel);
+  showToast('Eintrag aktualisiert.');
+  openDetail(_editEintragId, true);
+}
+
+/* ═══════════════════════════════════════════════════
+   PIN FÜR MITARBEITENDE (Inhaberin)
+═══════════════════════════════════════════════════ */
+let _setPinPersonId = null;
+
+function openSetPinModal(id, name) {
+  _setPinPersonId = id;
+  document.getElementById('setpin-desc').textContent =
+    'Neues Passwort für ' + name + ' festlegen. Die Person kann sich danach damit anmelden.';
+  ['setpin-pw','setpin-pw2'].forEach(fid => {
+    document.getElementById(fid).value = '';
+    document.getElementById(fid).classList.remove('error');
+  });
+  ['setpin-pw-err','setpin-pw2-err'].forEach(fid =>
+    document.getElementById(fid).classList.remove('visible'));
+  document.getElementById('modal-setpin').classList.add('open');
+}
+
+function closeSetPinModal(e) {
+  if (e && e.target !== document.getElementById('modal-setpin')) return;
+  document.getElementById('modal-setpin').classList.remove('open');
+}
+
+async function doSetPin() {
+  const pw1 = document.getElementById('setpin-pw').value;
+  const pw2 = document.getElementById('setpin-pw2').value;
+  let ok = true;
+
+  ['setpin-pw','setpin-pw2'].forEach(fid => document.getElementById(fid).classList.remove('error'));
+  ['setpin-pw-err','setpin-pw2-err'].forEach(fid => document.getElementById(fid).classList.remove('visible'));
+
+  if (pw1.length < 4) {
+    document.getElementById('setpin-pw').classList.add('error');
+    document.getElementById('setpin-pw-err').classList.add('visible');
+    ok = false;
+  }
+  if (pw1 !== pw2) {
+    document.getElementById('setpin-pw2').classList.add('error');
+    document.getElementById('setpin-pw2-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  await supaUpdate('teamapp_persons', 'id=eq.' + _setPinPersonId, { pw_hash: pw1 });
+  closeSetPinModal();
+  showToast('Passwort gespeichert.');
+  _setPinPersonId = null;
+}
+
+/* ═══════════════════════════════════════════════════
+   PERSON LÖSCHEN (Inhaberin)
+═══════════════════════════════════════════════════ */
+let _deletePersonId = null;
+
+function openDeletePersonModal(id, name) {
+  _deletePersonId = id;
+  document.getElementById('delete-person-desc').innerHTML =
+    '<strong>' + escHtml(name) + '</strong> wird endgültig gelöscht. ' +
+    'Lesebestätigungen und Rückmeldungen dieser Person bleiben im System erhalten.';
+  document.getElementById('modal-delete-person').classList.add('open');
+}
+
+function closeDeletePersonModal(e) {
+  if (e && e.target !== document.getElementById('modal-delete-person')) return;
+  document.getElementById('modal-delete-person').classList.remove('open');
+}
+
+async function doDeletePerson() {
+  if (!_deletePersonId) return;
+  await supaDelete('teamapp_persons', 'id=eq.' + _deletePersonId);
+  closeDeletePersonModal();
+  await renderTeam();
+  await renderInHome();
+  showToast('Person gelöscht.');
+  _deletePersonId = null;
+}
+
+/* ═══════════════════════════════════════════════════
+   TEAMVERWALTUNG (Schritt 1 — unverändert)
+═══════════════════════════════════════════════════ */
+async function renderTeam() {
+  const list = document.getElementById('team-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const persons = await dbGetAllPersons();
+  const sorted = [...persons].sort((a,b) => {
+    if (a.rolle === 'inhaberin') return -1;
+    if (b.rolle === 'inhaberin') return 1;
+    return a.name.localeCompare(b.name, 'de');
+  });
+  sorted.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'person-row' + (p.aktiv ? '' : ' inactive');
+    const rc = p.rolle === 'inhaberin' ? 'role-inhaberin' : 'role-mitarbeiter';
+    const rt = p.rolle === 'inhaberin' ? 'Inhaberin' : 'Mitarbeiter:in';
+    const dc = p.aktiv ? 'active' : 'inactive';
+    let actions = '';
+    if (p.rolle !== 'inhaberin') {
+      const safeName = escHtml(p.name);
+      const safeId   = p.id;
+
+      const deactBtn = p.aktiv
+        ? '<button class="icon-btn danger" title="Deaktivieren" onclick="openDeactivateModal(\'' + safeId + '\',\'' + safeName + '\')">&#x2715;</button>'
+        : '<button class="icon-btn" title="Reaktivieren"  onclick="openReactivateModal(\'' + safeId + '\',\'' + safeName + '\')">&#x21BA;</button>';
+
+      const pinBtn = '<button class="icon-btn" title="PIN ändern" style="font-size:12px;font-weight:700;" onclick="openSetPinModal(\'' + safeId + '\',\'' + safeName + '\')">PIN</button>';
+
+      const delBtn = '<button class="icon-btn danger" title="Löschen" onclick="openDeletePersonModal(\'' + safeId + '\',\'' + safeName + '\')">&#x1F5D1;</button>';
+
+      actions = pinBtn + ' ' + deactBtn + ' ' + delBtn;
+    }
+    row.innerHTML = `
+      <div class="person-info">
+        <div class="person-name">${escHtml(p.name)}</div>
+        <div class="person-meta">
+          <span class="role-label ${rc}">${rt}</span>
+          <span class="status-dot ${dc}"></span>
+          <span>${p.aktiv ? 'Aktiv' : 'Deaktiviert'}</span>
+        </div>
+      </div>
+      <div class="person-actions">${actions}</div>`;
+    list.appendChild(row);
+  });
+}
+
+function openInviteModal() {
+  ['invite-name','invite-email','invite-pw'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('error'); }
+  });
+  ['invite-name-err','invite-email-err','invite-pw-err'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  const res = document.getElementById('invite-result');
+  const act = document.getElementById('invite-actions');
+  if (res) res.style.display = 'none';
+  if (act) act.style.display = '';
+  document.getElementById('modal-invite').classList.add('open');
+}
+function closeInviteModal(e) {
+  if (e && e.target !== document.getElementById('modal-invite')) return;
+  document.getElementById('modal-invite').classList.remove('open');
+  renderTeam();
+}
+async function doCreateInvite() {
+  const name  = document.getElementById('invite-name').value.trim();
+  const pw    = document.getElementById('invite-pw').value.trim();
+  const email = document.getElementById('invite-email').value.trim();
+  let ok = true;
+
+  ['invite-name','invite-pw'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('error');
+  });
+  ['invite-name-err','invite-pw-err'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+
+  if (!name) {
+    document.getElementById('invite-name').classList.add('error');
+    document.getElementById('invite-name-err').classList.add('visible');
+    ok = false;
+  }
+  if (pw.length < 4) {
+    document.getElementById('invite-pw').classList.add('error');
+    document.getElementById('invite-pw-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  // Person direkt anlegen — kein Einladungslink-Flow mehr nötig
+  const newP = {
+    id:      'p-' + Date.now(),
+    name,
+    email:   email || (name.toLowerCase().replace(/\s+/g,'.') + '@team.lokal'),
+    rolle:   'mitarbeiter',
+    aktiv:   true,
+    pw_hash: pw
+  };
+  await dbCreatePerson(newP);
+
+  // Link zum direkten Einloggen (kein Registrierungsscreen)
+  const link = window.location.origin + window.location.pathname;
+  document.getElementById('invite-link-text').textContent = link;
+  document.getElementById('invite-info-box').innerHTML =
+    'Person angelegt. Schick <strong>' + escHtml(name) + '</strong> diesen Link und das Passwort: <strong>' + escHtml(pw) + '</strong>';
+  document.getElementById('invite-result').style.display  = '';
+  document.getElementById('invite-actions').style.display = 'none';
+
+  await renderTeam();
+}
+function copyInviteLink() {
+  const link = document.getElementById('invite-link-text').textContent;
+  if (navigator.clipboard) { navigator.clipboard.writeText(link).then(() => showToast('Link kopiert.')); }
+  else { const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Link kopiert.'); }
+}
+
+let _deactivateId = null;
+function openDeactivateModal(id, name) {
+  _deactivateId = id;
+  document.getElementById('deactivate-desc').innerHTML = `<strong>${escHtml(name)}</strong> kann sich dann nicht mehr anmelden und erscheint nicht mehr im Lesestand neuer Einträge. Bisherige Rückmeldungen bleiben erhalten.`;
+  document.getElementById('modal-deactivate').classList.add('open');
+}
+function closeDeactivateModal(e) {
+  if (e && e.target !== document.getElementById('modal-deactivate')) return;
+  document.getElementById('modal-deactivate').classList.remove('open');
+}
+async function doDeactivate() {
+  await dbUpdatePersonAktiv(_deactivateId, false);
+  closeDeactivateModal(); await renderTeam(); showToast('Account deaktiviert.'); _deactivateId = null;
+}
+
+let _reactivateId = null;
+function openReactivateModal(id, name) {
+  _reactivateId = id;
+  document.getElementById('reactivate-desc').innerHTML = `<strong>${escHtml(name)}</strong> kann sich dann wieder anmelden und erscheint im Lesestand.`;
+  document.getElementById('modal-reactivate').classList.add('open');
+}
+function closeReactivateModal(e) {
+  if (e && e.target !== document.getElementById('modal-reactivate')) return;
+  document.getElementById('modal-reactivate').classList.remove('open');
+}
+async function doReactivate() {
+  await dbUpdatePersonAktiv(_reactivateId, true);
+  closeReactivateModal(); await renderTeam(); showToast('Account reaktiviert.'); _reactivateId = null;
+}
+
+/* ═══════════════════════════════════════════════════
+   ANHANG-LOGIK (Erweiterung)
+═══════════════════════════════════════════════════ */
+
+// State: gewählte Datei für Create und Edit
+let _createAnhangFile = null;
+let _editAnhangFile   = null;
+let _editAnhangRemove = false;  // true = bestehenden Anhang entfernen
+
+function onAnhangChosen(ctx) {
+  const input = document.getElementById(ctx + '-anhang-input');
+  const file  = input.files[0];
+  if (!file) return;
+
+  if (ctx === 'create') {
+    _createAnhangFile = file;
+  } else {
+    _editAnhangFile   = file;
+    _editAnhangRemove = false;
+  }
+  setAnhangUI(ctx, file.name, true);
+}
+
+function setAnhangUI(ctx, label, hasFile) {
+  const area      = document.getElementById(ctx + '-anhang-area');
+  const labelEl   = document.getElementById(ctx + '-anhang-label');
+  const removeBtn = document.getElementById(ctx + '-anhang-remove-btn');
+
+  if (hasFile) {
+    area.classList.add('has-file');
+    labelEl.classList.add('has-file');
+    labelEl.textContent = label;
+    if (removeBtn) removeBtn.style.display = '';
+  } else {
+    area.classList.remove('has-file');
+    labelEl.classList.remove('has-file');
+    labelEl.textContent = 'Kein Anhang';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+function removeAnhang(ctx) {
+  if (ctx === 'edit') {
+    _editAnhangFile   = null;
+    _editAnhangRemove = true;
+  }
+  const input = document.getElementById(ctx + '-anhang-input');
+  if (input) input.value = '';
+  setAnhangUI(ctx, '', false);
+}
+
+// Datei zu Supabase Storage hochladen
+async function uploadAnhang(file) {
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = 'eintraege/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+  const url  = SUPA_URL + '/storage/v1/object/teamapp-anhaenge/' + path;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':  file.type,
+      'x-upsert':      'true'
+    },
+    body: file
+  });
+
+  if (!res.ok) throw new Error('Upload fehlgeschlagen');
+
+  // Öffentliche URL zusammensetzen
+  const publicUrl = SUPA_URL + '/storage/v1/object/public/teamapp-anhaenge/' + path;
+  return { url: publicUrl, name: file.name, path: path, typ: file.type };
+}
+
+// Anhang-Bereich im Detail rendern
+function renderDetailAnhang(e) {
+  const el = document.getElementById('detail-anhang');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!e.anhang_url) return;
+
+  const area = document.createElement('div');
+  area.className = 'anhang-detail';
+
+  const info = document.createElement('div');
+  info.className = 'anhang-detail-info';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'anhang-detail-label';
+  lbl.textContent = 'Anhang';
+
+  const name = document.createElement('div');
+  name.className = 'anhang-detail-name';
+  name.textContent = e.anhang_name || 'Datei';
+
+  info.appendChild(lbl);
+  info.appendChild(name);
+
+  const btn = document.createElement('a');
+  btn.className = 'anhang-open-btn';
+  btn.textContent = 'Anhang öffnen';
+  btn.href = e.anhang_url;
+  btn.target = '_blank';
+  btn.rel = 'noopener noreferrer';
+  btn.style.display = 'inline-block';
+  btn.style.textDecoration = 'none';
+  btn.style.textAlign = 'center';
+
+  area.appendChild(info);
+
+  const btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;align-items:flex-end;';
+  btnWrap.appendChild(btn);
+
+  // Löschen-Button — nur Inhaberin
+  const sess = getSession();
+  if (sess && sess.rolle === 'inhaberin') {
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Anhang löschen';
+    delBtn.style.cssText = 'font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;';
+    delBtn.onclick = async () => {
+      if (!confirm('Anhang „' + (e.anhang_name || 'Datei') + '" wirklich löschen?')) return;
+      try {
+        // Aus Storage löschen falls path vorhanden
+        if (e.anhang_path) {
+          await fetch(SUPA_URL + '/storage/v1/object/teamapp-anhaenge/' + e.anhang_path, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+          });
+        }
+        // Felder in DB leeren
+        await supaUpdate('teamapp_eintraege', 'id=eq.' + e.id, { anhang_url: null, anhang_name: null, anhang_path: null });
+        e.anhang_url = null; e.anhang_name = null; e.anhang_path = null;
+        renderDetailAnhang(e);
+        showToast('Anhang gelöscht.');
+      } catch(err) { showToast('Fehler beim Löschen.'); }
+    };
+    btnWrap.appendChild(delBtn);
+  }
+
+  area.appendChild(info);
+  area.appendChild(btnWrap);
+  el.appendChild(area);
+}
+
+/* ═══════════════════════════════════════════════════
+   EINTRAG LÖSCHEN
+═══════════════════════════════════════════════════ */
+function confirmDeleteEintrag(eintragId, titel) {
+  if (confirm('Eintrag „' + titel + '" wirklich löschen?\nDieser Vorgang kann nicht rückgängig gemacht werden.')) {
+    doDeleteEintrag(eintragId);
+  }
+}
+
+async function doDeleteEintrag(eintragId) {
+  try {
+    // Bestätigungen löschen
+    await supaDelete('teamapp_bestaetigungen', 'eintrag_id=eq.' + eintragId);
+    // Rückmeldungen löschen
+    await supaDelete('teamapp_rueckmeldungen', 'eintrag_id=eq.' + eintragId);
+    // Eintrag löschen
+    await supaDelete('teamapp_eintraege', 'id=eq.' + eintragId);
+    showToast('Eintrag gelöscht.');
+    await renderInHome();
+    navTo('screen-in-home');
+  } catch(e) {
+    showToast('Fehler beim Löschen.');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PASSWORT ÄNDERN
+═══════════════════════════════════════════════════ */
+function openChangePw() {
+  const session = getSession();
+  // Zurück-Button: zurück zum richtigen Home
+  const backFn = session && session.rolle === 'inhaberin'
+    ? () => { renderInHome(); navTo('screen-in-home'); }
+    : () => { renderMaFeed(); navTo('screen-ma-home'); };
+  document.getElementById('changepw-back-btn').onclick = backFn;
+  document.getElementById('cpw-cancel-btn').onclick    = backFn;
+
+  // Felder leeren
+  ['cpw-current','cpw-new','cpw-new2'].forEach(id => {
+    document.getElementById(id).value = '';
+    document.getElementById(id).classList.remove('error');
+  });
+  ['cpw-current-err','cpw-new-err','cpw-new2-err','cpw-general-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+
+  navTo('screen-changepw');
+}
+
+async function doChangePw() {
+  const session  = getSession();
+  if (!session) return;
+
+  const current = document.getElementById('cpw-current').value;
+  const pw1     = document.getElementById('cpw-new').value;
+  const pw2     = document.getElementById('cpw-new2').value;
+  let ok = true;
+
+  // Reset
+  ['cpw-current','cpw-new','cpw-new2'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+  ['cpw-current-err','cpw-new-err','cpw-new2-err','cpw-general-err'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+
+  if (!current) {
+    document.getElementById('cpw-current').classList.add('error');
+    document.getElementById('cpw-current-err').classList.add('visible');
+    ok = false;
+  }
+  if (pw1.length < 4) {
+    document.getElementById('cpw-new').classList.add('error');
+    document.getElementById('cpw-new-err').classList.add('visible');
+    ok = false;
+  }
+  if (pw1 !== pw2) {
+    document.getElementById('cpw-new2').classList.add('error');
+    document.getElementById('cpw-new2-err').classList.add('visible');
+    ok = false;
+  }
+  if (!ok) return;
+
+  // Aktuelles Passwort prüfen
+  const rows = await supa('teamapp_persons', 'GET', null, 'id=eq.' + session.id);
+  const person = rows[0];
+  if (!person || person.pw_hash !== current) {
+    document.getElementById('cpw-current').classList.add('error');
+    document.getElementById('cpw-general-err').classList.add('visible');
+    return;
+  }
+
+  // Neues Passwort speichern
+  await supaUpdate('teamapp_persons', 'id=eq.' + session.id, { pw_hash: pw1 });
+  showToast('Passwort gespeichert.');
+
+  // Zurück zum Home
+  if (session.rolle === 'inhaberin') {
+    await renderInHome(); navTo('screen-in-home');
+  } else {
+    await renderMaFeed(); navTo('screen-ma-home');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   BENACHRICHTIGUNGEN (Schritt 6)
+
+   PWA-Push läuft über den Service Worker (sw.js).
+   Dieser Block verwaltet:
+   a) Push-Berechtigung anfordern
+   b) Benachrichtigung auslösen (lokal oder via SW)
+   c) In-App-Badge als verlässlicher Fallback
+
+   Backend-Anbindung ersetzt triggerNotification():
+   Statt lokalem SW-Aufruf wird ein API-Endpunkt
+   aufgerufen, der FCM/WebPush für alle Empfänger
+   auslöst. Produktlogik bleibt identisch.
+═══════════════════════════════════════════════════ */
+
+/* Push-Berechtigung anfordern — einmalig bei Login */
+async function requestPushPermission() {
+  try {
+    if (!('Notification' in window) || typeof Notification === 'undefined') return;
+    if (Notification.permission === 'granted') return;
+    if (Notification.permission === 'denied') return;
+    await Notification.requestPermission();
+  } catch(e) {}
+}
+
+/* Benachrichtigung auslösen
+   Prototyp: lokale Browser-Notification über SW.
+   Produktion: API-Call → Backend → WebPush an alle Empfänger. */
+function triggerNotification(title, body) {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(title, {
+        body,
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
+        tag: 'teamapp-' + Date.now()
+      });
+    }).catch(() => {});
+  } catch(e) {}
+}
+
+/* Drei Auslöser laut Bauvorlage:
+   1. Neuer Eintrag → alle aktiven Mitarbeitenden
+   2. Eintrag bearbeitet → alle aktiven Mitarbeitenden
+   3. Neue Rückmeldung → Inhaberin */
+function notifyNeuerEintrag(titel) {
+  // Prototyp: eine Notification (Empfänger-Auflösung im Produkt am Server)
+  triggerNotification('Neuer Eintrag', titel);
+}
+function notifyEintragAktualisiert(titel) {
+  triggerNotification('Eintrag aktualisiert', titel + ' — wurde aktualisiert');
+}
+function notifyNeueRueckmeldung(name, typ) {
+  const typLabel = typ === 'frage' ? 'eine Frage' : 'eine Rückmeldung';
+  triggerNotification('Neue Rückmeldung', name + ' hat ' + typLabel + ' gesendet');
+}
+
+/* In-App-Badge: Tab-Titel zeigt Anzahl ungelesener Einträge
+   für Mitarbeiter:in — verlässliche Sichtbarkeit ohne Push */
+function updateTabBadge(personId) {
+  if (!personId) { document.title = 'Team · Mirjam Walenta'; return; }
+  const db = loadDB();
+  const confirmed = new Set(
+    db.bestaetigungen.filter(b => b.person_id === personId).map(b => b.eintrag_id)
+  );
+  const unread = db.eintraege.filter(e => !confirmed.has(e.id)).length;
+  document.title = unread > 0
+    ? '(' + unread + ') Team · Mirjam Walenta'
+    : 'Team · Mirjam Walenta';
+}
+
+/* ═══════════════════════════════════════════════════
+   HILFSFUNKTIONEN
+═══════════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════════════
+   ENTER-TASTEN
+═══════════════════════════════════════════════════ */
+document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pw').focus(); });
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+async function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  const session = getSession();
+  if (session) {
+    try {
+      const rows = await supa('teamapp_persons', 'GET', null, 'id=eq.' + session.id + '&aktiv=eq.true');
+      if (rows[0]) { await routeAfterLogin(rows[0]); return; }
+    } catch(e) {}
+    clearSession();
+  }
+  if (await checkInviteParam()) return;
+  navTo('screen-login');
+}
+
+(async () => { await init(); })();
+</script>
+</body>
+</html>
