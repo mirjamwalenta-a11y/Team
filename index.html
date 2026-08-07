@@ -2658,10 +2658,16 @@ function renderDetailAnhang(e) {
   info.appendChild(lbl);
   info.appendChild(name);
 
-  const btn = document.createElement('button');
+  const btn = document.createElement('a');
   btn.className = 'anhang-open-btn';
   btn.textContent = 'Anhang öffnen';
-  btn.onclick = () => { window.location.href = e.anhang_url; };
+  btn.href = e.anhang_url;
+  btn.target = '_blank';
+  btn.rel = 'noopener noreferrer';
+  btn.style.display = 'inline-block';
+  btn.style.textDecoration = 'none';
+  btn.style.textAlign = 'center';
+  btn.addEventListener('touchend', (ev) => { ev.preventDefault(); window.open(e.anhang_url, '_blank'); });
 
   area.appendChild(info);
   area.appendChild(btn);
