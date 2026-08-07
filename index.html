@@ -2658,15 +2658,10 @@ function renderDetailAnhang(e) {
   info.appendChild(lbl);
   info.appendChild(name);
 
-  const btn = document.createElement('a');
+  const btn = document.createElement('button');
   btn.className = 'anhang-open-btn';
   btn.textContent = 'Anhang öffnen';
-  btn.href = e.anhang_url;
-  btn.target = '_blank';
-  btn.rel = 'noopener noreferrer';
-  btn.style.display = 'inline-block';
-  btn.style.textDecoration = 'none';
-  btn.style.textAlign = 'center';
+  btn.onclick = () => { window.location.href = e.anhang_url; };
 
   area.appendChild(info);
   area.appendChild(btn);
