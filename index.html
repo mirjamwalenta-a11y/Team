@@ -1626,7 +1626,8 @@ function buildEntryCard(e, isRead, isImportant, isInhaber) {
   if (!isRead)      cls += ' unread';
   if (isImportant)  cls += ' important';
   card.className = cls;
-  card.onclick = () => openDetail(e.id, false);
+  card.addEventListener('click', () => openDetail(e.id, false));
+  card.addEventListener('touchend', (ev) => { ev.preventDefault(); openDetail(e.id, false); });
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
   const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
@@ -1661,7 +1662,8 @@ function buildEntryCard(e, isRead, isImportant, isInhaber) {
 function buildInEntryCard(e, ls, offeneRueckmeldungen) {
   const card = document.createElement('div');
   card.className = 'entry-card' + (e.wichtig ? ' important' : '');
-  card.onclick = () => openDetail(e.id, true);
+  card.addEventListener('click', () => openDetail(e.id, true));
+  card.addEventListener('touchend', (ev) => { ev.preventDefault(); openDetail(e.id, true); });
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
   const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
