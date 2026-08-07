@@ -1626,8 +1626,7 @@ function buildEntryCard(e, isRead, isImportant, isInhaber) {
   if (!isRead)      cls += ' unread';
   if (isImportant)  cls += ' important';
   card.className = cls;
-  card.addEventListener('click', () => openDetail(e.id, false));
-  card.addEventListener('touchend', (ev) => { ev.preventDefault(); openDetail(e.id, false); });
+  card.onclick = () => openDetail(e.id, false);
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
   const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
@@ -1662,8 +1661,7 @@ function buildEntryCard(e, isRead, isImportant, isInhaber) {
 function buildInEntryCard(e, ls, offeneRueckmeldungen) {
   const card = document.createElement('div');
   card.className = 'entry-card' + (e.wichtig ? ' important' : '');
-  card.addEventListener('click', () => openDetail(e.id, true));
-  card.addEventListener('touchend', (ev) => { ev.preventDefault(); openDetail(e.id, true); });
+  card.onclick = () => openDetail(e.id, true);
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || 'tag-b';
   const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
@@ -1696,15 +1694,9 @@ function buildInEntryCard(e, ls, offeneRueckmeldungen) {
 ═══════════════════════════════════════════════════ */
 async function openDetail(eintragId, isInhaber) {
   const session = getSession();
-  let rows;
-  try {
-    rows = await supa('teamapp_eintraege', 'GET', null, 'id=eq.' + encodeURIComponent(eintragId));
-  } catch(err) {
-    showToast('Verbindungsfehler – bitte nochmal tippen.');
-    return;
-  }
+  const rows = await supa('teamapp_eintraege', 'GET', null, 'id=eq.' + encodeURIComponent(eintragId));
   const e = rows && rows[0];
-  if (!e) { showToast('Eintrag konnte nicht geladen werden.'); return; }
+  if (!e) return;
 
   const tagClass = { besprechung: 'tag-b', produktinfo: 'tag-p', mitteilung: 'tag-m' }[e.inhaltsart] || '';
   const tagText  = { besprechung: 'Besprechung', produktinfo: 'Produktinfo', mitteilung: 'Mitteilung' }[e.inhaltsart] || '';
@@ -1780,8 +1772,7 @@ async function renderDetailReaction(eintragId, isInhaber, personId) {
   el.innerHTML = '';
   if (isInhaber || !personId) return;
 
-  let bestRows = [];
-  try { bestRows = await supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId); } catch(e) {}
+  const bestRows = await supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
   const hatBestaetigt = bestRows.length > 0;
 
   const area = document.createElement('div');
@@ -1803,8 +1794,7 @@ async function renderDetailReaction(eintragId, isInhaber, personId) {
   }
 
   // Gesendete Rückmeldungen dieser Person zu diesem Eintrag
-  let gesendete = [];
-  try { gesendete = await supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId); } catch(e) {}
+  const gesendete = await supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&person_id=eq.' + personId);
   const hatFrage      = gesendete.some(r => r.typ === 'frage');
   const hatRueckmeld  = gesendete.some(r => r.typ === 'rueckmeldung');
 
@@ -1941,16 +1931,11 @@ async function renderDetailLesestand(eintragId, isInhaber) {
   panel.innerHTML = '';
   if (!isInhaber) return;
 
-  let allPersons = [], bestRows = [], rmRows = [];
-  try {
-    allPersons = await dbGetAllPersons();
-  } catch(e) {}
-  try {
-    bestRows = await supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId);
-  } catch(e) {}
-  try {
-    rmRows = await supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc');
-  } catch(e) {}
+  const [allPersons, bestRows, rmRows] = await Promise.all([
+    dbGetAllPersons(),
+    supa('teamapp_bestaetigungen', 'GET', null, 'eintrag_id=eq.' + eintragId),
+    supa('teamapp_rueckmeldungen', 'GET', null, 'eintrag_id=eq.' + eintragId + '&order=erstellt_am.desc')
+  ]);
   const mitarbeiter = allPersons.filter(p => p.rolle === 'mitarbeiter' && p.aktiv);
   const confirmed   = new Set(bestRows.map(b => b.person_id));
 
@@ -2667,7 +2652,6 @@ function renderDetailAnhang(e) {
   btn.style.display = 'inline-block';
   btn.style.textDecoration = 'none';
   btn.style.textAlign = 'center';
-  btn.addEventListener('touchend', (ev) => { ev.preventDefault(); window.open(e.anhang_url, '_blank'); });
 
   area.appendChild(info);
   area.appendChild(btn);
