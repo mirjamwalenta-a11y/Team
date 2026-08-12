@@ -950,8 +950,7 @@ async function doLogin() {
   btn.disabled = true;
 
   try {
-    const hash = await hashPw(pw);
-    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}&pw_hash=eq.${hash}`);
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}&pw_hash=eq.${encodeURIComponent(pw)}`);
     if (!rows || rows.length === 0) {
       showErr('login-general-err');
       return;
@@ -1009,8 +1008,7 @@ async function doOnboarding() {
   if (pw !== pw2) { showErr('ob-pw2-err'); ok = false; }
   if (!ok) return;
   try {
-    const hash = await hashPw(pw);
-    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: hash });
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: pw });
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     // Invite löschen
     await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
@@ -1635,13 +1633,12 @@ async function doAddPerson() {
   if (!ok) return;
 
   try {
-    const hash = await hashPw(pw);
     const id = 'p-' + Date.now();
     await supaPost('teamapp_persons', {
       id, name, email: email || null,
       rolle: 'mitarbeiter',
       aktiv: true,
-      pw_hash: hash,
+      pw_hash: pw,
       erstellt_am: new Date().toISOString()
     });
 
@@ -1692,8 +1689,7 @@ async function doPinSave() {
   if (pw !== pw2) { showErr('pin-neu2-err'); ok = false; }
   if (!ok) return;
   try {
-    const hash = await hashPw(pw);
-    await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: hash });
+    await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: pw });
     closeOverlay('overlay-pin');
     showToast('Passwort gespeichert ✓');
   } catch(e) {
@@ -1793,13 +1789,11 @@ async function doChangePw() {
   if (!ok) return;
 
   try {
-    const altHash = await hashPw(alt);
-    if (altHash !== _me.pw_hash) {
+    if (alt !== _me.pw_hash) {
       showErr('pw-general-err'); return;
     }
-    const neuHash = await hashPw(neu);
-    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neuHash });
-    _me.pw_hash = neuHash;
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neu });
+    _me.pw_hash = neu;
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     closeOverlay('overlay-pw');
     showToast('Passwort geändert ✓');
