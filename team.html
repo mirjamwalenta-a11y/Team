@@ -950,8 +950,12 @@ async function doLogin() {
   btn.disabled = true;
 
   try {
-    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}&pw_hash=eq.${encodeURIComponent(pw)}`);
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}`);
     if (!rows || rows.length === 0) {
+      showErr('login-general-err');
+      return;
+    }
+    if (rows[0].pw_hash !== pw) {
       showErr('login-general-err');
       return;
     }
