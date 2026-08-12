@@ -559,9 +559,9 @@
       <div class="form-group">
         <label>Inhaltsart</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="create-art-btns">
-          <button class="typ-btn" onclick="selectArt(this,'Besprechung')">Besprechung</button>
-          <button class="typ-btn" onclick="selectArt(this,'Produktinfo')">Produktinfo</button>
-          <button class="typ-btn" onclick="selectArt(this,'Mitteilung')">Mitteilung</button>
+          <button class="typ-btn" onclick="selectArt(this,'besprechung')">Besprechung</button>
+          <button class="typ-btn" onclick="selectArt(this,'produktinfo')">Produktinfo</button>
+          <button class="typ-btn" onclick="selectArt(this,'mitteilung')">Mitteilung</button>
         </div>
         <div class="form-error" id="create-art-err">Bitte Inhaltsart wählen.</div>
       </div>
@@ -611,9 +611,9 @@
       <div class="form-group">
         <label>Inhaltsart</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="edit-art-btns">
-          <button class="typ-btn" onclick="selectEditArt(this,'Besprechung')">Besprechung</button>
-          <button class="typ-btn" onclick="selectEditArt(this,'Produktinfo')">Produktinfo</button>
-          <button class="typ-btn" onclick="selectEditArt(this,'Mitteilung')">Mitteilung</button>
+          <button class="typ-btn" onclick="selectEditArt(this,'besprechung')">Besprechung</button>
+          <button class="typ-btn" onclick="selectEditArt(this,'produktinfo')">Produktinfo</button>
+          <button class="typ-btn" onclick="selectEditArt(this,'mitteilung')">Mitteilung</button>
         </div>
         <div class="form-error" id="edit-art-err">Bitte Inhaltsart wählen.</div>
       </div>
@@ -1137,7 +1137,7 @@ async function renderFeed() {
       <div class="entry-card" onclick="showDetail('${e.id}')">
         <div class="entry-card-top">
           <div class="entry-meta">
-            <span class="entry-badge ${isWichtig ? 'wichtig' : ''}">${e.inhaltsart}</span>
+            <span class="entry-badge ${isWichtig ? 'wichtig' : ''}">${kapital(e.inhaltsart)}</span>
             ${isWichtig ? '<span class="entry-badge wichtig">⚑ Wichtig</span>' : ''}
             <span class="entry-date">${formatDate(e.erstellt_am)}</span>
           </div>
@@ -1205,7 +1205,7 @@ async function showDetail(id) {
     let html = `
       <div class="detail-header">
         <div class="detail-meta">
-          <span class="entry-badge">${e.inhaltsart}</span>
+          <span class="entry-badge">${kapital(e.inhaltsart)}</span>
           ${e.wichtig ? '<span class="entry-badge wichtig">⚑ Wichtig</span>' : ''}
           <span class="text-sm text-muted">${formatDate(e.erstellt_am)}</span>
         </div>
@@ -1838,6 +1838,11 @@ function showToast(msg) {
 // ═══════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════
+function kapital(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function esc(str) {
   if (!str) return '';
   return String(str)
