@@ -1105,10 +1105,40 @@ async function loadFeed() {
     _eintraege = await supaGet('teamapp_eintraege', 'order=erstellt_am.desc');
     _persons = await supaGet('teamapp_persons');
     await renderFeed();
+    syncTeamOS();
   } catch(e) {
     document.getElementById('feed-list').innerHTML =
       `<div class="feed-empty">Fehler beim Laden.<br><button class="btn btn-secondary mt-8" onclick="loadFeed()">Erneut versuchen</button></div>`;
   }
+}
+
+// OS-Integration: unbestätigte wichtige Mitteilungen melden
+async function syncTeamOS() {
+  try {
+    const BELEGE_URL = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
+    const BELEGE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2ODIxNDcsImV4cCI6MjEwMDI1ODE0N30.6VZUmmXj_x3Q8J55s_tbOHcW5-U5OXllGoEBhypaVfI';
+    const headers = { 'apikey': BELEGE_KEY, 'Authorization': 'Bearer ' + BELEGE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+
+    // Alle Bestätigungen laden
+    const alleBestaet = await supaGet('teamapp_bestaetigungen');
+    const bestaetigtIds = new Set((alleBestaet || []).map(b => b.eintrag_id));
+
+    // Wichtige Einträge ohne Bestätigung von allen
+    const wichtigUnbestaetigt = (_eintraege || []).filter(e => e.wichtig && !bestaetigtIds.has(e.id));
+
+    if (wichtigUnbestaetigt.length === 0) {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'erledigt', erledigt_am: new Date().toISOString() }) });
+      return;
+    }
+    const titel = wichtigUnbestaetigt.length === 1 ? '1 Mitteilung wartet auf Bestätigung' : `${wichtigUnbestaetigt.length} Mitteilungen warten auf Bestätigung`;
+    const r = await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen&select=id`, { headers: { 'apikey': BELEGE_KEY, 'Authorization': 'Bearer ' + BELEGE_KEY } });
+    const existing = await r.json();
+    if (Array.isArray(existing) && existing.length > 0) {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen`, { method: 'PATCH', headers, body: JSON.stringify({ titel }) });
+    } else {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben`, { method: 'POST', headers, body: JSON.stringify({ bereich: 'allgemein', titel, status: 'offen', prioritaet: 'grau', quelle: 'app', app_link: 'https://mirjamwalenta-a11y.github.io/team.greathairday/' }) });
+    }
+  } catch(e) { console.warn('OS-Sync Team fehlgeschlagen:', e.message); }
 }
 
 async function renderFeed() {
