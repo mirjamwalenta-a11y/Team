@@ -660,6 +660,32 @@
   </div>
 
   <!-- PROFIL TAB -->
+  <div id="tab-protokoll" class="screen" style="flex:1;flex-direction:column;min-height:0;overflow-y:auto;">
+    <div style="padding:16px;">
+
+      <!-- Kopfzeile -->
+      <div style="font-size:18px;font-weight:700;margin-bottom:16px;">🎤 Besprechungsprotokoll</div>
+
+      <!-- Eingabe -->
+      <div style="background:#fff;border-radius:14px;border:1px solid #E5E5EA;padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;color:#8E8E93;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Neues Protokoll</div>
+        <input id="prot-titel" placeholder="Titel (z.B. Teambesprechung August)" type="text"
+          style="width:100%;border:1px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:15px;outline:none;margin-bottom:8px;box-sizing:border-box;">
+        <textarea id="prot-text" placeholder="Protokoll eingeben oder diktieren…" rows="5"
+          style="width:100%;border:1px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="protMikro()" id="prot-mikro-btn"
+            style="background:#F2F2F7;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;">🎤 Diktieren</button>
+          <button onclick="protSpeichern()"
+            style="flex:1;background:#1C1C1E;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;">✓ Speichern</button>
+        </div>
+      </div>
+
+      <!-- Protokoll-Liste -->
+      <div id="prot-list"></div>
+    </div>
+  </div>
+
   <div id="tab-profil" class="screen" style="flex:1;flex-direction:column;min-height:0">
     <div class="header">
       <div class="header-row">
@@ -687,6 +713,10 @@
     <button class="nav-item" id="nav-profil" onclick="switchTab('profil')">
       <span class="nav-icon">👤</span>
       <span>Profil</span>
+    </button>
+    <button class="nav-item" id="nav-protokoll" onclick="switchTab('protokoll')">
+      <span class="nav-icon">🎤</span>
+      <span>Protokoll</span>
     </button>
   </nav>
 </div>
@@ -1050,7 +1080,7 @@ function showScreen(id) {
 function switchTab(tab) {
   _currentTab = tab;
   // Alle Tabs im main verstecken
-  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil'].forEach(t => {
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'].forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   // Nav aktualisieren
@@ -1070,6 +1100,11 @@ function switchTab(tab) {
     document.getElementById('nav-profil').classList.add('active');
     document.getElementById('fab-container').style.display = 'none';
     renderProfil();
+  } else if (tab === 'protokoll') {
+    document.getElementById('tab-protokoll').classList.add('active');
+    document.getElementById('nav-protokoll').classList.add('active');
+    document.getElementById('fab-container').style.display = 'none';
+    protRender();
   }
 }
 
@@ -1906,6 +1941,124 @@ function hideErr(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove('visible');
 }
+
+// ── PROTOKOLL ──
+var protEintraege = JSON.parse(localStorage.getItem('team-protokoll') || '[]');
+const GHD_URL_PROT = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
+const GHD_KEY_PROT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxOTAyMTIsImV4cCI6MjA1OTc2NjIxMn0.GHkqHB0DaJkV2R80MiIHJFqhU5TJiR5vHH7K0iNLPaY';
+const GHD_H_PROT = { "apikey": GHD_KEY_PROT, "Authorization": "Bearer " + GHD_KEY_PROT, "Content-Type": "application/json", "Prefer": "return=minimal" };
+
+function protSave() {
+  localStorage.setItem('team-protokoll', JSON.stringify(protEintraege));
+}
+
+function protRender() {
+  const list = document.getElementById('prot-list');
+  if (!list) return;
+  if (protEintraege.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:#8E8E93;font-size:14px;">Noch keine Protokolle.</div>';
+    return;
+  }
+  list.innerHTML = protEintraege.slice().reverse().map((p, ri) => {
+    const i = protEintraege.length - 1 - ri;
+    const datum = new Date(p.datum).toLocaleDateString('de-AT', {day:'2-digit',month:'2-digit',year:'numeric'});
+    return '<div style="background:#fff;border-radius:14px;border:1px solid #E5E5EA;padding:14px;margin-bottom:10px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+      + '<div style="font-size:15px;font-weight:700;">' + (p.titel||'Protokoll') + '</div>'
+      + '<div style="display:flex;gap:6px;">'
+      + '<span style="font-size:12px;color:#8E8E93;">' + datum + '</span>'
+      + '<button onclick="protDelete(' + i + ')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#C0392B;padding:0 4px;">×</button>'
+      + '</div></div>'
+      + '<div style="font-size:14px;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">' + p.text + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function protSpeichern() {
+  const titel = (document.getElementById('prot-titel').value || '').trim();
+  const text = (document.getElementById('prot-text').value || '').trim();
+  if (!text) { document.getElementById('prot-text').focus(); return; }
+
+  const eintrag = { titel: titel || 'Protokoll', text, datum: new Date().toISOString() };
+  protEintraege.push(eintrag);
+  protSave();
+
+  document.getElementById('prot-titel').value = '';
+  document.getElementById('prot-text').value = '';
+  protRender();
+
+  // Wörni informieren
+  protWoerniSignal(titel || 'Protokoll');
+}
+
+function protDelete(i) {
+  if (!confirm('Protokoll löschen?')) return;
+  protEintraege.splice(i, 1);
+  protSave();
+  protRender();
+}
+
+async function protWoerniSignal(titel) {
+  try {
+    const SIGNAL_KEY = 'team-protokoll-neu';
+    const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
+    const existing = await check.json();
+    if (Array.isArray(existing) && existing.length > 0) {
+      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt', {
+        method: 'PATCH', headers: GHD_H_PROT,
+        body: JSON.stringify({ titel: 'Neues Besprechungsprotokoll: ' + titel, geaendert_am: new Date().toISOString() })
+      });
+    } else {
+      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben', {
+        method: 'POST', headers: GHD_H_PROT,
+        body: JSON.stringify({
+          typ: 'team',
+          titel: 'Neues Besprechungsprotokoll: ' + titel,
+          naechster_schritt: 'Team-App öffnen → Protokoll lesen',
+          verantwortlich: 'mirjam',
+          prioritaet: 'diese-woche',
+          status: 'neu',
+          app_kontext: 'team',
+          fach_kontext: 'protokoll',
+          signal_key: SIGNAL_KEY,
+          erstellt_von: 'system',
+          erstellt_am: new Date().toISOString()
+        })
+      });
+    }
+  } catch(e) { console.warn('Wörni Protokoll-Signal fehlgeschlagen:', e); }
+}
+
+function protMikro() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Mikrofon nicht verfügbar'); return; }
+  var btn = document.getElementById('prot-mikro-btn');
+  btn.textContent = '🔴 Stopp';
+  btn.style.background = '#FFE5E5';
+  var erk = new SR();
+  erk.lang = 'de-AT';
+  erk.continuous = true;
+  erk.interimResults = false;
+  erk.onresult = function(e) {
+    var text = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) text += e.results[i][0].transcript + ' ';
+    }
+    var ta = document.getElementById('prot-text');
+    ta.value = (ta.value ? ta.value + ' ' : '') + text.trim();
+  };
+  erk.onend = function() {
+    btn.textContent = '🎤 Diktieren';
+    btn.style.background = '#F2F2F7';
+  };
+  erk.onerror = function() {
+    btn.textContent = '🎤 Diktieren';
+    btn.style.background = '#F2F2F7';
+  };
+  btn.onclick = function() { erk.stop(); };
+  erk.start();
+}
+
 </script>
 </body>
 </html>
