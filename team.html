@@ -674,7 +674,7 @@
         <textarea id="prot-text" placeholder="Protokoll eingeben oder diktieren…" rows="5"
           style="width:100%;border:1px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <button onclick="protMikro()" id="prot-mikro-btn"
+          <button onclick="protMikroToggle()" id="prot-mikro-btn"
             style="background:#F2F2F7;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;">🎤 Diktieren</button>
           <button onclick="protSpeichern()"
             style="flex:1;background:#1C1C1E;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;">✓ Speichern</button>
@@ -2029,33 +2029,33 @@ async function protWoerniSignal(titel) {
   } catch(e) { console.warn('Wörni Protokoll-Signal fehlgeschlagen:', e); }
 }
 
-function protMikro() {
+// ── PROTOKOLL MIKRO ──
+function protMikroToggle() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert('Mikrofon nicht verfügbar'); return; }
   var btn = document.getElementById('prot-mikro-btn');
-  btn.textContent = '🔴 Stopp';
+  var ta = document.getElementById('prot-text');
+
+  btn.textContent = '🔴';
   btn.style.background = '#FFE5E5';
+
   var erk = new SR();
   erk.lang = 'de-AT';
-  erk.continuous = true;
+  erk.continuous = false;
   erk.interimResults = false;
+
   erk.onresult = function(e) {
-    var text = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) text += e.results[i][0].transcript + ' ';
-    }
-    var ta = document.getElementById('prot-text');
-    ta.value = (ta.value ? ta.value + ' ' : '') + text.trim();
+    var text = e.results[0][0].transcript;
+    if (ta) ta.value = ta.value ? ta.value + ' ' + text : text;
   };
   erk.onend = function() {
-    btn.textContent = '🎤 Diktieren';
+    btn.textContent = '🎤 Weiter diktieren';
     btn.style.background = '#F2F2F7';
   };
   erk.onerror = function() {
     btn.textContent = '🎤 Diktieren';
     btn.style.background = '#F2F2F7';
   };
-  btn.onclick = function() { erk.stop(); };
   erk.start();
 }
 
