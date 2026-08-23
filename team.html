@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Team">
+<meta name="theme-color" content="#1a1a1a">
+<title>Mirjam Walenta – A great hair day · Team</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: #e8e5e0;
+    --text: #1a1a1a;
+    --text-2: #6b6560;
+    --accent: #1a1a1a;
+    --accent-light: #f0ede8;
+    --red: #c0392b;
+    --green: #27ae60;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; min-height: 100dvh; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: calc(12px + var(--safe-top)) 16px 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+  .header-brand { display: flex; flex-direction: column; }
+
+  /* ── LOGO ── */
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px; font-weight: 700; letter-spacing: -1px;
+    flex-shrink: 0;
+  }
+
+  /* ── LOGIN ── */
+  #screen-login {
+    justify-content: center;
+    align-items: center;
+    padding: 32px 24px;
+    background: var(--bg);
+  }
+  .login-box {
+    width: 100%; max-width: 380px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 32px 24px;
+    box-shadow: var(--shadow);
+  }
+  .login-logo {
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 28px; gap: 10px;
+  }
+  .login-logo .logo-mark { width: 44px; height: 44px; font-size: 22px; border-radius: 11px; }
+  .login-name { font-size: 16px; font-weight: 600; }
+  .login-tagline { font-size: 13px; color: var(--text-2); }
+
+  /* ── FORM ELEMENTS ── */
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+  input, textarea, select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: none; line-height: 1.5; }
+  .form-group { margin-bottom: 16px; }
+  .form-error { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
+  .form-error.visible { display: block; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    border: none; border-radius: 8px;
+    padding: 11px 16px;
+    font-size: 15px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: opacity 0.15s, background 0.15s;
+    text-decoration: none;
+  }
+  .btn:active { opacity: 0.75; }
+  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-secondary { background: var(--accent-light); color: var(--text); }
+  .btn-danger { background: #fdf0ef; color: var(--red); }
+  .btn-ghost { background: transparent; color: var(--text-2); padding: 8px; }
+  .btn-sm { padding: 7px 12px; font-size: 14px; }
+  .btn-full { width: 100%; }
+
+  /* ── FEED ── */
+  .feed-content { flex: 1; padding: 12px 16px; overflow-y: auto; }
+  .feed-empty {
+    text-align: center; padding: 60px 24px;
+    color: var(--text-2); font-size: 15px; line-height: 1.6;
+  }
+
+  /* ── ENTRY CARD ── */
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    -webkit-user-select: none; user-select: none;
+  }
+  .entry-card:active { opacity: 0.85; }
+  .entry-card-top {
+    padding: 14px 16px 10px;
+  }
+  .entry-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .entry-badge {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+    padding: 2px 7px; border-radius: 4px;
+    background: var(--accent-light); color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .entry-badge.wichtig { background: #fdf6e3; color: #b7860b; }
+  .entry-date { font-size: 12px; color: var(--text-2); margin-left: auto; }
+  .entry-title { font-size: 16px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
+  .entry-preview { font-size: 14px; color: var(--text-2); line-height: 1.4; 
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .entry-card-bottom {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    background: #fafaf8;
+  }
+  .entry-status { font-size: 12px; color: var(--text-2); flex: 1; }
+  .entry-unread {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed; bottom: calc(24px + var(--safe-bottom)); right: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: white;
+    border: none; font-size: 24px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.9); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+    position: sticky; bottom: 0; z-index: 100;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 4px; gap: 3px;
+    cursor: pointer; border: none; background: none;
+    font-family: inherit; color: var(--text-2);
+    font-size: 10px; font-weight: 500;
+    position: relative;
+    transition: color 0.15s;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-badge {
+    position: absolute; top: 6px; right: calc(50% - 18px);
+    background: var(--red); color: white;
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; height: 16px; border-radius: 8px;
+    padding: 0 4px; display: none;
+    align-items: center; justify-content: center;
+  }
+  .nav-badge.visible { display: flex; }
+
+  /* ── DETAIL / FORM SCREEN ── */
+  .subscreen {
+    flex: 1; overflow-y: auto;
+    padding: 16px 16px calc(32px + var(--safe-bottom));
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: none;
+    font-size: 16px; font-family: inherit; color: var(--text-2);
+    cursor: pointer; padding: 0;
+  }
+  .back-btn:active { opacity: 0.6; }
+
+  /* ── DETAIL ── */
+  .detail-header { margin-bottom: 20px; }
+  .detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .detail-title { font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .detail-body { font-size: 16px; line-height: 1.65; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .detail-section { margin-top: 24px; }
+  .detail-section-title {
+    font-size: 12px; font-weight: 600; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* ── ANHANG ── */
+  .anhang-box {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--accent-light);
+    cursor: pointer; text-decoration: none; color: var(--text);
+  }
+  .anhang-box:active { opacity: 0.75; }
+  .anhang-icon { font-size: 22px; flex-shrink: 0; }
+  .anhang-name { font-size: 14px; font-weight: 500; flex: 1; word-break: break-word; }
+  .anhang-arrow { color: var(--text-2); }
+
+  /* ── BESTÄTIGUNG ── */
+  .bestaetigen-box {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .bestaetigen-box p { font-size: 14px; color: var(--text-2); margin-bottom: 12px; line-height: 1.4; }
+  .bestaetigt-info { font-size: 14px; color: var(--green); font-weight: 500; }
+
+  /* ── REAKTIONEN ── */
+  .reaktion-list { display: flex; flex-direction: column; gap: 8px; }
+  .reaktion-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .reaktion-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .reaktion-name { font-size: 13px; font-weight: 600; }
+  .reaktion-typ { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.3px; }
+  .reaktion-text { font-size: 14px; color: var(--text-2); line-height: 1.4; }
+
+  .reaktion-form { display: flex; flex-direction: column; gap: 10px; }
+  .reaktion-typen { display: flex; gap: 8px; flex-wrap: wrap; }
+  .typ-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text-2);
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .typ-btn.selected { border-color: var(--accent); background: var(--accent); color: white; }
+
+  /* ── BESTÄTIGUNGEN LISTE (Inhaberin) ── */
+  .best-list { display: flex; flex-direction: column; gap: 6px; }
+  .best-item {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .best-item:last-child { border-bottom: none; }
+  .best-person { font-weight: 500; }
+  .best-status-ok { color: var(--green); font-size: 13px; }
+  .best-status-no { color: var(--text-2); font-size: 13px; }
+
+  /* ── TEAM TAB ── */
+  .team-list { display: flex; flex-direction: column; gap: 8px; }
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .team-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600; flex-shrink: 0;
+  }
+  .team-name { font-size: 16px; font-weight: 600; }
+  .team-rolle { font-size: 13px; color: var(--text-2); }
+  .team-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  /* ── EINLADUNG ── */
+  .invite-box {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .invite-box label { color: var(--text); margin-bottom: 8px; }
+  .invite-link-row { display: flex; gap: 8px; }
+  .invite-link-input {
+    flex: 1; font-size: 13px; padding: 9px 10px;
+    background: var(--surface); border-radius: 7px;
+    border: 1px solid var(--border); color: var(--text-2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* ── PROFIL TAB ── */
+  .profil-content { padding: 16px; }
+  .profil-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .profil-avatar { width: 52px; height: 52px; border-radius: 50%; font-size: 22px; }
+  .profil-name { font-size: 18px; font-weight: 700; }
+  .profil-rolle { font-size: 14px; color: var(--text-2); margin-top: 2px; }
+
+  .settings-list { display: flex; flex-direction: column; gap: 1px; }
+  .settings-item {
+    background: var(--surface);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; border: 1px solid var(--border);
+    font-size: 15px; font-family: inherit;
+    color: var(--text);
+  }
+  .settings-item:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+  .settings-item:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+  .settings-item:only-child { border-radius: var(--radius); }
+  .settings-item:active { background: var(--accent-light); }
+  .settings-arrow { color: var(--text-2); }
+
+  /* ── MODAL / SHEET ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 200; display: none; align-items: flex-end;
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .overlay.active { display: flex; }
+  .sheet {
+    width: 100%; background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(24px + var(--safe-bottom));
+    max-height: 90dvh; overflow-y: auto;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border); margin: 0 auto 20px;
+  }
+  .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.3px; }
+
+  /* ── CHAR COUNTER ── */
+  .char-counter { font-size: 11px; color: var(--text-2); text-align: right; margin-top: 4px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: white;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; font-weight: 500;
+    z-index: 500; opacity: 0; transition: opacity 0.2s;
+    white-space: nowrap; pointer-events: none;
+  }
+  .toast.visible { opacity: 1; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-screen {
+    display: flex; align-items: center; justify-content: center;
+    flex: 1; color: var(--text-2); gap: 10px;
+  }
+  .spinner-dark {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* ── ONBOARDING ── */
+  #screen-onboarding {
+    justify-content: center; align-items: center;
+    padding: 32px 24px; background: var(--bg);
+  }
+  .onboarding-box {
+    width: 100%; max-width: 380px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 32px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── INAKTIV ── */
+  .inaktiv-screen {
+    justify-content: center; align-items: center; padding: 32px;
+    text-align: center;
+  }
+  .inaktiv-screen p { color: var(--text-2); line-height: 1.6; font-size: 15px; }
+
+  /* ── UTILS ── */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .text-muted { color: var(--text-2); }
+  .text-sm { font-size: 13px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .gap-8 { gap: 8px; }
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-mark">MW</div>
+      <div>
+        <div class="login-name">Mirjam Walenta</div>
+        <div class="login-tagline">A great hair day</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="login-email">E-Mail</label>
+      <input type="email" id="login-email" placeholder="" autocomplete="email" inputmode="email">
+      <div class="form-error" id="login-email-err">Bitte E-Mail eingeben.</div>
+    </div>
+    <div class="form-group">
+      <label for="login-pw">Passwort</label>
+      <input type="password" id="login-pw" placeholder="" autocomplete="current-password">
+      <div class="form-error" id="login-pw-err">Bitte Passwort eingeben.</div>
+    </div>
+    <div class="form-error" id="login-general-err" style="margin-bottom:12px">E-Mail oder Passwort nicht korrekt.</div>
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Anmelden</button>
+    <p class="text-sm text-muted mt-12" style="text-align:center;line-height:1.5">
+      Noch kein Zugang?<br>Du erhältst einen Einladungslink von Mirjam.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════════ ONBOARDING (Einladung) ════════════════ -->
+<div id="screen-onboarding" class="screen">
+  <div class="onboarding-box">
+    <div class="login-logo" style="margin-bottom:20px">
+      <div class="logo-mark">MW</div>
+      <div>
+        <div class="login-name">Willkommen im Team.</div>
+      </div>
+    </div>
+    <p class="text-sm text-muted" style="margin-bottom:20px;line-height:1.5">
+      Mirjam hat dich eingeladen. Bitte leg jetzt dein Passwort fest, damit du dich künftig direkt anmelden kannst.
+    </p>
+    <div class="form-group">
+      <label for="ob-pw">Neues Passwort</label>
+      <input type="password" id="ob-pw" placeholder="">
+      <div class="form-error" id="ob-pw-err">Passwort muss mindestens 8 Zeichen haben.</div>
+    </div>
+    <div class="form-group">
+      <label for="ob-pw2">Passwort wiederholen</label>
+      <input type="password" id="ob-pw2" placeholder="">
+      <div class="form-error" id="ob-pw2-err">Passwörter stimmen nicht überein.</div>
+    </div>
+    <button class="btn btn-primary" onclick="doOnboarding()">Passwort festlegen &amp; loslegen</button>
+  </div>
+</div>
+
+<!-- ════════════════ INAKTIV ════════════════ -->
+<div id="screen-inaktiv" class="screen inaktiv-screen">
+  <div class="logo-mark" style="width:52px;height:52px;font-size:22px;margin-bottom:20px">MW</div>
+  <p>Dein Account ist deaktiviert.<br>Bitte wende dich an Mirjam.</p>
+</div>
+
+<!-- ════════════════ MAIN APP ════════════════ -->
+<div id="screen-main" class="screen" style="flex-direction:column">
+
+  <!-- FEED TAB -->
+  <div id="tab-feed" class="screen active" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <div class="header-brand">
+          <div class="header-title">Mirjam Walenta</div>
+          <div class="header-sub">A great hair day</div>
+        </div>
+        <div class="logo-mark">MW</div>
+      </div>
+    </div>
+    <div class="feed-content" id="feed-list">
+      <div class="loading-screen"><div class="spinner-dark"></div></div>
+    </div>
+    <div id="fab-container"></div>
+  </div>
+
+  <!-- DETAIL SCREEN -->
+  <div id="tab-detail" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <button class="back-btn" onclick="showFeed()">‹ Zurück</button>
+        <div id="detail-actions" style="display:flex;gap:8px"></div>
+      </div>
+    </div>
+    <div class="subscreen" id="detail-body"></div>
+  </div>
+
+  <!-- NEUER EINTRAG -->
+  <div id="tab-create" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <button class="back-btn" onclick="showFeed()">‹ Verwerfen</button>
+        <div class="header-title">Neuer Eintrag</div>
+        <div style="width:80px"></div>
+      </div>
+    </div>
+    <div class="subscreen">
+      <div class="form-group">
+        <label>Inhaltsart</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="create-art-btns">
+          <button class="typ-btn" onclick="selectArt(this,'besprechung')">Besprechung</button>
+          <button class="typ-btn" onclick="selectArt(this,'produktinfo')">Produktinfo</button>
+          <button class="typ-btn" onclick="selectArt(this,'mitteilung')">Mitteilung</button>
+        </div>
+        <div class="form-error" id="create-art-err">Bitte Inhaltsart wählen.</div>
+      </div>
+      <div class="form-group">
+        <label for="create-titel">Titel</label>
+        <input type="text" id="create-titel" placeholder="" maxlength="100">
+        <div class="form-error" id="create-titel-err">Bitte Titel eingeben.</div>
+      </div>
+      <div class="form-group">
+        <label for="create-inhalt">Inhalt</label>
+        <textarea id="create-inhalt" rows="6" maxlength="1200" oninput="updateCharCount(this,'create-char')"></textarea>
+        <div class="char-counter"><span id="create-char">0</span>/1200</div>
+        <div class="form-error" id="create-inhalt-err">Bitte Inhalt eingeben.</div>
+      </div>
+      <div class="form-group">
+        <label>Anhang — optional, PDF oder Bild</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="create-anhang-name" class="text-sm text-muted">Kein Anhang</span>
+          <label for="create-anhang-input" class="btn btn-secondary btn-sm" style="cursor:pointer">Datei wählen</label>
+          <input type="file" id="create-anhang-input" accept=".pdf,image/*" style="display:none" onchange="onAnhangChosen(this,'create-anhang-name','create-anhang-remove')">
+          <button id="create-anhang-remove" style="display:none" class="btn btn-ghost btn-sm" onclick="removeAnhang('create-anhang-input','create-anhang-name','create-anhang-remove')">✕</button>
+        </div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="create-wichtig" style="width:auto">
+        <label for="create-wichtig" style="margin:0;font-size:14px;color:var(--text)">
+          Besonders wichtig
+          <span class="text-muted" style="font-weight:400"> — Steht im Feed oben, bis jede Person bestätigt hat</span>
+        </label>
+      </div>
+      <button class="btn btn-primary mt-16" onclick="doCreateEintrag()">Veröffentlichen</button>
+      <button class="btn btn-secondary btn-full mt-8" onclick="showFeed()">Verwerfen</button>
+    </div>
+  </div>
+
+  <!-- EINTRAG BEARBEITEN -->
+  <div id="tab-edit" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <button class="back-btn" onclick="showDetail(_currentEintragId)">‹ Abbrechen</button>
+        <div class="header-title">Eintrag bearbeiten</div>
+        <div style="width:80px"></div>
+      </div>
+    </div>
+    <div class="subscreen">
+      <p class="text-sm text-muted" style="margin-bottom:16px">Lesebestätigungen bleiben erhalten.</p>
+      <div class="form-group">
+        <label>Inhaltsart</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="edit-art-btns">
+          <button class="typ-btn" onclick="selectEditArt(this,'besprechung')">Besprechung</button>
+          <button class="typ-btn" onclick="selectEditArt(this,'produktinfo')">Produktinfo</button>
+          <button class="typ-btn" onclick="selectEditArt(this,'mitteilung')">Mitteilung</button>
+        </div>
+        <div class="form-error" id="edit-art-err">Bitte Inhaltsart wählen.</div>
+      </div>
+      <div class="form-group">
+        <label for="edit-titel">Titel</label>
+        <input type="text" id="edit-titel" maxlength="100">
+        <div class="form-error" id="edit-titel-err">Bitte Titel eingeben.</div>
+      </div>
+      <div class="form-group">
+        <label for="edit-inhalt">Inhalt</label>
+        <textarea id="edit-inhalt" rows="6" maxlength="1200" oninput="updateCharCount(this,'edit-char')"></textarea>
+        <div class="char-counter"><span id="edit-char">0</span>/1200</div>
+        <div class="form-error" id="edit-inhalt-err">Bitte Inhalt eingeben.</div>
+      </div>
+      <div class="form-group">
+        <label>Anhang</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="edit-anhang-name" class="text-sm text-muted">Kein Anhang</span>
+          <label for="edit-anhang-input" class="btn btn-secondary btn-sm" style="cursor:pointer">Datei wählen</label>
+          <input type="file" id="edit-anhang-input" accept=".pdf,image/*" style="display:none" onchange="onAnhangChosen(this,'edit-anhang-name','edit-anhang-remove')">
+          <button id="edit-anhang-remove" style="display:none" class="btn btn-ghost btn-sm" onclick="removeAnhangEdit()">✕</button>
+        </div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="edit-wichtig" style="width:auto">
+        <label for="edit-wichtig" style="margin:0;font-size:14px;color:var(--text)">Besonders wichtig</label>
+      </div>
+      <button class="btn btn-primary mt-16" onclick="doEditSave()">Speichern</button>
+      <button class="btn btn-secondary btn-full mt-8" onclick="showDetail(_currentEintragId)">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- TEAM TAB -->
+  <div id="tab-team" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <div class="header-brand">
+          <div class="header-title">Team</div>
+        </div>
+        <div class="logo-mark">MW</div>
+      </div>
+    </div>
+    <div class="subscreen" id="team-content"></div>
+  </div>
+
+  <!-- PROFIL TAB -->
+  <div id="tab-protokoll" class="screen" style="flex:1;flex-direction:column;min-height:0;overflow-y:auto;">
+    <div style="padding:16px;">
+
+      <!-- Kopfzeile -->
+      <div style="font-size:18px;font-weight:700;margin-bottom:16px;">🎤 Besprechungsprotokoll</div>
+
+      <!-- Eingabe -->
+      <div style="background:#fff;border-radius:14px;border:1px solid #E5E5EA;padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;color:#8E8E93;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Neues Protokoll</div>
+        <input id="prot-titel" placeholder="Titel (z.B. Teambesprechung August)" type="text"
+          style="width:100%;border:1px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:15px;outline:none;margin-bottom:8px;box-sizing:border-box;">
+        <textarea id="prot-text" placeholder="Protokoll eingeben oder diktieren…" rows="5"
+          style="width:100%;border:1px solid #E5E5EA;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="protMikroToggle()" id="prot-mikro-btn"
+            style="background:#F2F2F7;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;">🎤 Diktieren</button>
+          <button onclick="protSpeichern()"
+            style="flex:1;background:#1C1C1E;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;">✓ Speichern</button>
+        </div>
+      </div>
+
+      <!-- Protokoll-Liste -->
+      <div id="prot-list"></div>
+    </div>
+  </div>
+
+  <div id="tab-profil" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <div class="header-brand">
+          <div class="header-title">Mirjam Walenta</div>
+          <div class="header-sub">A great hair day</div>
+        </div>
+        <div class="logo-mark">MW</div>
+      </div>
+    </div>
+    <div class="profil-content" id="profil-content"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" id="nav-feed" onclick="switchTab('feed')">
+      <span class="nav-icon">📋</span>
+      <span>Feed</span>
+      <span class="nav-badge" id="badge-feed"></span>
+    </button>
+    <button class="nav-item" id="nav-team" onclick="switchTab('team')">
+      <span class="nav-icon">👥</span>
+      <span>Team</span>
+    </button>
+    <button class="nav-item" id="nav-profil" onclick="switchTab('profil')">
+      <span class="nav-icon">👤</span>
+      <span>Profil</span>
+    </button>
+    <button class="nav-item" id="nav-protokoll" onclick="switchTab('protokoll')">
+      <span class="nav-icon">🎤</span>
+      <span>Protokoll</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ════════════════ OVERLAYS ════════════════ -->
+
+<!-- Rückmeldung -->
+<div class="overlay" id="overlay-reaktion">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Rückmeldung geben</div>
+    <div class="reaktion-form">
+      <div>
+        <label>Art der Rückmeldung</label>
+        <div class="reaktion-typen mt-8" id="reaktion-typ-btns">
+          <button class="typ-btn" onclick="selectReaktionTyp(this,'Frage')">Frage</button>
+          <button class="typ-btn" onclick="selectReaktionTyp(this,'Anmerkung')">Anmerkung</button>
+          <button class="typ-btn" onclick="selectReaktionTyp(this,'Erledigt')">Erledigt</button>
+        </div>
+        <div class="form-error" id="reaktion-typ-err">Bitte Art wählen.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label for="reaktion-text">Nachricht — optional</label>
+        <textarea id="reaktion-text" rows="3" placeholder=""></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="doSendReaktion()">Rückmeldung senden</button>
+      <button class="btn btn-secondary btn-full" onclick="closeOverlay('overlay-reaktion')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Passwort ändern -->
+<div class="overlay" id="overlay-pw">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Passwort ändern</div>
+    <div class="form-group">
+      <label for="pw-alt">Aktuelles Passwort</label>
+      <input type="password" id="pw-alt" placeholder="">
+      <div class="form-error" id="pw-alt-err">Bitte aktuelles Passwort eingeben.</div>
+    </div>
+    <div class="form-group">
+      <label for="pw-neu">Neues Passwort</label>
+      <input type="password" id="pw-neu" placeholder="">
+      <div class="form-error" id="pw-neu-err">Mindestens 4 Zeichen erforderlich.</div>
+    </div>
+    <div class="form-group">
+      <label for="pw-neu2">Neues Passwort wiederholen</label>
+      <input type="password" id="pw-neu2" placeholder="">
+      <div class="form-error" id="pw-neu2-err">Passwörter stimmen nicht überein.</div>
+    </div>
+    <div class="form-error" id="pw-general-err" style="margin-bottom:12px">Aktuelles Passwort nicht korrekt.</div>
+    <button class="btn btn-primary" onclick="doChangePw()">Passwort speichern</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-pw')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- PIN setzen (Inhaberin für Mitarbeiter) -->
+<div class="overlay" id="overlay-pin">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="pin-sheet-title">PIN festlegen</div>
+    <div class="form-group">
+      <label for="pin-neu">Neues Passwort</label>
+      <input type="password" id="pin-neu" placeholder="">
+      <div class="form-error" id="pin-neu-err">Passwort muss mindestens 8 Zeichen haben.</div>
+    </div>
+    <div class="form-group">
+      <label for="pin-neu2">Wiederholen</label>
+      <input type="password" id="pin-neu2" placeholder="">
+      <div class="form-error" id="pin-neu2-err">Passwörter stimmen nicht überein.</div>
+    </div>
+    <button class="btn btn-primary" onclick="doPinSave()">Passwort speichern</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-pin')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Person hinzufügen -->
+<div class="overlay" id="overlay-add-person">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Mitarbeiter:in hinzufügen</div>
+    <div class="form-group">
+      <label for="add-name">Name</label>
+      <input type="text" id="add-name" placeholder="">
+      <div class="form-error" id="add-name-err">Bitte Name eingeben.</div>
+    </div>
+    <div class="form-group">
+      <label for="add-pw">Passwort festlegen</label>
+      <input type="password" id="add-pw" placeholder="">
+      <div class="form-error" id="add-pw-err">Mindestens 4 Zeichen erforderlich.</div>
+    </div>
+    <div class="form-group">
+      <label for="add-email">E-Mail — optional</label>
+      <input type="email" id="add-email" placeholder="" inputmode="email">
+    </div>
+    <div class="invite-box" id="add-invite-box" style="display:none">
+      <label>Einladungslink</label>
+      <div class="invite-link-row">
+        <div class="invite-link-input" id="add-invite-link"></div>
+        <button class="btn btn-secondary btn-sm" onclick="copyInviteLink()">Kopieren</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="doAddPerson()">Hinzufügen</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-add-person')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Person löschen -->
+<div class="overlay" id="overlay-delete-person">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="delete-person-title">Person löschen</div>
+    <p class="text-sm text-muted" style="margin-bottom:20px;line-height:1.5">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+    <button class="btn btn-danger btn-full" onclick="doDeletePerson()">Endgültig löschen</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-delete-person')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Account deaktivieren -->
+<div class="overlay" id="overlay-deactivate">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="deactivate-title">Account deaktivieren</div>
+    <p class="text-sm text-muted" style="margin-bottom:20px;line-height:1.5">Die Person kann sich nicht mehr anmelden.</p>
+    <button class="btn btn-danger btn-full" onclick="doDeactivate()">Deaktivieren</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-deactivate')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Account reaktivieren -->
+<div class="overlay" id="overlay-reactivate">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="reactivate-title">Account reaktivieren</div>
+    <button class="btn btn-primary btn-full" onclick="doReactivate()">Reaktivieren</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-reactivate')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Eintrag löschen -->
+<div class="overlay" id="overlay-delete-eintrag">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Eintrag löschen</div>
+    <p class="text-sm text-muted" style="margin-bottom:20px;line-height:1.5">Dieser Eintrag und alle Rückmeldungen werden endgültig gelöscht.</p>
+    <button class="btn btn-danger btn-full" onclick="doDeleteEintrag()">Endgültig löschen</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="closeOverlay('overlay-delete-eintrag')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════
+const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
+const STORAGE_BUCKET = 'teamapp-anhaenge';
+const APP_URL = 'https://mirjamwalenta-a11y.github.io/Team/team.html';
+async function ghd_upsertEreignis(app, typ, titel, prioritaet) {
+  try {
+    const _h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
+    const _r = await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse?app=eq.' + encodeURIComponent(app) + '&typ=eq.' + encodeURIComponent(typ) + '&gelesen=eq.false&select=id', { headers: _h });
+    const _ex = await _r.json();
+    if (Array.isArray(_ex) && _ex.length > 0) {
+      await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse?app=eq.' + encodeURIComponent(app) + '&typ=eq.' + encodeURIComponent(typ) + '&gelesen=eq.false',
+        { method: 'PATCH', headers: { ..._h, 'Prefer': 'return=minimal' }, body: JSON.stringify({ titel, prioritaet, erstellt_am: new Date().toISOString() }) });
+    } else {
+      await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse',
+        { method: 'POST', headers: { ..._h, 'Prefer': 'return=minimal' }, body: JSON.stringify({ app, typ, titel, prioritaet, gelesen: false }) });
+    }
+  } catch(e) { console.warn('ghd_upsertEreignis:', e); }
+}
+
+
+async function supa(table, method = 'GET', body = null, filter = '') {
+  const url = `${SUPA_URL}/rest/v1/${table}${filter ? '?' + filter : ''}`;
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : (method === 'PATCH' ? 'return=representation' : ''),
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(err);
+  }
+  const txt = await r.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+async function supaGet(table, filter = '') {
+  return supa(table, 'GET', null, filter);
+}
+async function supaPost(table, body) {
+  return supa(table, 'POST', body, '');
+}
+async function supaPatch(table, filter, body) {
+  return supa(table, 'PATCH', body, filter);
+}
+async function supaDelete(table, filter) {
+  return supa(table, 'DELETE', null, filter);
+}
+
+// ═══════════════════════════════════════════
+// HASHING (SHA-256)
+// ═══════════════════════════════════════════
+async function hashPw(pw) {
+  const enc = new TextEncoder().encode(pw);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let _me = null; // aktuelle Person
+let _eintraege = [];
+let _persons = [];
+let _currentEintragId = null;
+let _createArt = null;
+let _editArt = null;
+let _editAnhangRemove = false;
+let _reaktionTyp = null;
+let _pinTargetId = null;
+let _deletePersonId = null;
+let _deactivateId = null;
+let _reactivateId = null;
+let _currentTab = 'feed';
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  // Einladungs-Token prüfen
+  const params = new URLSearchParams(location.search);
+  const token = params.get('invite');
+  if (token) {
+    await handleInvite(token);
+    return;
+  }
+  // Auto-Login aus sessionStorage
+  const saved = sessionStorage.getItem('teamapp_person');
+  if (saved) {
+    try {
+      _me = JSON.parse(saved);
+      await startApp();
+      return;
+    } catch(e) {}
+  }
+  showScreen('screen-login');
+});
+
+// ═══════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  let ok = true;
+  hideErr('login-email-err'); hideErr('login-pw-err'); hideErr('login-general-err');
+  if (!email) { showErr('login-email-err'); ok = false; }
+  if (!pw) { showErr('login-pw-err'); ok = false; }
+  if (!ok) return;
+
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  try {
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}`);
+    if (!rows || rows.length === 0) {
+      showErr('login-general-err');
+      return;
+    }
+    if (rows[0].pw_hash !== pw) {
+      showErr('login-general-err');
+      return;
+    }
+    const person = rows[0];
+    if (!person.aktiv) {
+      showScreen('screen-inaktiv');
+      return;
+    }
+    _me = person;
+    sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
+    await startApp();
+  } catch(e) {
+    showErr('login-general-err');
+  } finally {
+    btn.innerHTML = 'Anmelden';
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('login-pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ═══════════════════════════════════════════
+// ONBOARDING (Einladungslink)
+// ═══════════════════════════════════════════
+async function handleInvite(token) {
+  try {
+    const rows = await supaGet('teamapp_invites', `token=eq.${token}`);
+    if (!rows || rows.length === 0) {
+      showScreen('screen-login');
+      return;
+    }
+    const invite = rows[0];
+    // Finde Person mit dieser E-Mail oder diesem Namen
+    const persons = await supaGet('teamapp_persons', `name=eq.${encodeURIComponent(invite.name)}`);
+    if (persons && persons.length > 0) {
+      _me = persons[0];
+      showScreen('screen-onboarding');
+    } else {
+      showScreen('screen-login');
+    }
+  } catch(e) {
+    showScreen('screen-login');
+  }
+}
+
+async function doOnboarding() {
+  const pw = document.getElementById('ob-pw').value;
+  const pw2 = document.getElementById('ob-pw2').value;
+  hideErr('ob-pw-err'); hideErr('ob-pw2-err');
+  let ok = true;
+  if (!pw || pw.length < 8) { showErr('ob-pw-err'); ok = false; }
+  if (pw !== pw2) { showErr('ob-pw2-err'); ok = false; }
+  if (!ok) return;
+  try {
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: pw });
+    sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
+    // Invite löschen
+    await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
+    await startApp();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// APP START
+// ═══════════════════════════════════════════
+async function startApp() {
+  showScreen('screen-main');
+  switchTab('feed');
+  // FAB nur für Inhaberin
+  if (_me.rolle === 'inhaberin') {
+    document.getElementById('fab-container').innerHTML =
+      `<button class="fab" onclick="showCreate()">＋</button>`;
+  }
+  await loadFeed();
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-main') {
+    document.getElementById('screen-main').classList.add('active');
+  }
+}
+
+function switchTab(tab) {
+  _currentTab = tab;
+  // Alle Tabs im main verstecken
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'].forEach(t => {
+    document.getElementById(t).classList.remove('active');
+  });
+  // Nav aktualisieren
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  if (tab === 'feed') {
+    document.getElementById('tab-feed').classList.add('active');
+    document.getElementById('nav-feed').classList.add('active');
+    document.getElementById('fab-container').style.display = '';
+  } else if (tab === 'team') {
+    document.getElementById('tab-team').classList.add('active');
+    document.getElementById('nav-team').classList.add('active');
+    document.getElementById('fab-container').style.display = 'none';
+    renderTeam();
+  } else if (tab === 'profil') {
+    document.getElementById('tab-profil').classList.add('active');
+    document.getElementById('nav-profil').classList.add('active');
+    document.getElementById('fab-container').style.display = 'none';
+    renderProfil();
+  } else if (tab === 'protokoll') {
+    document.getElementById('tab-protokoll').classList.add('active');
+    document.getElementById('nav-protokoll').classList.add('active');
+    document.getElementById('fab-container').style.display = 'none';
+    protRender();
+  }
+}
+
+function showFeed() {
+  switchTab('feed');
+}
+
+function showCreate() {
+  _createArt = null;
+  document.querySelectorAll('#create-art-btns .typ-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('create-titel').value = '';
+  document.getElementById('create-inhalt').value = '';
+  document.getElementById('create-char').textContent = '0';
+  document.getElementById('create-wichtig').checked = false;
+  removeAnhang('create-anhang-input','create-anhang-name','create-anhang-remove');
+  hideErr('create-art-err'); hideErr('create-titel-err'); hideErr('create-inhalt-err');
+  showInnerTab('tab-create');
+}
+
+function showInnerTab(tabId) {
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil'].forEach(t => {
+    document.getElementById(t).classList.remove('active');
+  });
+  document.getElementById(tabId).classList.add('active');
+  document.getElementById('fab-container').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+// FEED LADEN
+// ═══════════════════════════════════════════
+async function loadFeed() {
+  try {
+    _eintraege = await supaGet('teamapp_eintraege', 'order=erstellt_am.desc');
+    _persons = await supaGet('teamapp_persons');
+    await renderFeed();
+    syncTeamOS();
+  } catch(e) {
+    document.getElementById('feed-list').innerHTML =
+      `<div class="feed-empty">Fehler beim Laden.<br><button class="btn btn-secondary mt-8" onclick="loadFeed()">Erneut versuchen</button></div>`;
+  }
+}
+
+// OS-Integration: unbestätigte wichtige Mitteilungen melden
+async function syncTeamOS() {
+  try {
+    const BELEGE_URL = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
+    const BELEGE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2ODIxNDcsImV4cCI6MjEwMDI1ODE0N30.6VZUmmXj_x3Q8J55s_tbOHcW5-U5OXllGoEBhypaVfI';
+    const headers = { 'apikey': BELEGE_KEY, 'Authorization': 'Bearer ' + BELEGE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+
+    // Alle Bestätigungen laden
+    const alleBestaet = await supaGet('teamapp_bestaetigungen');
+    const bestaetigtIds = new Set((alleBestaet || []).map(b => b.eintrag_id));
+
+    // Wichtige Einträge ohne Bestätigung von allen
+    const wichtigUnbestaetigt = (_eintraege || []).filter(e => e.wichtig && !bestaetigtIds.has(e.id));
+
+    if (wichtigUnbestaetigt.length === 0) {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'erledigt', erledigt_am: new Date().toISOString() }) });
+      return;
+    }
+    const titel = wichtigUnbestaetigt.length === 1 ? '1 Mitteilung wartet auf Bestätigung' : `${wichtigUnbestaetigt.length} Mitteilungen warten auf Bestätigung`;
+    const r = await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen&select=id`, { headers: { 'apikey': BELEGE_KEY, 'Authorization': 'Bearer ' + BELEGE_KEY } });
+    const existing = await r.json();
+    if (Array.isArray(existing) && existing.length > 0) {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben?bereich=eq.allgemein&status=eq.offen`, { method: 'PATCH', headers, body: JSON.stringify({ titel }) });
+    } else {
+      await fetch(`${BELEGE_URL}/rest/v1/os_aufgaben`, { method: 'POST', headers, body: JSON.stringify({ bereich: 'allgemein', titel, status: 'offen', prioritaet: 'grau', quelle: 'app', app_link: 'https://mirjamwalenta-a11y.github.io/team.greathairday/' }) });
+    }
+  } catch(e) { console.warn('OS-Sync Team fehlgeschlagen:', e.message); }
+}
+
+async function renderFeed() {
+  const list = document.getElementById('feed-list');
+  if (!_eintraege || _eintraege.length === 0) {
+    list.innerHTML = '<div class="feed-empty">Noch keine Einträge.</div>';
+    updateBadge(0);
+    return;
+  }
+
+  // Bestätigungen für mich laden
+  const myBest = await supaGet('teamapp_bestaetigungen', `person_id=eq.${_me.id}`);
+  const bestaetigt = new Set((myBest || []).map(b => b.eintrag_id));
+
+  // Wichtig-Einträge die ich noch nicht bestätigt habe, zuerst
+  const wichtig = _eintraege.filter(e => e.wichtig && !bestaetigt.has(e.id));
+  const rest = _eintraege.filter(e => !wichtig.includes(e));
+  const sorted = [...wichtig, ...rest];
+
+  let unread = 0;
+  list.innerHTML = sorted.map(e => {
+    const istBestaetigt = bestaetigt.has(e.id);
+    const isWichtig = e.wichtig && !istBestaetigt;
+    if (!istBestaetigt && _me.rolle !== 'inhaberin') unread++;
+    return `
+      <div class="entry-card" onclick="showDetail('${e.id}')">
+        <div class="entry-card-top">
+          <div class="entry-meta">
+            <span class="entry-badge ${isWichtig ? 'wichtig' : ''}">${kapital(e.inhaltsart)}</span>
+            ${isWichtig ? '<span class="entry-badge wichtig">⚑ Wichtig</span>' : ''}
+            <span class="entry-date">${formatDate(e.erstellt_am)}</span>
+          </div>
+          <div class="entry-title">${esc(e.titel)}</div>
+          <div class="entry-preview">${esc(e.inhalt)}</div>
+        </div>
+        <div class="entry-card-bottom">
+          <span class="entry-status">${istBestaetigt || _me.rolle === 'inhaberin' ? '' : 'Noch nicht bestätigt'}</span>
+          ${!istBestaetigt && _me.rolle !== 'inhaberin' ? '<div class="entry-unread"></div>' : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  updateBadge(unread);
+}
+
+function updateBadge(n) {
+  const b = document.getElementById('badge-feed');
+  if (n > 0) {
+    b.textContent = n;
+    b.classList.add('visible');
+  } else {
+    b.classList.remove('visible');
+  }
+}
+
+// ═══════════════════════════════════════════
+// DETAIL
+// ═══════════════════════════════════════════
+async function showDetail(id) {
+  _currentEintragId = id;
+  showInnerTab('tab-detail');
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = '<div class="loading-screen"><div class="spinner-dark"></div></div>';
+
+  try {
+    // Eintrag aus Supabase laden (immer frisch)
+    const rows = await supaGet('teamapp_eintraege', `id=eq.${id}`);
+    if (!rows || rows.length === 0) {
+      body.innerHTML = '<div class="feed-empty">Eintrag nicht gefunden.</div>';
+      return;
+    }
+    const e = rows[0];
+
+    // Bestätigungen für diesen Eintrag
+    const allBest = await supaGet('teamapp_bestaetigungen', `eintrag_id=eq.${id}`);
+    const myBest = (allBest || []).find(b => b.person_id === _me.id);
+
+    // Meine Rückmeldung
+    const allReak = await supaGet('teamapp_rueckmeldungen', `eintrag_id=eq.${id}&order=erstellt_am.asc`);
+    const myReak = (allReak || []).find(r => r.person_id === _me.id);
+
+    // Actions (Inhaberin: Bearbeiten + Löschen)
+    const actionsEl = document.getElementById('detail-actions');
+    if (_me.rolle === 'inhaberin') {
+      actionsEl.innerHTML = `
+        <button class="btn btn-secondary btn-sm" onclick="showEdit('${e.id}')">Bearbeiten</button>
+        <button class="btn btn-ghost btn-sm" onclick="openOverlay('overlay-delete-eintrag')">🗑</button>`;
+    } else {
+      actionsEl.innerHTML = '';
+    }
+
+    // Render
+    let html = `
+      <div class="detail-header">
+        <div class="detail-meta">
+          <span class="entry-badge">${kapital(e.inhaltsart)}</span>
+          ${e.wichtig ? '<span class="entry-badge wichtig">⚑ Wichtig</span>' : ''}
+          <span class="text-sm text-muted">${formatDate(e.erstellt_am)}</span>
+        </div>
+        <div class="detail-title">${esc(e.titel)}</div>
+      </div>
+      <div class="detail-body">${esc(e.inhalt)}</div>`;
+
+    // Anhang
+    if (e.anhang_url) {
+      const icon = e.anhang_typ && e.anhang_typ.includes('pdf') ? '📄' : '🖼';
+      html += `
+        <div class="detail-section">
+          <a href="${e.anhang_url}" target="_blank" class="anhang-box">
+            <span class="anhang-icon">${icon}</span>
+            <span class="anhang-name">${esc(e.anhang_name || 'Anhang')}</span>
+            <span class="anhang-arrow">→</span>
+          </a>
+        </div>`;
+    }
+
+    // Bestätigung (nur Mitarbeiter)
+    if (_me.rolle !== 'inhaberin') {
+      if (!myBest) {
+        html += `
+          <div class="detail-section">
+            <div class="bestaetigen-box">
+              <p>Bitte bestätige, dass du diesen Eintrag gelesen hast.</p>
+              <button class="btn btn-primary" onclick="doBestaetigen('${e.id}')">Gelesen &amp; bestätigt</button>
+            </div>
+          </div>`;
+      } else {
+        html += `
+          <div class="detail-section">
+            <p class="bestaetigt-info">✓ Bestätigt am ${formatDate(myBest.bestaetigt_am)}</p>
+          </div>`;
+      }
+    }
+
+    // Rückmeldungen anzeigen
+    if (allReak && allReak.length > 0) {
+      html += `<div class="detail-section">
+        <div class="detail-section-title">Rückmeldungen</div>
+        <div class="reaktion-list">`;
+      for (const r of allReak) {
+        const person = (_persons || []).find(p => p.id === r.person_id);
+        const name = person ? person.name : 'Unbekannt';
+        html += `
+          <div class="reaktion-item">
+            <div class="reaktion-header">
+              <span class="reaktion-name">${esc(name)}</span>
+              <span class="reaktion-typ">${esc(r.typ)}</span>
+            </div>
+            ${r.text ? `<div class="reaktion-text">${esc(r.text)}</div>` : ''}
+          </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Rückmeldung geben (nur nach Bestätigung, nur wenn noch keine)
+    if (_me.rolle !== 'inhaberin' && myBest && !myReak) {
+      html += `
+        <div class="detail-section">
+          <button class="btn btn-secondary btn-full" onclick="openOverlay('overlay-reaktion')">Rückmeldung geben</button>
+        </div>`;
+    }
+
+    // Inhaberin: alle Bestätigungen
+    if (_me.rolle === 'inhaberin' && _persons) {
+      const mitarbeiter = _persons.filter(p => p.rolle !== 'inhaberin' && p.aktiv);
+      if (mitarbeiter.length > 0) {
+        html += `<div class="detail-section">
+          <div class="detail-section-title">Lesebestätigungen</div>
+          <div class="best-list">`;
+        for (const p of mitarbeiter) {
+          const hat = (allBest || []).find(b => b.person_id === p.id);
+          html += `
+            <div class="best-item">
+              <span class="best-person">${esc(p.name)}</span>
+              ${hat
+                ? `<span class="best-status-ok">✓ ${formatDate(hat.bestaetigt_am)}</span>`
+                : `<span class="best-status-no">Ausstehend</span>`}
+            </div>`;
+        }
+        html += `</div></div>`;
+      }
+    }
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div class="feed-empty">Fehler beim Laden.<br><small>${e.message}</small></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// BESTÄTIGEN
+// ═══════════════════════════════════════════
+async function doBestaetigen(eintragId) {
+  try {
+    await supaPost('teamapp_bestaetigungen', {
+      eintrag_id: eintragId,
+      person_id: _me.id,
+      bestaetigt_am: new Date().toISOString()
+    });
+    showToast('Bestätigt ✓');
+    await showDetail(eintragId);
+    // Feed im Hintergrund aktualisieren
+    loadFeed();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// RÜCKMELDUNG
+// ═══════════════════════════════════════════
+let _reaktionEintragId = null;
+function openReaktion(eintragId) {
+  _reaktionEintragId = eintragId;
+  _reaktionTyp = null;
+  document.querySelectorAll('#reaktion-typ-btns .typ-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('reaktion-text').value = '';
+  hideErr('reaktion-typ-err');
+  openOverlay('overlay-reaktion');
+}
+
+function selectReaktionTyp(btn, typ) {
+  _reaktionTyp = typ;
+  document.querySelectorAll('#reaktion-typ-btns .typ-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function doSendReaktion() {
+  hideErr('reaktion-typ-err');
+  if (!_reaktionTyp) { showErr('reaktion-typ-err'); return; }
+  const text = document.getElementById('reaktion-text').value.trim();
+  try {
+    await supaPost('teamapp_rueckmeldungen', {
+      id: 'r-' + Date.now(),
+      eintrag_id: _currentEintragId,
+      person_id: _me.id,
+      typ: _reaktionTyp,
+      text: text || null,
+      erstellt_am: new Date().toISOString(),
+      gesehen: false
+    });
+    closeOverlay('overlay-reaktion');
+    showToast('Rückmeldung gesendet');
+    // ── GHD-EREIGNIS bei Frage-Rückmeldung ─────────────────────────
+    if (_reaktionTyp === 'Frage') {
+      const eintragTitel = (_eintraege.find(e => e.id === _currentEintragId) || {}).titel || 'Eintrag';
+      ghd_upsertEreignis('Team', 'rueckmeldung_frage', 'Frage vom Team zu: ' + eintragTitel, 'diese-woche');
+    }
+    await showDetail(_currentEintragId);
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// EINTRAG ERSTELLEN
+// ═══════════════════════════════════════════
+function selectArt(btn, art) {
+  _createArt = art;
+  document.querySelectorAll('#create-art-btns .typ-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function doCreateEintrag() {
+  hideErr('create-art-err'); hideErr('create-titel-err'); hideErr('create-inhalt-err');
+  const titel = document.getElementById('create-titel').value.trim();
+  const inhalt = document.getElementById('create-inhalt').value.trim();
+  let ok = true;
+  if (!_createArt) { showErr('create-art-err'); ok = false; }
+  if (!titel) { showErr('create-titel-err'); ok = false; }
+  if (!inhalt) { showErr('create-inhalt-err'); ok = false; }
+  if (!ok) return;
+
+  const wichtig = document.getElementById('create-wichtig').checked;
+  const file = document.getElementById('create-anhang-input').files[0];
+
+  try {
+    let anhang_url = null, anhang_name = null, anhang_typ = null;
+    if (file) {
+      const r = await uploadAnhang(file);
+      anhang_url = r.url; anhang_name = r.name; anhang_typ = r.typ;
+    }
+
+    const id = 'e-' + Date.now();
+    await supaPost('teamapp_eintraege', {
+      id,
+      inhaltsart: _createArt,
+      titel,
+      inhalt,
+      wichtig,
+      erstellt_am: new Date().toISOString(),
+      bearbeitet_am: new Date().toISOString(),
+      anhang_url,
+      anhang_name,
+      anhang_typ
+    });
+    showToast('Veröffentlicht ✓');
+    // ── GHD-EREIGNIS bei wichtigem Eintrag ────────────────────────
+    if (wichtig) {
+      supa('ghd_ereignisse', 'POST', {
+        app: 'Team',
+        typ: 'wichtige_mitteilung',
+        titel: 'Wichtige Mitteilung: ' + titel,
+        prioritaet: 'heute',
+        gelesen: false,
+      }).catch(function(){});
+    }
+    await loadFeed();
+    showFeed();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// EINTRAG BEARBEITEN
+// ═══════════════════════════════════════════
+async function showEdit(id) {
+  _currentEintragId = id;
+  _editAnhangRemove = false;
+  const rows = await supaGet('teamapp_eintraege', `id=eq.${id}`);
+  const e = rows[0];
+  _editArt = e.inhaltsart;
+
+  document.querySelectorAll('#edit-art-btns .typ-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === e.inhaltsart);
+  });
+  document.getElementById('edit-titel').value = e.titel;
+  document.getElementById('edit-inhalt').value = e.inhalt;
+  document.getElementById('edit-char').textContent = e.inhalt.length;
+  document.getElementById('edit-wichtig').checked = e.wichtig;
+
+  // Anhang
+  const nameEl = document.getElementById('edit-anhang-name');
+  const removeEl = document.getElementById('edit-anhang-remove');
+  if (e.anhang_name) {
+    nameEl.textContent = e.anhang_name;
+    nameEl.style.color = 'var(--green)';
+    removeEl.style.display = 'inline-flex';
+  } else {
+    nameEl.textContent = 'Kein Anhang';
+    nameEl.style.color = '';
+    removeEl.style.display = 'none';
+  }
+  document.getElementById('edit-anhang-input').value = '';
+
+  hideErr('edit-art-err'); hideErr('edit-titel-err'); hideErr('edit-inhalt-err');
+  showInnerTab('tab-edit');
+}
+
+function selectEditArt(btn, art) {
+  _editArt = art;
+  document.querySelectorAll('#edit-art-btns .typ-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function removeAnhangEdit() {
+  _editAnhangRemove = true;
+  const nameEl = document.getElementById('edit-anhang-name');
+  nameEl.textContent = 'Kein Anhang';
+  nameEl.style.color = '';
+  document.getElementById('edit-anhang-remove').style.display = 'none';
+  document.getElementById('edit-anhang-input').value = '';
+}
+
+async function doEditSave() {
+  hideErr('edit-art-err'); hideErr('edit-titel-err'); hideErr('edit-inhalt-err');
+  const titel = document.getElementById('edit-titel').value.trim();
+  const inhalt = document.getElementById('edit-inhalt').value.trim();
+  let ok = true;
+  if (!_editArt) { showErr('edit-art-err'); ok = false; }
+  if (!titel) { showErr('edit-titel-err'); ok = false; }
+  if (!inhalt) { showErr('edit-inhalt-err'); ok = false; }
+  if (!ok) return;
+
+  const wichtig = document.getElementById('edit-wichtig').checked;
+  const file = document.getElementById('edit-anhang-input').files[0];
+
+  try {
+    let fields = {
+      inhaltsart: _editArt, titel, inhalt, wichtig,
+      bearbeitet_am: new Date().toISOString()
+    };
+
+    if (file) {
+      const r = await uploadAnhang(file);
+      fields.anhang_url = r.url; fields.anhang_name = r.name; fields.anhang_typ = r.typ;
+    } else if (_editAnhangRemove) {
+      fields.anhang_url = null; fields.anhang_name = null; fields.anhang_typ = null;
+    }
+
+    await supaPatch('teamapp_eintraege', `id=eq.${_currentEintragId}`, fields);
+    showToast('Gespeichert ✓');
+    await loadFeed();
+    await showDetail(_currentEintragId);
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// EINTRAG LÖSCHEN
+// ═══════════════════════════════════════════
+async function doDeleteEintrag() {
+  try {
+    await supaDelete('teamapp_bestaetigungen', `eintrag_id=eq.${_currentEintragId}`);
+    await supaDelete('teamapp_rueckmeldungen', `eintrag_id=eq.${_currentEintragId}`);
+    await supaDelete('teamapp_eintraege', `id=eq.${_currentEintragId}`);
+    closeOverlay('overlay-delete-eintrag');
+    showToast('Eintrag gelöscht');
+    await loadFeed();
+    showFeed();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// ANHANG UPLOAD
+// ═══════════════════════════════════════════
+async function uploadAnhang(file) {
+  const path = `eintraege/${Date.now()}_${file.name}`;
+  const url = `${SUPA_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!r.ok) throw new Error('Upload fehlgeschlagen');
+  return {
+    url: `${SUPA_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`,
+    name: file.name,
+    typ: file.type
+  };
+}
+
+function onAnhangChosen(input, nameElId, removeElId) {
+  const file = input.files[0];
+  const nameEl = document.getElementById(nameElId);
+  const removeEl = document.getElementById(removeElId);
+  if (file) {
+    nameEl.textContent = file.name;
+    nameEl.style.color = 'var(--green)';
+    removeEl.style.display = 'inline-flex';
+  }
+}
+
+function removeAnhang(inputId, nameElId, removeElId) {
+  document.getElementById(inputId).value = '';
+  const nameEl = document.getElementById(nameElId);
+  nameEl.textContent = 'Kein Anhang';
+  nameEl.style.color = '';
+  document.getElementById(removeElId).style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+// TEAM TAB
+// ═══════════════════════════════════════════
+async function renderTeam() {
+  const el = document.getElementById('team-content');
+  el.innerHTML = '<div class="loading-screen"><div class="spinner-dark"></div></div>';
+  try {
+    _persons = await supaGet('teamapp_persons');
+    const aktive = _persons.filter(p => p.aktiv);
+    const inaktive = _persons.filter(p => !p.aktiv);
+
+    let html = '';
+
+    if (_me.rolle === 'inhaberin') {
+      html += `
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary btn-full" onclick="openOverlay('overlay-add-person')">＋ Mitarbeiter:in hinzufügen</button>
+        </div>`;
+    }
+
+    html += `<div class="team-list">`;
+    for (const p of aktive) {
+      html += renderPersonCard(p);
+    }
+    html += `</div>`;
+
+    if (inaktive.length > 0 && _me.rolle === 'inhaberin') {
+      html += `<div class="detail-section-title" style="margin-top:24px">Deaktiviert</div><div class="team-list">`;
+      for (const p of inaktive) html += renderPersonCard(p);
+      html += `</div>`;
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="feed-empty">Fehler beim Laden.</div>`;
+  }
+}
+
+function renderPersonCard(p) {
+  const initial = p.name.charAt(0).toUpperCase();
+  const isMe = p.id === _me.id;
+  const isInhaberin = _me.rolle === 'inhaberin';
+
+  let actions = '';
+  if (isInhaberin && !isMe) {
+    if (p.aktiv) {
+      actions += `<button class="btn btn-secondary btn-sm" onclick="openPinOverlay('${p.id}','${esc(p.name)}')">Passwort setzen</button>`;
+      actions += `<button class="btn btn-danger btn-sm" onclick="openDeactivate('${p.id}','${esc(p.name)}')">Deaktivieren</button>`;
+      actions += `<button class="btn btn-ghost btn-sm" onclick="openDeletePerson('${p.id}','${esc(p.name)}')">🗑</button>`;
+    } else {
+      actions += `<button class="btn btn-secondary btn-sm" onclick="openReactivate('${p.id}','${esc(p.name)}')">Reaktivieren</button>`;
+      actions += `<button class="btn btn-ghost btn-sm" onclick="openDeletePerson('${p.id}','${esc(p.name)}')">🗑</button>`;
+    }
+  }
+
+  return `
+    <div class="team-card">
+      <div class="team-card-header">
+        <div class="avatar">${initial}</div>
+        <div>
+          <div class="team-name">${esc(p.name)}${isMe ? ' (ich)' : ''}</div>
+          <div class="team-rolle">${p.rolle === 'inhaberin' ? 'Inhaberin' : 'Mitarbeiter:in'}${!p.aktiv ? ' · Deaktiviert' : ''}</div>
+        </div>
+      </div>
+      ${actions ? `<div class="team-actions">${actions}</div>` : ''}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// PERSON HINZUFÜGEN
+// ═══════════════════════════════════════════
+async function doAddPerson() {
+  const name = document.getElementById('add-name').value.trim();
+  const pw = document.getElementById('add-pw').value;
+  const email = document.getElementById('add-email').value.trim();
+  hideErr('add-name-err'); hideErr('add-pw-err');
+  let ok = true;
+  if (!name) { showErr('add-name-err'); ok = false; }
+  if (!pw || pw.length < 4) { showErr('add-pw-err'); ok = false; }
+  if (!ok) return;
+
+  try {
+    const id = 'p-' + Date.now();
+    await supaPost('teamapp_persons', {
+      id, name, email: email || null,
+      rolle: 'mitarbeiter',
+      aktiv: true,
+      pw_hash: pw,
+      erstellt_am: new Date().toISOString()
+    });
+
+    // Invite Token erstellen
+    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    await supaPost('teamapp_invites', {
+      token, name, email: email || null,
+      erstellt_am: new Date().toISOString()
+    });
+    const link = `${APP_URL}?invite=${token}`;
+    document.getElementById('add-invite-link').textContent = link;
+    document.getElementById('add-invite-box').style.display = 'block';
+
+    document.getElementById('add-name').value = '';
+    document.getElementById('add-pw').value = '';
+    document.getElementById('add-email').value = '';
+
+    showToast(`${name} hinzugefügt`);
+    await renderTeam();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function copyInviteLink() {
+  const link = document.getElementById('add-invite-link').textContent;
+  navigator.clipboard.writeText(link).then(() => showToast('Link kopiert'));
+}
+
+// ═══════════════════════════════════════════
+// PIN / PASSWORT SETZEN (Inhaberin)
+// ═══════════════════════════════════════════
+function openPinOverlay(personId, name) {
+  _pinTargetId = personId;
+  document.getElementById('pin-sheet-title').textContent = `Passwort für ${name} setzen`;
+  document.getElementById('pin-neu').value = '';
+  document.getElementById('pin-neu2').value = '';
+  hideErr('pin-neu-err'); hideErr('pin-neu2-err');
+  openOverlay('overlay-pin');
+}
+
+async function doPinSave() {
+  const pw = document.getElementById('pin-neu').value;
+  const pw2 = document.getElementById('pin-neu2').value;
+  hideErr('pin-neu-err'); hideErr('pin-neu2-err');
+  let ok = true;
+  if (!pw || pw.length < 8) { showErr('pin-neu-err'); ok = false; }
+  if (pw !== pw2) { showErr('pin-neu2-err'); ok = false; }
+  if (!ok) return;
+  try {
+    await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: pw });
+    closeOverlay('overlay-pin');
+    showToast('Passwort gespeichert ✓');
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// DEAKTIVIEREN / REAKTIVIEREN
+// ═══════════════════════════════════════════
+function openDeactivate(id, name) {
+  _deactivateId = id;
+  document.getElementById('deactivate-title').textContent = `${name} deaktivieren`;
+  openOverlay('overlay-deactivate');
+}
+async function doDeactivate() {
+  try {
+    await supaPatch('teamapp_persons', `id=eq.${_deactivateId}`, { aktiv: false });
+    closeOverlay('overlay-deactivate');
+    showToast('Deaktiviert');
+    await renderTeam();
+  } catch(e) { alert('Fehler: ' + e.message); }
+}
+
+function openReactivate(id, name) {
+  _reactivateId = id;
+  document.getElementById('reactivate-title').textContent = `${name} reaktivieren`;
+  openOverlay('overlay-reactivate');
+}
+async function doReactivate() {
+  try {
+    await supaPatch('teamapp_persons', `id=eq.${_reactivateId}`, { aktiv: true });
+    closeOverlay('overlay-reactivate');
+    showToast('Reaktiviert');
+    await renderTeam();
+  } catch(e) { alert('Fehler: ' + e.message); }
+}
+
+function openDeletePerson(id, name) {
+  _deletePersonId = id;
+  document.getElementById('delete-person-title').textContent = `${name} löschen`;
+  openOverlay('overlay-delete-person');
+}
+async function doDeletePerson() {
+  try {
+    await supaDelete('teamapp_persons', `id=eq.${_deletePersonId}`);
+    closeOverlay('overlay-delete-person');
+    showToast('Gelöscht');
+    await renderTeam();
+  } catch(e) { alert('Fehler: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════
+// PROFIL TAB
+// ═══════════════════════════════════════════
+function renderProfil() {
+  const el = document.getElementById('profil-content');
+  const initial = _me.name.charAt(0).toUpperCase();
+  el.innerHTML = `
+    <div class="profil-card">
+      <div class="avatar profil-avatar">${initial}</div>
+      <div>
+        <div class="profil-name">${esc(_me.name)}</div>
+        <div class="profil-rolle">${_me.rolle === 'inhaberin' ? 'Inhaberin' : 'Mitarbeiter:in'}</div>
+      </div>
+    </div>
+    <div class="settings-list">
+      <button class="settings-item" onclick="openOverlay('overlay-pw')">
+        Passwort ändern <span class="settings-arrow">›</span>
+      </button>
+      <button class="settings-item" style="color:var(--red)" onclick="doLogout()">
+        Abmelden <span class="settings-arrow">›</span>
+      </button>
+    </div>`;
+}
+
+function doLogout() {
+  sessionStorage.removeItem('teamapp_person');
+  _me = null;
+  showScreen('screen-login');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pw').value = '';
+}
+
+// ═══════════════════════════════════════════
+// PASSWORT ÄNDERN
+// ═══════════════════════════════════════════
+async function doChangePw() {
+  const alt = document.getElementById('pw-alt').value;
+  const neu = document.getElementById('pw-neu').value;
+  const neu2 = document.getElementById('pw-neu2').value;
+  hideErr('pw-alt-err'); hideErr('pw-neu-err'); hideErr('pw-neu2-err'); hideErr('pw-general-err');
+  let ok = true;
+  if (!alt) { showErr('pw-alt-err'); ok = false; }
+  if (!neu || neu.length < 4) { showErr('pw-neu-err'); ok = false; }
+  if (neu !== neu2) { showErr('pw-neu2-err'); ok = false; }
+  if (!ok) return;
+
+  try {
+    if (alt !== _me.pw_hash) {
+      showErr('pw-general-err'); return;
+    }
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neu });
+    _me.pw_hash = neu;
+    sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
+    closeOverlay('overlay-pw');
+    showToast('Passwort geändert ✓');
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// OVERLAY HELPERS
+// ═══════════════════════════════════════════
+function openOverlay(id) {
+  document.getElementById(id).classList.add('active');
+}
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// Click outside to close
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => {
+    if (e.target === o) closeOverlay(o.id);
+  });
+});
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('visible'), 2200);
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function kapital(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'Gerade eben';
+  if (diff < 3600000) return Math.floor(diff/60000) + ' Min.';
+  if (diff < 86400000) return Math.floor(diff/3600000) + ' Std.';
+  if (diff < 604800000) return Math.floor(diff/86400000) + ' Tagen';
+  return d.toLocaleDateString('de-AT', { day:'numeric', month:'short' });
+}
+
+function updateCharCount(textarea, countId) {
+  document.getElementById(countId).textContent = textarea.value.length;
+}
+
+function showErr(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('visible');
+}
+function hideErr(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('visible');
+}
+
+// ── PROTOKOLL ──
+var protEintraege = JSON.parse(localStorage.getItem('team-protokoll') || '[]');
+const GHD_URL_PROT = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
+const GHD_KEY_PROT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxOTAyMTIsImV4cCI6MjA1OTc2NjIxMn0.GHkqHB0DaJkV2R80MiIHJFqhU5TJiR5vHH7K0iNLPaY';
+const GHD_H_PROT = { "apikey": GHD_KEY_PROT, "Authorization": "Bearer " + GHD_KEY_PROT, "Content-Type": "application/json", "Prefer": "return=minimal" };
+
+function protSave() {
+  localStorage.setItem('team-protokoll', JSON.stringify(protEintraege));
+}
+
+function protRender() {
+  const list = document.getElementById('prot-list');
+  if (!list) return;
+  if (protEintraege.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:#8E8E93;font-size:14px;">Noch keine Protokolle.</div>';
+    return;
+  }
+  list.innerHTML = protEintraege.slice().reverse().map((p, ri) => {
+    const i = protEintraege.length - 1 - ri;
+    const datum = new Date(p.datum).toLocaleDateString('de-AT', {day:'2-digit',month:'2-digit',year:'numeric'});
+    return '<div style="background:#fff;border-radius:14px;border:1px solid #E5E5EA;padding:14px;margin-bottom:10px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+      + '<div style="font-size:15px;font-weight:700;">' + (p.titel||'Protokoll') + '</div>'
+      + '<div style="display:flex;gap:6px;">'
+      + '<span style="font-size:12px;color:#8E8E93;">' + datum + '</span>'
+      + '<button onclick="protDelete(' + i + ')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#C0392B;padding:0 4px;">×</button>'
+      + '</div></div>'
+      + '<div style="font-size:14px;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">' + p.text + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function protSpeichern() {
+  const titel = (document.getElementById('prot-titel').value || '').trim();
+  const text = (document.getElementById('prot-text').value || '').trim();
+  if (!text) { document.getElementById('prot-text').focus(); return; }
+
+  const eintrag = { titel: titel || 'Protokoll', text, datum: new Date().toISOString() };
+  protEintraege.push(eintrag);
+  protSave();
+
+  document.getElementById('prot-titel').value = '';
+  document.getElementById('prot-text').value = '';
+  protRender();
+
+  // Wörni informieren
+  protWoerniSignal(titel || 'Protokoll');
+}
+
+function protDelete(i) {
+  if (!confirm('Protokoll löschen?')) return;
+  protEintraege.splice(i, 1);
+  protSave();
+  protRender();
+}
+
+async function protWoerniSignal(titel) {
+  // ── GHD-EREIGNIS Protokoll ─────────────────────────────────
+  ghd_upsertEreignis('Team', 'protokoll_neu', 'Neues Besprechungsprotokoll: ' + titel, 'diese-woche');
+  try {
+    const SIGNAL_KEY = 'team-protokoll-neu';
+    const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
+    const existing = await check.json();
+    if (Array.isArray(existing) && existing.length > 0) {
+      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt', {
+        method: 'PATCH', headers: GHD_H_PROT,
+        body: JSON.stringify({ titel: 'Neues Besprechungsprotokoll: ' + titel, geaendert_am: new Date().toISOString() })
+      });
+    } else {
+      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben', {
+        method: 'POST', headers: GHD_H_PROT,
+        body: JSON.stringify({
+          typ: 'team',
+          titel: 'Neues Besprechungsprotokoll: ' + titel,
+          naechster_schritt: 'Team-App öffnen → Protokoll lesen',
+          verantwortlich: 'mirjam',
+          prioritaet: 'diese-woche',
+          status: 'neu',
+          app_kontext: 'team',
+          fach_kontext: 'protokoll',
+          signal_key: SIGNAL_KEY,
+          erstellt_von: 'system',
+          erstellt_am: new Date().toISOString()
+        })
+      });
+    }
+  } catch(e) { console.warn('Wörni Protokoll-Signal fehlgeschlagen:', e); }
+}
+
+// ── PROTOKOLL MIKRO ──
+function protMikroToggle() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Mikrofon nicht verfügbar'); return; }
+  var btn = document.getElementById('prot-mikro-btn');
+  var ta = document.getElementById('prot-text');
+
+  btn.textContent = '🔴';
+  btn.style.background = '#FFE5E5';
+
+  var erk = new SR();
+  erk.lang = 'de-AT';
+  erk.continuous = false;
+  erk.interimResults = false;
+
+  erk.onresult = function(e) {
+    var text = e.results[0][0].transcript;
+    if (ta) ta.value = ta.value ? ta.value + ' ' + text : text;
+  };
+  erk.onend = function() {
+    btn.textContent = '🎤 Weiter diktieren';
+    btn.style.background = '#F2F2F7';
+  };
+  erk.onerror = function() {
+    btn.textContent = '🎤 Diktieren';
+    btn.style.background = '#F2F2F7';
+  };
+  erk.start();
+}
+
+</script>
+</body>
+</html>
