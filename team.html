@@ -1418,6 +1418,17 @@ async function doSendReaktion() {
     });
     closeOverlay('overlay-reaktion');
     showToast('Rückmeldung gesendet');
+    // ── GHD-EREIGNIS bei Frage-Rückmeldung ─────────────────────────
+    if (_reaktionTyp === 'Frage') {
+      const eintragTitel = (_eintraege.find(e => e.id === _currentEintragId) || {}).titel || 'Eintrag';
+      supa('ghd_ereignisse', 'POST', {
+        app: 'Team',
+        typ: 'rueckmeldung_frage',
+        titel: 'Frage vom Team zu: ' + eintragTitel,
+        prioritaet: 'diese-woche',
+        gelesen: false,
+      }).catch(function(){});
+    }
     await showDetail(_currentEintragId);
   } catch(e) {
     alert('Fehler: ' + e.message);
@@ -1467,6 +1478,16 @@ async function doCreateEintrag() {
       anhang_typ
     });
     showToast('Veröffentlicht ✓');
+    // ── GHD-EREIGNIS bei wichtigem Eintrag ────────────────────────
+    if (wichtig) {
+      supa('ghd_ereignisse', 'POST', {
+        app: 'Team',
+        typ: 'wichtige_mitteilung',
+        titel: 'Wichtige Mitteilung: ' + titel,
+        prioritaet: 'heute',
+        gelesen: false,
+      }).catch(function(){});
+    }
     await loadFeed();
     showFeed();
   } catch(e) {
@@ -1999,6 +2020,14 @@ function protDelete(i) {
 }
 
 async function protWoerniSignal(titel) {
+  // ── GHD-EREIGNIS Protokoll ─────────────────────────────────
+  supa('ghd_ereignisse', 'POST', {
+    app: 'Team',
+    typ: 'protokoll_neu',
+    titel: 'Neues Besprechungsprotokoll: ' + titel,
+    prioritaet: 'diese-woche',
+    gelesen: false,
+  }).catch(function(){});
   try {
     const SIGNAL_KEY = 'team-protokoll-neu';
     const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
