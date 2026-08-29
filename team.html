@@ -761,7 +761,7 @@
     <div class="form-group">
       <label for="pw-neu">Neues Passwort</label>
       <input type="password" id="pw-neu" placeholder="">
-      <div class="form-error" id="pw-neu-err">Mindestens 4 Zeichen erforderlich.</div>
+      <div class="form-error" id="pw-neu-err">Mindestens 6 Zeichen erforderlich.</div>
     </div>
     <div class="form-group">
       <label for="pw-neu2">Neues Passwort wiederholen</label>
@@ -807,7 +807,7 @@
     <div class="form-group">
       <label for="add-pw">Passwort festlegen</label>
       <input type="password" id="add-pw" placeholder="">
-      <div class="form-error" id="add-pw-err">Mindestens 4 Zeichen erforderlich.</div>
+      <div class="form-error" id="add-pw-err">Mindestens 6 Zeichen erforderlich.</div>
     </div>
     <div class="form-group">
       <label for="add-email">E-Mail — optional</label>
@@ -871,6 +871,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ═══════════════════════════════════════════
 // SUPABASE CONFIG
@@ -879,29 +880,19 @@ const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
 const STORAGE_BUCKET = 'teamapp-anhaenge';
 const APP_URL = 'https://mirjamwalenta-a11y.github.io/Team/team.html';
-async function ghd_upsertEreignis(app, typ, titel, prioritaet) {
-  try {
-    const _h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
-    const _r = await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse?app=eq.' + encodeURIComponent(app) + '&typ=eq.' + encodeURIComponent(typ) + '&gelesen=eq.false&select=id', { headers: _h });
-    const _ex = await _r.json();
-    if (Array.isArray(_ex) && _ex.length > 0) {
-      await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse?app=eq.' + encodeURIComponent(app) + '&typ=eq.' + encodeURIComponent(typ) + '&gelesen=eq.false',
-        { method: 'PATCH', headers: { ..._h, 'Prefer': 'return=minimal' }, body: JSON.stringify({ titel, prioritaet, erstellt_am: new Date().toISOString() }) });
-    } else {
-      await fetch(SUPA_URL + '/rest/v1/ghd_ereignisse',
-        { method: 'POST', headers: { ..._h, 'Prefer': 'return=minimal' }, body: JSON.stringify({ app, typ, titel, prioritaet, gelesen: false }) });
-    }
-  } catch(e) { console.warn('ghd_upsertEreignis:', e); }
-}
+const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/team-admin';
 
+const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 async function supa(table, method = 'GET', body = null, filter = '') {
+  const { data: { session } } = await sbAuth.auth.getSession();
+  const token = session?.access_token || SUPA_KEY;
   const url = `${SUPA_URL}/rest/v1/${table}${filter ? '?' + filter : ''}`;
   const opts = {
     method,
     headers: {
       'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/json',
       'Prefer': method === 'POST' ? 'return=representation' : (method === 'PATCH' ? 'return=representation' : ''),
     }
@@ -914,6 +905,21 @@ async function supa(table, method = 'GET', body = null, filter = '') {
   }
   const txt = await r.text();
   return txt ? JSON.parse(txt) : null;
+}
+
+// Ruft die team-admin Edge Function auf (Passwort setzen / sperren / entsperren / neu anlegen) —
+// nur die Inhaberin kann das erfolgreich, die Funktion prüft das serverseitig selbst.
+async function teamAdminCall(action, email, password) {
+  const { data: { session } } = await sbAuth.auth.getSession();
+  const token = session?.access_token;
+  const r = await fetch(TEAM_ADMIN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ action, email, password })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Unbekannter Fehler bei ' + action);
+  return data;
 }
 
 async function supaGet(table, filter = '') {
@@ -966,15 +972,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     await handleInvite(token);
     return;
   }
-  // Auto-Login aus sessionStorage
+  // Auto-Login nur wenn wirklich eine gültige Supabase-Session vorhanden ist
+  // (vorher wurde hier nur sessionStorage vertraut, ohne echte Prüfung)
+  const { data: { session } } = await sbAuth.auth.getSession();
   const saved = sessionStorage.getItem('teamapp_person');
-  if (saved) {
+  if (session && saved) {
     try {
       _me = JSON.parse(saved);
       await startApp();
       return;
     } catch(e) {}
   }
+  sessionStorage.removeItem('teamapp_person');
   showScreen('screen-login');
 });
 
@@ -995,12 +1004,13 @@ async function doLogin() {
   btn.disabled = true;
 
   try {
-    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}`);
-    if (!rows || rows.length === 0) {
+    const { error: authErr } = await sbAuth.auth.signInWithPassword({ email, password: pw });
+    if (authErr) {
       showErr('login-general-err');
       return;
     }
-    if (rows[0].pw_hash !== pw) {
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(email)}`);
+    if (!rows || rows.length === 0) {
       showErr('login-general-err');
       return;
     }
@@ -1057,7 +1067,14 @@ async function doOnboarding() {
   if (pw !== pw2) { showErr('ob-pw2-err'); ok = false; }
   if (!ok) return;
   try {
+    // Zuerst mit dem von der Inhaberin vergebenen Anfangspasswort anmelden,
+    // damit wir danach im eigenen Namen das neue Passwort setzen können.
+    const { error: signInErr } = await sbAuth.auth.signInWithPassword({ email: _me.email, password: _me.pw_hash });
+    if (signInErr) { alert('Fehler: Anmeldung mit dem ursprünglichen Passwort fehlgeschlagen. Bitte Mirjam kontaktieren.'); return; }
+    const { error: updErr } = await sbAuth.auth.updateUser({ password: pw });
+    if (updErr) { alert('Fehler: ' + updErr.message); return; }
     await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: pw });
+    _me.pw_hash = pw;
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     // Invite löschen
     await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
@@ -1436,7 +1453,13 @@ async function doSendReaktion() {
     // ── GHD-EREIGNIS bei Frage-Rückmeldung ─────────────────────────
     if (_reaktionTyp === 'Frage') {
       const eintragTitel = (_eintraege.find(e => e.id === _currentEintragId) || {}).titel || 'Eintrag';
-      ghd_upsertEreignis('Team', 'rueckmeldung_frage', 'Frage vom Team zu: ' + eintragTitel, 'diese-woche');
+      supa('ghd_ereignisse', 'POST', {
+        app: 'Team',
+        typ: 'rueckmeldung_frage',
+        titel: 'Frage vom Team zu: ' + eintragTitel,
+        prioritaet: 'diese-woche',
+        gelesen: false,
+      }).catch(function(){});
     }
     await showDetail(_currentEintragId);
   } catch(e) {
@@ -1728,13 +1751,17 @@ async function doAddPerson() {
   hideErr('add-name-err'); hideErr('add-pw-err');
   let ok = true;
   if (!name) { showErr('add-name-err'); ok = false; }
-  if (!pw || pw.length < 4) { showErr('add-pw-err'); ok = false; }
+  if (!pw || pw.length < 6) { showErr('add-pw-err'); ok = false; }
+  if (!email) { alert('Bitte E-Mail eingeben — wird jetzt für den echten Login benötigt.'); ok = false; }
   if (!ok) return;
 
   try {
+    // Echtes Login-Konto anlegen (über die team-admin Funktion, nur die Inhaberin darf das)
+    await teamAdminCall('create_user', email, pw);
+
     const id = 'p-' + Date.now();
     await supaPost('teamapp_persons', {
-      id, name, email: email || null,
+      id, name, email,
       rolle: 'mitarbeiter',
       aktiv: true,
       pw_hash: pw,
@@ -1744,7 +1771,7 @@ async function doAddPerson() {
     // Invite Token erstellen
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
     await supaPost('teamapp_invites', {
-      token, name, email: email || null,
+      token, name, email,
       erstellt_am: new Date().toISOString()
     });
     const link = `${APP_URL}?invite=${token}`;
@@ -1788,6 +1815,11 @@ async function doPinSave() {
   if (pw !== pw2) { showErr('pin-neu2-err'); ok = false; }
   if (!ok) return;
   try {
+    const person = (_persons || []).find(p => p.id === _pinTargetId);
+    if (!person || !person.email) { alert('Für diese Person ist keine E-Mail hinterlegt — Login kann nicht gesetzt werden.'); return; }
+    // Setzt das echte Login-Passwort (legt das Konto an, falls es noch keins gibt —
+    // damit lassen sich auch die bestehenden Personen ohne echtes Konto nachträglich migrieren)
+    await teamAdminCall('set_password', person.email, pw);
     await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: pw });
     closeOverlay('overlay-pin');
     showToast('Passwort gespeichert ✓');
@@ -1807,6 +1839,12 @@ function openDeactivate(id, name) {
 async function doDeactivate() {
   try {
     await supaPatch('teamapp_persons', `id=eq.${_deactivateId}`, { aktiv: false });
+    // Echtes Login zusätzlich sperren (nicht nur die App-Markierung)
+    const person = (_persons || []).find(p => p.id === _deactivateId);
+    if (person && person.email) {
+      try { await teamAdminCall('deactivate', person.email); }
+      catch(e) { console.warn('Login-Sperre fehlgeschlagen:', e.message); }
+    }
     closeOverlay('overlay-deactivate');
     showToast('Deaktiviert');
     await renderTeam();
@@ -1821,6 +1859,12 @@ function openReactivate(id, name) {
 async function doReactivate() {
   try {
     await supaPatch('teamapp_persons', `id=eq.${_reactivateId}`, { aktiv: true });
+    // Echtes Login wieder freischalten
+    const person = (_persons || []).find(p => p.id === _reactivateId);
+    if (person && person.email) {
+      try { await teamAdminCall('reactivate', person.email); }
+      catch(e) { console.warn('Login-Entsperrung fehlgeschlagen:', e.message); }
+    }
     closeOverlay('overlay-reactivate');
     showToast('Reaktiviert');
     await renderTeam();
@@ -1866,6 +1910,7 @@ function renderProfil() {
 }
 
 function doLogout() {
+  sbAuth.auth.signOut();
   sessionStorage.removeItem('teamapp_person');
   _me = null;
   showScreen('screen-login');
@@ -1883,14 +1928,18 @@ async function doChangePw() {
   hideErr('pw-alt-err'); hideErr('pw-neu-err'); hideErr('pw-neu2-err'); hideErr('pw-general-err');
   let ok = true;
   if (!alt) { showErr('pw-alt-err'); ok = false; }
-  if (!neu || neu.length < 4) { showErr('pw-neu-err'); ok = false; }
+  if (!neu || neu.length < 6) { showErr('pw-neu-err'); ok = false; }
   if (neu !== neu2) { showErr('pw-neu2-err'); ok = false; }
   if (!ok) return;
 
   try {
-    if (alt !== _me.pw_hash) {
+    // Aktuelles Passwort über eine echte Anmeldung prüfen (statt Klartextvergleich)
+    const { error: checkErr } = await sbAuth.auth.signInWithPassword({ email: _me.email, password: alt });
+    if (checkErr) {
       showErr('pw-general-err'); return;
     }
+    const { error: updErr } = await sbAuth.auth.updateUser({ password: neu });
+    if (updErr) { alert('Fehler: ' + updErr.message); return; }
     await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neu });
     _me.pw_hash = neu;
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
@@ -2030,7 +2079,13 @@ function protDelete(i) {
 
 async function protWoerniSignal(titel) {
   // ── GHD-EREIGNIS Protokoll ─────────────────────────────────
-  ghd_upsertEreignis('Team', 'protokoll_neu', 'Neues Besprechungsprotokoll: ' + titel, 'diese-woche');
+  supa('ghd_ereignisse', 'POST', {
+    app: 'Team',
+    typ: 'protokoll_neu',
+    titel: 'Neues Besprechungsprotokoll: ' + titel,
+    prioritaet: 'diese-woche',
+    gelesen: false,
+  }).catch(function(){});
   try {
     const SIGNAL_KEY = 'team-protokoll-neu';
     const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
@@ -2091,6 +2146,24 @@ function protMikroToggle() {
   erk.start();
 }
 
+</script>
+<script>
+// ── Wörni / Claude – sicherer Proxy ──
+async function claudeAnfrage(system, userText, maxTokens) {
+  maxTokens = maxTokens || 400;
+  const res = await fetch('https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/rapid-service', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: system,
+      messages: [{ role: 'user', content: userText }]
+    })
+  });
+  const data = await res.json();
+  return data?.content?.[0]?.text || null;
+}
 </script>
 </body>
 </html>
