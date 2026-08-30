@@ -496,6 +496,11 @@
       Mirjam hat dich eingeladen. Bitte leg jetzt dein Passwort fest, damit du dich künftig direkt anmelden kannst.
     </p>
     <div class="form-group">
+      <label for="ob-start-pw">Anfangspasswort (von Mirjam erhalten)</label>
+      <input type="password" id="ob-start-pw" placeholder="">
+      <div class="form-error" id="ob-start-pw-err">Bitte das Anfangspasswort eingeben, das du von Mirjam bekommen hast.</div>
+    </div>
+    <div class="form-group">
       <label for="ob-pw">Neues Passwort</label>
       <input type="password" id="ob-pw" placeholder="">
       <div class="form-error" id="ob-pw-err">Passwort muss mindestens 8 Zeichen haben.</div>
@@ -1059,22 +1064,27 @@ async function handleInvite(token) {
 }
 
 async function doOnboarding() {
+  const startPw = document.getElementById('ob-start-pw').value;
   const pw = document.getElementById('ob-pw').value;
   const pw2 = document.getElementById('ob-pw2').value;
-  hideErr('ob-pw-err'); hideErr('ob-pw2-err');
+  hideErr('ob-start-pw-err'); hideErr('ob-pw-err'); hideErr('ob-pw2-err');
   let ok = true;
+  if (!startPw) { showErr('ob-start-pw-err'); ok = false; }
   if (!pw || pw.length < 8) { showErr('ob-pw-err'); ok = false; }
   if (pw !== pw2) { showErr('ob-pw2-err'); ok = false; }
   if (!ok) return;
   try {
-    // Zuerst mit dem von der Inhaberin vergebenen Anfangspasswort anmelden,
-    // damit wir danach im eigenen Namen das neue Passwort setzen können.
-    const { error: signInErr } = await sbAuth.auth.signInWithPassword({ email: _me.email, password: _me.pw_hash });
-    if (signInErr) { alert('Fehler: Anmeldung mit dem ursprünglichen Passwort fehlgeschlagen. Bitte Mirjam kontaktieren.'); return; }
+    // Zuerst mit dem von der Inhaberin vergebenen Anfangspasswort anmelden (das die Person
+    // selbst eingibt, nicht mehr aus der Datenbank gelesen — dort steht seit der Umstellung
+    // auf echtes Hashen kein verwendbares Klartext-Passwort mehr), damit wir danach im
+    // eigenen Namen das neue Passwort setzen können.
+    const { error: signInErr } = await sbAuth.auth.signInWithPassword({ email: _me.email, password: startPw });
+    if (signInErr) { alert('Fehler: Anmeldung mit dem Anfangspasswort fehlgeschlagen. Bitte Mirjam kontaktieren.'); return; }
     const { error: updErr } = await sbAuth.auth.updateUser({ password: pw });
     if (updErr) { alert('Fehler: ' + updErr.message); return; }
-    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: pw });
-    _me.pw_hash = pw;
+    const pwHash = await hashPw(pw);
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: pwHash });
+    _me.pw_hash = pwHash;
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     // Invite löschen
     await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
@@ -1764,7 +1774,7 @@ async function doAddPerson() {
       id, name, email,
       rolle: 'mitarbeiter',
       aktiv: true,
-      pw_hash: pw,
+      pw_hash: await hashPw(pw),
       erstellt_am: new Date().toISOString()
     });
 
@@ -1820,7 +1830,7 @@ async function doPinSave() {
     // Setzt das echte Login-Passwort (legt das Konto an, falls es noch keins gibt —
     // damit lassen sich auch die bestehenden Personen ohne echtes Konto nachträglich migrieren)
     await teamAdminCall('set_password', person.email, pw);
-    await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: pw });
+    await supaPatch('teamapp_persons', `id=eq.${_pinTargetId}`, { pw_hash: await hashPw(pw) });
     closeOverlay('overlay-pin');
     showToast('Passwort gespeichert ✓');
   } catch(e) {
@@ -1940,8 +1950,9 @@ async function doChangePw() {
     }
     const { error: updErr } = await sbAuth.auth.updateUser({ password: neu });
     if (updErr) { alert('Fehler: ' + updErr.message); return; }
-    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neu });
-    _me.pw_hash = neu;
+    const neuHash = await hashPw(neu);
+    await supaPatch('teamapp_persons', `id=eq.${_me.id}`, { pw_hash: neuHash });
+    _me.pw_hash = neuHash;
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     closeOverlay('overlay-pw');
     showToast('Passwort geändert ✓');
@@ -2151,9 +2162,11 @@ function protMikroToggle() {
 // ── Wörni / Claude – sicherer Proxy ──
 async function claudeAnfrage(system, userText, maxTokens) {
   maxTokens = maxTokens || 400;
-  const res = await fetch('https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/rapid-service', {
+  const { data: sessionData } = await sbAuth.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPA_KEY;
+  const res = await fetch('https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/rapid-function', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
