@@ -155,7 +155,7 @@
   .entry-badge.wichtig { background: #fdf6e3; color: #b7860b; }
   .entry-date { font-size: 12px; color: var(--text-2); margin-left: auto; }
   .entry-title { font-size: 16px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
-  .entry-preview { font-size: 14px; color: var(--text-2); line-height: 1.4; 
+  .entry-preview { font-size: 14px; color: var(--text-2); line-height: 1.4;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .entry-card-bottom {
     padding: 8px 16px;
@@ -885,7 +885,7 @@ const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
 const STORAGE_BUCKET = 'teamapp-anhaenge';
 const APP_URL = 'https://mirjamwalenta-a11y.github.io/Team/team.html';
-const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/team-admin';
+const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/swift-worker';
 
 const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY);
 
@@ -1180,7 +1180,7 @@ function showInnerTab(tabId) {
 async function loadFeed() {
   try {
     _eintraege = await supaGet('teamapp_eintraege', 'order=erstellt_am.desc');
-    _persons = await supaGet('teamapp_persons');
+    _persons = await supaGet('teamapp_persons', _me && _me.rolle==='inhaberin' ? '' : 'select=id,name,rolle,aktiv');
     await renderFeed();
     syncTeamOS();
   } catch(e) {
@@ -1487,6 +1487,7 @@ function selectArt(btn, art) {
 }
 
 async function doCreateEintrag() {
+  if (_me.rolle !== 'inhaberin') return;
   hideErr('create-art-err'); hideErr('create-titel-err'); hideErr('create-inhalt-err');
   const titel = document.getElementById('create-titel').value.trim();
   const inhalt = document.getElementById('create-inhalt').value.trim();
@@ -1507,18 +1508,30 @@ async function doCreateEintrag() {
     }
 
     const id = 'e-' + Date.now();
-    await supaPost('teamapp_eintraege', {
-      id,
-      inhaltsart: _createArt,
-      titel,
-      inhalt,
-      wichtig,
-      erstellt_am: new Date().toISOString(),
-      bearbeitet_am: new Date().toISOString(),
-      anhang_url,
-      anhang_name,
-      anhang_typ
+    // Erstellen läuft jetzt über den Rechte-Gatekeeper (serverseitige Rollenprüfung),
+    // statt direkt per REST auf teamapp_eintraege zu schreiben.
+    const { data: { session } } = await sbAuth.auth.getSession();
+    const gwRes = await fetch(SUPA_URL + '/functions/v1/rechte-gatekeeper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session && session.access_token) },
+      body: JSON.stringify({
+        action: 'create_entry',
+        entry: {
+          id,
+          inhaltsart: _createArt,
+          titel,
+          inhalt,
+          wichtig,
+          erstellt_am: new Date().toISOString(),
+          bearbeitet_am: new Date().toISOString(),
+          anhang_url,
+          anhang_name,
+          anhang_typ
+        }
+      })
     });
+    const gwData = await gwRes.json();
+    if (!gwRes.ok) throw new Error(gwData.error || 'Veröffentlichen fehlgeschlagen');
     showToast('Veröffentlicht ✓');
     // ── GHD-EREIGNIS bei wichtigem Eintrag ────────────────────────
     if (wichtig) {
@@ -1589,6 +1602,7 @@ function removeAnhangEdit() {
 }
 
 async function doEditSave() {
+  if (_me.rolle !== 'inhaberin') return;
   hideErr('edit-art-err'); hideErr('edit-titel-err'); hideErr('edit-inhalt-err');
   const titel = document.getElementById('edit-titel').value.trim();
   const inhalt = document.getElementById('edit-inhalt').value.trim();
@@ -1614,7 +1628,16 @@ async function doEditSave() {
       fields.anhang_url = null; fields.anhang_name = null; fields.anhang_typ = null;
     }
 
-    await supaPatch('teamapp_eintraege', `id=eq.${_currentEintragId}`, fields);
+    // Speichern läuft jetzt über den Rechte-Gatekeeper (serverseitige Rollenprüfung),
+    // statt direkt per REST auf teamapp_eintraege zu schreiben.
+    const { data: { session } } = await sbAuth.auth.getSession();
+    const gwRes = await fetch(SUPA_URL + '/functions/v1/rechte-gatekeeper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session && session.access_token) },
+      body: JSON.stringify({ action: 'update_entry', entry_id: _currentEintragId, fields })
+    });
+    const gwData = await gwRes.json();
+    if (!gwRes.ok) throw new Error(gwData.error || 'Speichern fehlgeschlagen');
     showToast('Gespeichert ✓');
     await loadFeed();
     await showDetail(_currentEintragId);
@@ -1627,10 +1650,19 @@ async function doEditSave() {
 // EINTRAG LÖSCHEN
 // ═══════════════════════════════════════════
 async function doDeleteEintrag() {
+  if (_me.rolle !== 'inhaberin') return;
   try {
-    await supaDelete('teamapp_bestaetigungen', `eintrag_id=eq.${_currentEintragId}`);
-    await supaDelete('teamapp_rueckmeldungen', `eintrag_id=eq.${_currentEintragId}`);
-    await supaDelete('teamapp_eintraege', `id=eq.${_currentEintragId}`);
+    // Löschen läuft jetzt über den Rechte-Gatekeeper (serverseitige Rollenprüfung,
+    // inkl. Löschen der zugehörigen Bestätigungen/Rückmeldungen), statt direkt per
+    // REST auf drei Tabellen zuzugreifen.
+    const { data: { session } } = await sbAuth.auth.getSession();
+    const gwRes = await fetch(SUPA_URL + '/functions/v1/rechte-gatekeeper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session && session.access_token) },
+      body: JSON.stringify({ action: 'delete_entry', entry_id: _currentEintragId })
+    });
+    const gwData = await gwRes.json();
+    if (!gwRes.ok) throw new Error(gwData.error || 'Löschen fehlgeschlagen');
     closeOverlay('overlay-delete-eintrag');
     showToast('Eintrag gelöscht');
     await loadFeed();
@@ -1690,7 +1722,7 @@ async function renderTeam() {
   const el = document.getElementById('team-content');
   el.innerHTML = '<div class="loading-screen"><div class="spinner-dark"></div></div>';
   try {
-    _persons = await supaGet('teamapp_persons');
+    _persons = await supaGet('teamapp_persons', _me && _me.rolle==='inhaberin' ? '' : 'select=id,name,rolle,aktiv');
     const aktive = _persons.filter(p => p.aktiv);
     const inaktive = _persons.filter(p => !p.aktiv);
 
@@ -1755,6 +1787,7 @@ function renderPersonCard(p) {
 // PERSON HINZUFÜGEN
 // ═══════════════════════════════════════════
 async function doAddPerson() {
+  if (_me.rolle !== 'inhaberin') return;
   const name = document.getElementById('add-name').value.trim();
   const pw = document.getElementById('add-pw').value;
   const email = document.getElementById('add-email').value.trim();
@@ -1817,6 +1850,7 @@ function openPinOverlay(personId, name) {
 }
 
 async function doPinSave() {
+  if (_me.rolle !== 'inhaberin') return;
   const pw = document.getElementById('pin-neu').value;
   const pw2 = document.getElementById('pin-neu2').value;
   hideErr('pin-neu-err'); hideErr('pin-neu2-err');
@@ -1847,6 +1881,7 @@ function openDeactivate(id, name) {
   openOverlay('overlay-deactivate');
 }
 async function doDeactivate() {
+  if (_me.rolle !== 'inhaberin') return;
   try {
     await supaPatch('teamapp_persons', `id=eq.${_deactivateId}`, { aktiv: false });
     // Echtes Login zusätzlich sperren (nicht nur die App-Markierung)
@@ -1867,6 +1902,7 @@ function openReactivate(id, name) {
   openOverlay('overlay-reactivate');
 }
 async function doReactivate() {
+  if (_me.rolle !== 'inhaberin') return;
   try {
     await supaPatch('teamapp_persons', `id=eq.${_reactivateId}`, { aktiv: true });
     // Echtes Login wieder freischalten
@@ -1887,8 +1923,16 @@ function openDeletePerson(id, name) {
   openOverlay('overlay-delete-person');
 }
 async function doDeletePerson() {
+  if (_me.rolle !== 'inhaberin') return;
   try {
-    await supaDelete('teamapp_persons', `id=eq.${_deletePersonId}`);
+    const { data: { session } } = await sbAuth.auth.getSession();
+    const gwRes = await fetch(SUPA_URL + '/functions/v1/rechte-gatekeeper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session && session.access_token) },
+      body: JSON.stringify({ action: 'delete_person', person_id: _deletePersonId })
+    });
+    const gwData = await gwRes.json();
+    if (!gwRes.ok) throw new Error(gwData.error || 'Löschen fehlgeschlagen');
     closeOverlay('overlay-delete-person');
     showToast('Gelöscht');
     await renderTeam();
