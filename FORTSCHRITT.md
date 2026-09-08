@@ -85,35 +85,44 @@ erwähnte `esc()`-Funktion abgesichert. Zwei Lücken (lokaler Protokoll-Tab: `p.
 wurden ergänzt — Risiko dort gering, da rein lokal in `localStorage` und nicht mit anderen
 Nutzern geteilt.
 
+## Live durchgeführt, zweiter Teil (mit Mirjam, 08.09.2026, Edge Function + Anthropic)
+
+- [x] `rapid-function` im Supabase-Dashboard deployed (Projekt "Lernquiz" = Hauptprojekt), Code
+      per Copy-Paste im Dashboard-Editor (kein CLI). `ANTHROPIC_API_KEY`-Secret war bereits von
+      früher hinterlegt, kein neues Secret nötig.
+- [x] Getestet per Browser-Console-`fetch` ohne Auth-Token → Antwort
+      `{"error":"Nicht angemeldet"}` — Funktion läuft und lehnt unautorisierte Anfragen korrekt ab.
+- [x] `rapid-service` bewusst NICHT deployed — laut Mirjam nicht in Verwendung, nur
+      `rapid-function` wird gebraucht (von team.html, salon-checklist.html, abwesenheiten.html).
+- [x] Anthropic-Kostenbremse geklärt: Konto läuft auf Prepaid-Guthaben (aktuell 19,05 €) mit
+      **deaktiviertem** Auto-Aufladen — das ist bereits die sicherste Variante, kein zusätzliches
+      Spend-Limit nötig. Bewusst nicht aktiviert (Auto-Aufladen einzuschalten würde die
+      natürliche Kostenbremse aufheben).
+- [x] Beim Setzen der Anthropic-Secrets fiel auf: `WOERNI_SERVICE_EMAIL` und
+      `WOERNI_SERVICE_PASSWORD` liegen bereits als Supabase-Secrets vor — bestätigt, dass Woernis
+      Zugangsdaten für die Telegram-Automatisierung dort (nicht in `auth.users`) verwaltet werden.
+      Grund, warum wir Woernis Passwort in der DB bewusst nicht angefasst haben (siehe oben).
+
 ## NICHT erledigt — noch offen
 
-1. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
-   `rapid-service` sind fertig codiert, aber nicht deployed. Geht auch direkt im
-   Supabase-Dashboard unter "Edge Functions" per Copy-Paste, ohne CLI. `supabase/functions/
-   README.md` hat die Schritte. `rapid-service`s SYSTEM_PROMPTS-Liste ist ein Platzhalter —
-   vor dem Deploy die echten Aufrufer prüfen. Solange nicht deployed, geben die vier
-   `claudeAnfrage()`-Funktionen (Wörni-Proxy) schlicht `null` zurück (kein Absturz, nur keine
-   Antwort) — kein dringender Blocker, aber die KI-Assistenz-Features laufen erst danach.
-2. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
+1. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
    `team-admin` auf), lagen aber in keinem der vier Repos und waren nicht einsehbar. Laut
    Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard oder
    `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
-3. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen (erst relevant, sobald die Edge
-   Functions deployed sind und echt Anthropic-Anfragen durchlaufen).
-4. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
+2. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
    ohne Netzwerkzugriff keine echten SRI-Hashes berechenbar, ein falscher Hash hätte die Seiten
    lahmgelegt. Betroffen: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `unpkg.com`,
    `cdn.tailwindcss.com`. Niedrige Priorität, kann später mit echtem Netzwerkzugriff nachgeholt
    werden.
-5. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
+3. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
    anon-Key des Lager-Projekts ("Belege"). Gleiches Muster wie L1, aber laut
    `CODE-VORSCHLAEGE-AGENT.md` "nicht Teil dieser GHD-Absicherung" — bewusst nicht angefasst.
-6. **`alert('Fehler: '+e.message)`** — viele Stellen v.a. in team.html, geringes Risiko (natives
+4. **`alert('Fehler: '+e.message)`** — viele Stellen v.a. in team.html, geringes Risiko (natives
    Dialogfeld, kein HTML-Kontext), nicht pauschal umgeschrieben.
-7. **Live-Verifikation (Schritt 5 im Runbook, `rlstest.sh`)** — konnte in dieser Session nicht
+5. **Live-Verifikation (Schritt 5 im Runbook, `rlstest.sh`)** — konnte in dieser Session nicht
    ausgeführt werden (kein Terminal/curl-Zugriff bei Mirjam, kein Supabase-MCP hier). Alle
-   Kern-Migrationen sind eingespielt und die Login-/Sync-Tests mit Mirjam waren erfolgreich —
-   ein formeller Abschluss-Scan steht aber noch aus.
+   Kern-Migrationen sind eingespielt und live getestet (Login, Lager-Sync, Edge Function) — ein
+   formeller Abschluss-Scan mit dem Skript steht aber noch aus.
 
 ## Nicht angefasst (bereits sicher / bewusst unverändert)
 
