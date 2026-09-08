@@ -21,6 +21,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   checkliste: "Du bist ein knapper Assistent für eine Salon-Checkliste. Antworte auf Deutsch, maximal 3 Sätze.",
   einkauf:    "Du hilfst beim Sortieren einer Einkaufsliste. Antworte auf Deutsch, nur die bereinigte Liste.",
   team:       "Du bist Wörni, ein knapper Assistent für die Team-App von A Great Hair Day. Antworte auf Deutsch, maximal 4 Sätze.",
+  abwesenheiten: "Du bist Wörni, ein knapper Assistent für die Abwesenheiten-App von A Great Hair Day. Antworte auf Deutsch, maximal 4 Sätze.",
 };
 
 const MODEL = "claude-sonnet-4-6";
