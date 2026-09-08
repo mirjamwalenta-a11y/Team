@@ -16,8 +16,38 @@ aus der Git-Historie wiederhergestellt, siehe erster Commit auf dem Branch.
 
 Diese Session hatte **keinen Netzwerkzugriff** auf `*.supabase.co`, GitHub ausgenommen, und
 **keine** Supabase-CLI/-PAT/-MCP-Anbindung (Schritt 2 aus `00-START-CLAUDE-CODE.md` war nicht
-möglich). Alle DB-Änderungen liegen deshalb als reviewbare `.sql`-Dateien vor, nicht eingespielt.
-Alle Edge Functions liegen als Code vor, nicht deployed.
+möglich). Alle DB-Migrationen wurden deshalb gemeinsam mit Mirjam live im Supabase SQL Editor
+durchgeführt (Chat-geführt, Statement für Statement) — Details siehe "Live durchgeführt" unten.
+Die Edge Functions liegen als fertiger Code vor, sind aber noch **nicht deployed**.
+
+**Projekt-Namen im Dashboard vs. Code:** Die Anzeigenamen im Supabase-Dashboard weichen von den
+technischen Projekt-IDs ab und sind irreführend:
+- Hauptprojekt (`wrxlaltgtgkdomklgrlj`) heißt im Dashboard **"Lernquiz"**
+- Lager-Projekt (`lpuxvvfrrcnbuzafscyk`) heißt im Dashboard **"Belege"**
+- Es gibt daneben kein separates, dritt es Projekt mehr für "Belege"/Belegchecker gefunden —
+  falls es das noch gibt, ist es außerhalb der beiden hier bekannten Projekte.
+
+## Live durchgeführt (mit Mirjam, 08.09.2026, im Supabase SQL Editor)
+
+- [x] `teamapp_persons`: RLS aktiviert (nur `authenticated` liest), `pw_hash`-Spalte gelöscht.
+- [x] Passwörter zurückgesetzt für: Mirjam, Mazen, Hassan, Alina (Login geprüft — funktioniert).
+      **Nicht angefasst:** Testmitarbeiter (`pranz@test.at`, bewusst unverändert laut Mirjam) und
+      Woerni (`woerni-telegram@greathairday.internal`, Bot-Konto für Telegram-Anbindung — Passwort
+      liegt vermutlich zusätzlich in der Bot-Konfiguration, NICHT ändern ohne das dort zu
+      synchronisieren).
+- [x] `teamapp_invites`: `laeuft_ab`-Spalte + RLS (anon liest nur nicht abgelaufene Einladungen).
+- [x] RLS für `ghd_ereignisse`, `ghd_aufgaben`, `ghd_aufgaben_vorlagen`, `ghd_aufgaben_verlauf`,
+      `salon_checks`, `salon_monatszuweisung`, `einkauf_items`, `einkauf_listen`, `einkauf_flex`,
+      `lager_bestellliste` — alle existierten, alle Policies erfolgreich angelegt.
+- [x] `lager_data`: Tabelle im Hauptprojekt angelegt + RLS. Die alte Tabelle im Lager-Projekt
+      (`lpuxvvfrrcnbuzafscyk` / "Belege") war leer (0 Zeilen) — **kein Datenübertrag nötig**.
+      Mirjams aktuelle Lagerbestände lagen/liegen lokal im Browser (localStorage) und wurden
+      nach dem Login erfolgreich neu hochsynchronisiert (von ihr bestätigt: "alles in Ordnung").
+- [x] `abw_team`/`abw_anfragen`/`abw_einstellungen`: RLS + Helper-Funktionen
+      (`abw_current_person_id()`, `abw_is_owner()`) aus den vorbereiteten Dateien im
+      `abwesenheiten-ghd`-Repo eingespielt.
+- [x] `abw_team_scoped`-View (maskiert Urlaubsanspruch/-verbraucht/Eintrittsdatum fremder Zeilen)
+      eingespielt — Frontend fragt bereits gezielt diese View ab, kein Client-Fix mehr nötig.
 
 ## Erledigt (Client-Code, gepusht)
 
@@ -55,49 +85,35 @@ erwähnte `esc()`-Funktion abgesichert. Zwei Lücken (lokaler Protokoll-Tab: `p.
 wurden ergänzt — Risiko dort gering, da rein lokal in `localStorage` und nicht mit anderen
 Nutzern geteilt.
 
-## NICHT erledigt — braucht Supabase-Zugriff (Mensch)
+## NICHT erledigt — noch offen
 
-1. **Migrationen einspielen** (`supabase/migrations/` in diesem Repo, Reihenfolge nach
-   Zeitstempel):
-   - `20260908143643_p0_teamapp_persons.sql` — **zuerst lesen**: der `drop column pw_hash`
-     darf erst nach dem Passwort-Reset laufen (siehe Punkt 2).
-   - `20260908143644_t3_teamapp_invites.sql`
-   - `20260908144000_l0_lager_data_umzug.sql` — enthält den manuellen Datenübertrag aus dem
-     Lager-Projekt (Schritt 2 in der Datei). **Ohne diesen Schritt bleibt der Lager-Sync in
-     Lager_index.html kaputt** (der Client-Fix ist bereits gepusht und erwartet die Tabelle
-     im Hauptprojekt).
-   - `20260908144500_rls_ghd_checkliste_einkauf.sql`
-   - Zusätzlich bereits vorhanden (nicht von mir verändert, aus einer früheren Session):
-     `abwesenheiten-ghd/rls_haertung_abwesenheit.sql` und
-     `abwesenheiten-ghd/rls_haertung_abw_team_spalten.sql` — prüfen, ob diese schon eingespielt
-     sind (Live-Test zeigte `abw_team` bereits als HTTP 401).
-2. **Passwörter zurücksetzen** — die `pw_hash`-Werte in `teamapp_persons` waren im Klartext
-   öffentlich lesbar. Alle betroffenen Supabase-Auth-Passwörter neu setzen, **Mirjam zuerst**.
-3. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
-   `rapid-service` sind fertig codiert, aber nicht deployed. `supabase/functions/README.md`
-   hat die genauen Schritte (Login, Secret setzen, Deploy, Test). `rapid-service`s
-   SYSTEM_PROMPTS-Liste ist ein Platzhalter — vor dem Deploy die echten Aufrufer prüfen.
-4. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
-   `team-admin` auf), lagen aber in keinem der vier Repos und waren für mich nicht einsehbar.
-   Laut Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard
-   oder `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
-5. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.
-6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: ich hatte keinen Netzwerkzugriff, um
-   echte SRI-Hashes zu berechnen oder zu prüfen, ob eine gepinnte Versionsnummer überhaupt
-   existiert. Ein falscher/erfundener Hash hätte die Seiten in Produktion lahmgelegt (Browser
-   blockiert Skripte bei SRI-Mismatch). Aktuell betroffen: `cdn.jsdelivr.net` (supabase-js, alle
-   vier Apps), `cdnjs.cloudflare.com` (xlsx, Lager_index.html), `unpkg.com` (React/ReactDOM/
-   Babel, abwesenheiten.html), `cdn.tailwindcss.com`. Empfehlung: mit echtem Netzwerkzugriff auf
-   exakte Versionen pinnen und Hashes über srihash.org ziehen.
-7. **Live-Verifikation (Schritt 5 im Runbook)** — `bash rlstest.sh`, der Edge-Function-curl-Test
-   und die MCP-Abfragen ("Tabellen ohne RLS" / "Policies mit anon-Zugriff") brauchen echten
-   Supabase-Zugriff. Nach dem Einspielen der Migrationen von einem Menschen oder einer Session
-   mit Supabase-MCP-Zugriff ausführen.
-8. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
-   anon-Key des Lager-Projekts. Gleiches Muster wie L1, aber laut `CODE-VORSCHLAEGE-AGENT.md`
-   "nicht Teil dieser GHD-Absicherung" — bewusst nicht angefasst, hier nur notiert.
-9. **`alert('Fehler: '+e.message)`** — viele Stellen v.a. in team.html, geringes Risiko, nicht
-   pauschal umgeschrieben (siehe oben).
+1. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
+   `rapid-service` sind fertig codiert, aber nicht deployed. Geht auch direkt im
+   Supabase-Dashboard unter "Edge Functions" per Copy-Paste, ohne CLI. `supabase/functions/
+   README.md` hat die Schritte. `rapid-service`s SYSTEM_PROMPTS-Liste ist ein Platzhalter —
+   vor dem Deploy die echten Aufrufer prüfen. Solange nicht deployed, geben die vier
+   `claudeAnfrage()`-Funktionen (Wörni-Proxy) schlicht `null` zurück (kein Absturz, nur keine
+   Antwort) — kein dringender Blocker, aber die KI-Assistenz-Features laufen erst danach.
+2. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
+   `team-admin` auf), lagen aber in keinem der vier Repos und waren nicht einsehbar. Laut
+   Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard oder
+   `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
+3. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen (erst relevant, sobald die Edge
+   Functions deployed sind und echt Anthropic-Anfragen durchlaufen).
+4. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
+   ohne Netzwerkzugriff keine echten SRI-Hashes berechenbar, ein falscher Hash hätte die Seiten
+   lahmgelegt. Betroffen: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `unpkg.com`,
+   `cdn.tailwindcss.com`. Niedrige Priorität, kann später mit echtem Netzwerkzugriff nachgeholt
+   werden.
+5. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
+   anon-Key des Lager-Projekts ("Belege"). Gleiches Muster wie L1, aber laut
+   `CODE-VORSCHLAEGE-AGENT.md` "nicht Teil dieser GHD-Absicherung" — bewusst nicht angefasst.
+6. **`alert('Fehler: '+e.message)`** — viele Stellen v.a. in team.html, geringes Risiko (natives
+   Dialogfeld, kein HTML-Kontext), nicht pauschal umgeschrieben.
+7. **Live-Verifikation (Schritt 5 im Runbook, `rlstest.sh`)** — konnte in dieser Session nicht
+   ausgeführt werden (kein Terminal/curl-Zugriff bei Mirjam, kein Supabase-MCP hier). Alle
+   Kern-Migrationen sind eingespielt und die Login-/Sync-Tests mit Mirjam waren erfolgreich —
+   ein formeller Abschluss-Scan steht aber noch aus.
 
 ## Nicht angefasst (bereits sicher / bewusst unverändert)
 
