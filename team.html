@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co wss://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1398,7 +1399,8 @@ async function showDetail(id) {
 
     body.innerHTML = html;
   } catch(e) {
-    body.innerHTML = `<div class="feed-empty">Fehler beim Laden.<br><small>${e.message}</small></div>`;
+    console.error(e);
+    body.innerHTML = `<div class="feed-empty">Fehler beim Laden. Bitte erneut versuchen.</div>`;
   }
 }
 
@@ -1739,7 +1741,7 @@ function renderPersonCard(p) {
   return `
     <div class="team-card">
       <div class="team-card-header">
-        <div class="avatar">${initial}</div>
+        <div class="avatar">${esc(initial)}</div>
         <div>
           <div class="team-name">${esc(p.name)}${isMe ? ' (ich)' : ''}</div>
           <div class="team-rolle">${p.rolle === 'inhaberin' ? 'Inhaberin' : 'Mitarbeiter:in'}${!p.aktiv ? ' · Deaktiviert' : ''}</div>
@@ -2049,12 +2051,12 @@ function protRender() {
     const datum = new Date(p.datum).toLocaleDateString('de-AT', {day:'2-digit',month:'2-digit',year:'numeric'});
     return '<div style="background:#fff;border-radius:14px;border:1px solid #E5E5EA;padding:14px;margin-bottom:10px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
-      + '<div style="font-size:15px;font-weight:700;">' + (p.titel||'Protokoll') + '</div>'
+      + '<div style="font-size:15px;font-weight:700;">' + esc(p.titel||'Protokoll') + '</div>'
       + '<div style="display:flex;gap:6px;">'
       + '<span style="font-size:12px;color:#8E8E93;">' + datum + '</span>'
       + '<button onclick="protDelete(' + i + ')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#C0392B;padding:0 4px;">×</button>'
       + '</div></div>'
-      + '<div style="font-size:14px;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">' + p.text + '</div>'
+      + '<div style="font-size:14px;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">' + esc(p.text) + '</div>'
       + '</div>';
   }).join('');
 }
