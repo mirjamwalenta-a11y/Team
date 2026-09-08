@@ -105,10 +105,24 @@ Nutzern geteilt.
 
 ## NICHT erledigt — noch offen
 
+0. **⚠️ Neu entdeckt: viele weitere, nie geprüfte Edge Functions.** Beim Nachsehen, ob
+   `rapid-service` existiert (Antwort: nein, gibt's nicht, war nur eine Vermutung aus dem alten
+   Report), fiel auf: Im Hauptprojekt ("Lernquiz") liegen weit mehr Functions als die drei, die
+   der Security-Report je kannte (`rapid-function`, `rapid-service`, `swift-worker`). Gesehen
+   (Liste ging über den sichtbaren Bereich hinaus, evtl. unvollständig):
+   `dynamic-processor`, `mitarbeiter-anziehen`, `process-woerni-aufgabe`, `quick-api`,
+   `quick-task`, `rapid-function`, `rechte-gatekeeper`, `smooth-handler`, `tageslage`,
+   `team-admin`, `telegram-setup-webhook`, `telegram-tageslage` — und vermutlich mehr weiter
+   unten in der Liste (u.a. `swift-worker` selbst war noch nicht sichtbar).
+   **Keine davon wurde auf einen Auth-Check (`auth.getUser()`) geprüft.** Besonders
+   `rechte-gatekeeper` (Name deutet auf Berechtigungsprüfung) und `team-admin` (setzt
+   Passwörter) verdienen als erstes einen Blick. Mirjam wollte das bewusst auf ein andermal
+   verschieben — nicht vergessen, das ist potenziell die größte verbliebene unbekannte Fläche.
 1. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
    `team-admin` auf), lagen aber in keinem der vier Repos und waren nicht einsehbar. Laut
    Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard oder
-   `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
+   `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben. (Siehe
+   auch Punkt 0 — das ist jetzt Teil eines größeren, noch unbekannten Kreises von Functions.)
 2. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
    ohne Netzwerkzugriff keine echten SRI-Hashes berechenbar, ein falscher Hash hätte die Seiten
    lahmgelegt. Betroffen: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `unpkg.com`,
