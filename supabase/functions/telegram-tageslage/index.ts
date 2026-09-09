@@ -31,10 +31,12 @@
 // TELEGRAM_WEBHOOK_SECRET unten), damit nicht irgendwer diese URL beliebig
 // aufrufen kann.
 
-// Weder URL noch Anon-Key stehen fest im Code — beide sind in jedem Supabase-
-// Projekt automatisch als Secret vorhanden (dasselbe Muster wie in rapid-function).
+// SUPABASE_URL ist ein verlässliches Default-Secret (bestätigt funktionsfähig,
+// auch in rapid-function). SUPABASE_ANON_KEY ist es in diesem Projekt NICHT
+// (führte zum Crash, siehe Logs) — deshalb hier als eigenes, benanntes Secret
+// TG_ANON_KEY gesetzt, statt einen ungeprüften Default-Namen zu vermuten.
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
-const SB_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SB_ANON_KEY = Deno.env.get("TG_ANON_KEY")!;
 
 // Secrets — werden in Supabase unter Edge Functions → telegram-tageslage → Secrets gesetzt,
 // stehen NICHT im Code:
