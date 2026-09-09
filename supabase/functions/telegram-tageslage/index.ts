@@ -69,9 +69,11 @@ function zeitkonstantGleich(a: string, b: string): boolean {
 // Die vier festen Phase-1-Trigger. Bewusst NUR diese — kein Freitext-Fallback,
 // keine natürlichsprachlichen Synonyme mehr (das bisherige "was ist heute
 // wichtig"/"was ist kritisch" für Tageslage entfällt damit; siehe Absprache).
-const AUFGABE_MUSTER = /^aufgabe:\s*(.+)$/is;
-const NOTIZ_MUSTER = /^notiz:\s*(.+)$/is;
-const BESPRECHUNG_MUSTER = /^besprechung:\s*(.+)$/is;
+// \s* auch VOR dem Doppelpunkt zugelassen — manche Handy-Tastaturen fügen beim
+// Autokorrigieren automatisch ein Leerzeichen vor Satzzeichen ein.
+const AUFGABE_MUSTER = /^aufgabe\s*:\s*(.+)$/is;
+const NOTIZ_MUSTER = /^notiz\s*:\s*(.+)$/is;
+const BESPRECHUNG_MUSTER = /^besprechung\s*:\s*(.+)$/is;
 
 async function holeServiceToken(): Promise<string> {
   // Meldet den technischen Wörni-Telegram-Nutzer bei Supabase Auth an — genau
@@ -235,6 +237,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const eingabe = text.trim();
+    console.log("telegram-tageslage eingabe:", JSON.stringify(eingabe));
 
     try {
       if (/^tageslage\b/i.test(eingabe)) {
