@@ -156,14 +156,37 @@ Ergebnisse, Code jeweils gelesen (nicht nur Kommentare geglaubt):
       gleicher auth.getUser()+inhaberin-Check wie bei team-admin/rechte-gatekeeper ergänzt.
       Nach dem Deploy von Mirjam bestätigt: funktioniert weiterhin normal.
 
-**Noch zu prüfen (nächstes Mal):** `dynamic-processor`, `quick-api`, `quick-task`,
-`smooth-handler` — Code jeweils noch nicht gelesen. Sehen nach automatisch von Supabase
-vergebenen Platzhalternamen aus (könnten alte/verwaiste Test-Deployments von `rapid-function`
-sein) — trotzdem prüfen, nicht nur vermuten.
+- [x] **`quick-api`** — reiner Supabase-Beispielcode ("Hello World"-Vorlage), keine echten
+      Daten/Secrets involviert, kein Sicherheitsrisiko. Logs leer, aber Mirjam vermutet, das
+      könnte ihre Begrüßung im "Betriebssystem" (internes Dashboard) sein — daher bewusst NICHT
+      gelöscht, nur unklar/harmlos. Bei Gelegenheit klären, keine Eile.
+- [x] **`quick-task`** — identischer offener Anthropic-Proxy wie process-woerni-aufgabe, Logs
+      leer, keine erkennbare Nutzung — **gelöscht**.
+- [x] **`dynamic-processor`** — ebenfalls derselbe offene Anthropic-Proxy, Logs leer, aber
+      Mirjam vermutet, dass er gebraucht wird — **gefixt** (gleicher auth.getUser()-Check wie
+      process-woerni-aufgabe ergänzt, Rest unverändert), nicht gelöscht.
+- [x] **`smooth-handler`** — wieder derselbe offene Anthropic-Proxy, Logs leer, keine
+      Vermutung einer Nutzung — **gelöscht**.
+
+Alle 12 Functions sind damit durchgesehen. Vier praktisch identische, komplett offene
+Anthropic-Proxys wurden gefunden (`process-woerni-aufgabe`, `quick-task`, `dynamic-processor`,
+`smooth-handler`) — vermutlich Iterationen/Duplikate derselben Vorlage über die Zeit, nie mit
+Auth versehen. Zwei davon gefixt (in Verwendung/vermutet), zwei gelöscht (unbenutzt). Zusätzlich
+bei allen behandelten Functions (`rapid-function`, `team-admin`, `rechte-gatekeeper`,
+`process-woerni-aufgabe`, `mitarbeiter-anziehen`, `dynamic-processor`, `tageslage`) die
+Plattform-Einstellung **"Verify JWT" eingeschaltet** als zusätzliche Schutzschicht.
+
+**Empfehlung für die Zukunft:** Beim Anlegen einer neuen Edge Function im Dashboard sofort einen
+aussagekräftigen Namen vergeben und den Login-Check gleich mit einbauen (Vorlage: `team-admin`
+oder `rapid-function` in diesem Repo) — nicht erst später nachrüsten. Auto-generierte Namen wie
+"quick-task"/"smooth-handler" sind ein Hinweis darauf, dass eine Funktion vermutlich vergessen
+und nie aufgeräumt wurde.
 
 ## NICHT erledigt — noch offen
 
-1. **Restliche Edge Functions prüfen** — siehe Liste direkt oberhalb.
+1. **`quick-api` klären** — vermutlich Mirjams Begrüßung im internen "Betriebssystem"-Dashboard,
+   nicht sicherheitsrelevant, aber Zweck nicht abschließend bestätigt. Bei Gelegenheit prüfen,
+   welche Seite diese Function tatsächlich aufruft.
 2. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
    ohne Netzwerkzugriff keine echten SRI-Hashes berechenbar, ein falscher Hash hätte die Seiten
    lahmgelegt. Betroffen: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `unpkg.com`,
