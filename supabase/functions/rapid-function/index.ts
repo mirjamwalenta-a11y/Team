@@ -22,6 +22,13 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   einkauf:    "Du hilfst beim Sortieren einer Einkaufsliste. Antworte auf Deutsch, nur die bereinigte Liste.",
   team:       "Du bist Wörni, ein knapper Assistent für die Team-App von A Great Hair Day. Antworte auf Deutsch, maximal 4 Sätze.",
   abwesenheiten: "Du bist Wörni, ein knapper Assistent für die Abwesenheiten-App von A Great Hair Day. Antworte auf Deutsch, maximal 4 Sätze.",
+  besprechung: "Du strukturierst eine rohe Besprechungsnotiz für A Great Hair Day. " +
+    "Nutze ausschließlich das, was im Text tatsächlich steht — nichts erfinden, nichts hineininterpretieren. " +
+    "Antworte auf Deutsch, ausschließlich in exakt dieser Form, ohne Einleitung und ohne zusätzlichen Text:\n" +
+    "Ziel: <ein Satz>\n" +
+    "Offene Punkte: <Liste oder ein Satz>\n" +
+    "Kritische Fragen: <Liste oder ein Satz>\n" +
+    "Gewünschtes Ergebnis: <ein Satz>",
 };
 
 const MODEL = "claude-sonnet-4-6";
