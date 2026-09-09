@@ -130,17 +130,17 @@ async function legeAufgabeAn(titel: string): Promise<void> {
   if (!res.ok) throw new Error("Aufgabe anlegen fehlgeschlagen: " + (await res.text()));
 }
 
-// ── Notiz: … / Besprechung: … → bestehende Tabelle woerni_aufgaben (schon heute
-// für freie Notizen in apps.html im Einsatz, dort auch angezeigt).
+// ── Notiz: … / Besprechung: … → bestehende Tabelle woerni_aufgaben.
+// Echte Spalten (per information_schema geprüft, nicht nur vermutet):
+// id, app, typ, anlass, status, ergebnis, fehler, erstellt_am, erledigt_am —
+// KEINE "notiz"-Spalte (die gab's im Code an einer Stelle in apps.html, aber
+// nicht in der echten Tabelle; der dortige Insert war also schon vorher tot).
 // status wird bewusst direkt als "erledigt" angelegt (nicht "offen") — eine
 // Notiz ist kein offener KI-Auftrag, der noch bearbeitet werden muss. So bleibt
 // die bestehende "offene Aufträge"-Ansicht in apps.html sauber und vermischt
-// sich nicht mit echten laufenden Wörni-Aufträgen.
-// WICHTIG: Die bestehende Anzeige in apps.html zeigt bei status "erledigt" den
-// Inhalt aus dem Feld `ergebnis` an (nicht `notiz` — das wird dort nur bei
-// status "offen" angezeigt). Damit die Notiz in der bestehenden Ansicht
-// tatsächlich sichtbar ist, füllen wir beide vorhandenen Felder — keine neue
-// Spalte, nur bestehende Felder derselben Tabelle konsistent genutzt.
+// sich nicht mit echten laufenden Wörni-Aufträgen. Der Text steht in `ergebnis`
+// — genau das Feld, das die bestehende Anzeige in apps.html bei status
+// "erledigt" auch tatsächlich ausliest.
 async function legeNotizAn(typ: string, notizText: string): Promise<void> {
   const token = await holeServiceToken();
   const res = await fetch(`${SB_URL}/rest/v1/woerni_aufgaben`, {
@@ -155,7 +155,6 @@ async function legeNotizAn(typ: string, notizText: string): Promise<void> {
       app: "allgemein",
       typ,
       anlass: `telegram_${typ}`,
-      notiz: notizText,
       ergebnis: notizText,
       status: "erledigt",
       erledigt_am: new Date().toISOString(),
