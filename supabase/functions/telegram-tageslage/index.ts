@@ -31,18 +31,26 @@
 // TELEGRAM_WEBHOOK_SECRET unten), damit nicht irgendwer diese URL beliebig
 // aufrufen kann.
 
+// Entfernt alles außerhalb des normalen Text-Bereichs (z. B. unsichtbare
+// Sonderzeichen, die beim Kopieren eines Secrets aus einem Editor/Chat mit
+// reinrutschen können) — ein echter API-Key/JWT besteht ohnehin nur aus
+// Buchstaben, Zahlen, "-", "_" und ".", da geht dadurch nichts verloren.
+function bereinigt(wert: string): string {
+  return wert.replace(/[^\x00-\xFF]/g, "").trim();
+}
+
 // SUPABASE_URL ist ein verlässliches Default-Secret (bestätigt funktionsfähig,
 // auch in rapid-function). SUPABASE_ANON_KEY ist es in diesem Projekt NICHT
 // (führte zum Crash, siehe Logs) — deshalb hier als eigenes, benanntes Secret
 // TG_ANON_KEY gesetzt, statt einen ungeprüften Default-Namen zu vermuten.
-const SB_URL = Deno.env.get("SUPABASE_URL")!;
-const SB_ANON_KEY = Deno.env.get("TG_ANON_KEY")!;
+const SB_URL = bereinigt(Deno.env.get("SUPABASE_URL")!);
+const SB_ANON_KEY = bereinigt(Deno.env.get("TG_ANON_KEY")!);
 
 // Secrets — werden in Supabase unter Edge Functions → telegram-tageslage → Secrets gesetzt,
 // stehen NICHT im Code:
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-const TELEGRAM_WEBHOOK_SECRET = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
-const SERVICE_EMAIL = Deno.env.get("WOERNI_SERVICE_EMAIL")!;
+const TELEGRAM_BOT_TOKEN = bereinigt(Deno.env.get("TELEGRAM_BOT_TOKEN")!);
+const TELEGRAM_WEBHOOK_SECRET = bereinigt(Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!);
+const SERVICE_EMAIL = bereinigt(Deno.env.get("WOERNI_SERVICE_EMAIL")!);
 const SERVICE_PASSWORD = Deno.env.get("WOERNI_SERVICE_PASSWORD")!;
 
 // Zeitkonstanter String-Vergleich fürs Webhook-Secret — verhindert, dass ein
