@@ -149,11 +149,17 @@ Ergebnisse, Code jeweils gelesen (nicht nur Kommentare geglaubt):
       dann braucht der eigentliche Aufrufer vermutlich noch einen echten Supabase-Token, den er
       bisher nicht mitgeschickt hat.
 
-**Noch zu prüfen (nächstes Mal):** `dynamic-processor`, `mitarbeiter-anziehen`, `quick-api`,
-`quick-task`, `smooth-handler` — Code jeweils noch nicht gelesen. Die vier generisch benannten
-(`dynamic-processor`, `quick-api`, `quick-task`, `smooth-handler`) sehen nach automatisch von
-Supabase vergebenen Platzhalternamen aus (könnten alte/verwaiste Test-Deployments von
-`rapid-function` sein) — trotzdem prüfen, nicht nur vermuten.
+- [x] **`mitarbeiter-anziehen`** — auch ungeschützt: liest interne Team-Beobachtungen
+      (`ghd_team_beobachtungen`, per Service-Role-Key) und lässt sie von Claude für
+      Recruiting-Content zusammenfassen — ohne Auth hätte jeder im Internet indirekt sehen
+      können, was intern über Mitarbeiter:innen notiert wird, plus Kostenrisiko. **Gefixt**:
+      gleicher auth.getUser()+inhaberin-Check wie bei team-admin/rechte-gatekeeper ergänzt.
+      Nach dem Deploy von Mirjam bestätigt: funktioniert weiterhin normal.
+
+**Noch zu prüfen (nächstes Mal):** `dynamic-processor`, `quick-api`, `quick-task`,
+`smooth-handler` — Code jeweils noch nicht gelesen. Sehen nach automatisch von Supabase
+vergebenen Platzhalternamen aus (könnten alte/verwaiste Test-Deployments von `rapid-function`
+sein) — trotzdem prüfen, nicht nur vermuten.
 
 ## NICHT erledigt — noch offen
 
