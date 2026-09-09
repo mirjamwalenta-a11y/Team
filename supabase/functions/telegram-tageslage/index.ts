@@ -104,7 +104,16 @@ async function legeAufgabeAn(titel: string): Promise<void> {
 }
 
 // ── Notiz: … / Besprechung: … → bestehende Tabelle woerni_aufgaben (schon heute
-// für freie Notizen in apps.html im Einsatz, dort auch angezeigt) ──
+// für freie Notizen in apps.html im Einsatz, dort auch angezeigt).
+// status wird bewusst direkt als "erledigt" angelegt (nicht "offen") — eine
+// Notiz ist kein offener KI-Auftrag, der noch bearbeitet werden muss. So bleibt
+// die bestehende "offene Aufträge"-Ansicht in apps.html sauber und vermischt
+// sich nicht mit echten laufenden Wörni-Aufträgen.
+// WICHTIG: Die bestehende Anzeige in apps.html zeigt bei status "erledigt" den
+// Inhalt aus dem Feld `ergebnis` an (nicht `notiz` — das wird dort nur bei
+// status "offen" angezeigt). Damit die Notiz in der bestehenden Ansicht
+// tatsächlich sichtbar ist, füllen wir beide vorhandenen Felder — keine neue
+// Spalte, nur bestehende Felder derselben Tabelle konsistent genutzt.
 async function legeNotizAn(typ: string, notizText: string): Promise<void> {
   const token = await holeServiceToken();
   const res = await fetch(`${SB_URL}/rest/v1/woerni_aufgaben`, {
@@ -120,7 +129,9 @@ async function legeNotizAn(typ: string, notizText: string): Promise<void> {
       typ,
       anlass: `telegram_${typ}`,
       notiz: notizText,
-      status: "offen",
+      ergebnis: notizText,
+      status: "erledigt",
+      erledigt_am: new Date().toISOString(),
     }),
   });
   if (!res.ok) throw new Error("Notiz speichern fehlgeschlagen: " + (await res.text()));
