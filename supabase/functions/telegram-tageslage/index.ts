@@ -31,8 +31,10 @@
 // TELEGRAM_WEBHOOK_SECRET unten), damit nicht irgendwer diese URL beliebig
 // aufrufen kann.
 
-const SB_URL = "https://wrxlaltgtgkdomklgrlj.supabase.co";
-const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g";
+// Weder URL noch Anon-Key stehen fest im Code — beide sind in jedem Supabase-
+// Projekt automatisch als Secret vorhanden (dasselbe Muster wie in rapid-function).
+const SB_URL = Deno.env.get("SUPABASE_URL")!;
+const SB_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Secrets — werden in Supabase unter Edge Functions → telegram-tageslage → Secrets gesetzt,
 // stehen NICHT im Code:
@@ -40,6 +42,19 @@ const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const TELEGRAM_WEBHOOK_SECRET = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
 const SERVICE_EMAIL = Deno.env.get("WOERNI_SERVICE_EMAIL")!;
 const SERVICE_PASSWORD = Deno.env.get("WOERNI_SERVICE_PASSWORD")!;
+
+// Zeitkonstanter String-Vergleich fürs Webhook-Secret — verhindert, dass ein
+// Angreifer das Secret zeichenweise über Antwortzeit-Unterschiede erraten
+// könnte (rein theoretisches Risiko bei einem einfachen "!==", aber die
+// Absicherung dafür ist trivial billig, also machen wir sie sauber).
+function zeitkonstantGleich(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let unterschied = 0;
+  for (let i = 0; i < a.length; i++) {
+    unterschied |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return unterschied === 0;
+}
 
 // Die vier festen Phase-1-Trigger. Bewusst NUR diese — kein Freitext-Fallback,
 // keine natürlichsprachlichen Synonyme mehr (das bisherige "was ist heute
@@ -187,10 +202,14 @@ const BEFEHLSUEBERSICHT =
   "Besprechung: <Rohtext> — Besprechungsvorbereitung erstellen";
 
 Deno.serve(async (req: Request) => {
-  // Telegrams eigenes Webhook-Secret prüfen — verhindert, dass fremde Aufrufer
-  // diese URL direkt ansprechen (Ersatz für die hier fehlende JWT-Prüfung).
+  // Eintrittspfad: nur POST, nur mit gültigem, tatsächlich gesetztem Secret,
+  // zeitkonstant verglichen. Alles andere wird sofort und ohne weitere
+  // Verarbeitung abgelehnt (Ersatz für die hier bewusst fehlende JWT-Prüfung).
+  if (req.method !== "POST") {
+    return new Response("method not allowed", { status: 405 });
+  }
   const secretHeader = req.headers.get("x-telegram-bot-api-secret-token");
-  if (secretHeader !== TELEGRAM_WEBHOOK_SECRET) {
+  if (!TELEGRAM_WEBHOOK_SECRET || !secretHeader || !zeitkonstantGleich(secretHeader, TELEGRAM_WEBHOOK_SECRET)) {
     return new Response("unauthorized", { status: 401 });
   }
 
