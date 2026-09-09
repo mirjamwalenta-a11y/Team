@@ -1,8 +1,9 @@
 # Fortschritt — Security-Hardening Great Hair Day Apps
 
-Stand: 2026-09-08. Bearbeitet nach `FIX-ANLEITUNG-AGENT.md` / `CODE-VORSCHLAEGE-AGENT.md` /
-`00-START-CLAUDE-CODE.md`. **Wichtige Abweichung vom Runbook:** Die vier Apps liegen nicht als
-Ordner in einem Repo, sondern in vier getrennten GitHub-Repos:
+Stand: 2026-09-08/09. Bearbeitet nach `FIX-ANLEITUNG-AGENT.md` / `CODE-VORSCHLAEGE-AGENT.md` /
+`00-START-CLAUDE-CODE.md`, plus am 09.09. ein separater Feature-Patch (Wörni Telegram Phase 1,
+siehe eigener Abschnitt ganz unten). **Wichtige Abweichung vom Runbook:** Die vier Apps liegen
+nicht als Ordner in einem Repo, sondern in vier getrennten GitHub-Repos:
 
 | App | Repo | Branch |
 |---|---|---|
@@ -214,3 +215,57 @@ und nie aufgeräumt wurde.
 Kann von dieser Session aus nicht abschließend bestätigt werden (kein Supabase-Zugriff). Nach
 Erledigung der Punkte oben: `bash rlstest.sh` laufen lassen und gegen die Ziel-Ausgabe in
 `FIX-ANLEITUNG-AGENT.md` prüfen.
+
+---
+
+## Feature-Patch: Wörni Telegram Phase 1 (09.09.2026)
+
+Separater Auftrag, Patch-Modus mit striktem Scope: Telegram als reiner Bedienkanal für
+denselben Wörni, keine zweite Logik/Datenwelt. Vier feste Befehle in `telegram-tageslage`
+(Team-Repo, `supabase/functions/telegram-tageslage/`), alle docken an bestehende Strukturen
+im Hauptprojekt ("Lernquiz") an:
+
+- **Tageslage** → bestehender Endpunkt `tageslage`, unverändert.
+- **Aufgabe: …** → INSERT in `ghd_aufgaben` (dieselbe Tabelle, die `tageslage` liest).
+- **Notiz: Titel | Inhalt** → INSERT in `woerni_aufgaben` (Text im Feld `ergebnis`,
+  `status:"erledigt"` direkt beim Anlegen, damit es sich nicht mit offenen KI-Aufträgen
+  vermischt — bewusste Entscheidung von Mirjam).
+- **Besprechung: …** → Rohtext über `rapid-function` (neuer zweck `besprechung`) in
+  Ziel/Offene Punkte/Kritische Fragen/Gewünschtes Ergebnis strukturieren lassen, Ergebnis
+  ebenfalls als Zeile in `woerni_aufgaben`.
+- Alles außerhalb der vier Trigger: kurze Befehlsübersicht, kein freier Chat.
+- Alle vier Befehle legen nur neu an (POST) — nichts Bestehendes wird je verändert.
+
+**Alle 5 Tests (4 positiv + 1 Negativtest) am 09.09. erfolgreich durchlaufen.**
+
+### Unterwegs gefundene und behobene Bugs (fünf, nacheinander)
+
+1. `Deno.env.get("SUPABASE_ANON_KEY")` existiert in diesem Projekt nicht als Default-Secret
+   (crashte beim rohen Header-Aufbau) — eigenes Secret `TG_ANON_KEY` angelegt.
+2. Trotz korrektem Secret weiterhin "not a valid ByteString" — ein beim Kopieren
+   reingerutschtes unsichtbares Sonderzeichen im Secret-Wert. Fix: alle in Headern verwendeten
+   Secrets laufen jetzt durch eine `bereinigt()`-Funktion (entfernt alles außerhalb des
+   Latin-1-Bereichs + trim).
+3. "Invalid API key" — der erste `TG_ANON_KEY`-Wert war (vermutlich beim Kopieren aus dem
+   Chat) unbemerkt verfälscht; nach frischem Kopieren direkt aus Project Settings → API Keys
+   behoben.
+4. "Aufgabe: …" wurde nicht erkannt (fiel auf die Befehlsübersicht zurück) — vermutlich fügt
+   die Handy-Tastatur beim Autokorrigieren ein Leerzeichen vor dem Doppelpunkt ein. Die drei
+   Trigger-Muster erlauben jetzt `\s*` auch vor dem Doppelpunkt.
+5. "Notiz: …" schlug zweimal fehl: erst `PGRST204` (Spalte `notiz` existiert in
+   `woerni_aufgaben` gar nicht — der ursprüngliche Fund aus `apps.html`-Code war ein bereits
+   vorher toter Insert-Pfad, nie eine echte Spalte), dann RLS-Fehler `42501` ("Nur Boss"-Policy
+   ließ nur Mirjams eigenes Konto zu). Fixe: `notiz`-Feld aus dem Insert entfernt (nur noch
+   `ergebnis`), plus eine eng begrenzte Zusatz-Policy nur für das Wörni-Telegram-Service-Konto
+   (`auth.uid() = '6d4fccff-72ff-49f6-b4dc-20fdc80ad5dd'`), **nur für INSERT** — lesen/ändern/
+   löschen bleibt exklusiv "Nur Boss". Migration bisher nur live im SQL Editor ausgeführt, noch
+   nicht als Datei im Repo nachgezogen (siehe offener Punkt unten).
+
+### Noch offen aus diesem Patch
+
+- Die RLS-Zusatzpolicy für `woerni_aufgaben` (Punkt 5 oben) als `.sql`-Datei im Team-Repo
+  nachtragen (bisher nur live ausgeführt, nicht versioniert).
+- Das Debug-Log `console.log("telegram-tageslage eingabe:", ...)` ist noch aktiv — kann bei
+  Gelegenheit wieder entfernt werden, sobald sich die Erkennung als stabil erwiesen hat.
+- `rapid-service`-Frage von gestern ist geklärt: existiert nicht, war nur eine falsche Annahme
+  aus dem alten Security-Report.
