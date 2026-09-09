@@ -103,26 +103,61 @@ Nutzern geteilt.
       Zugangsdaten für die Telegram-Automatisierung dort (nicht in `auth.users`) verwaltet werden.
       Grund, warum wir Woernis Passwort in der DB bewusst nicht angefasst haben (siehe oben).
 
+## Edge-Function-Vollaudit (09.09.2026, mit Mirjam, alle im Hauptprojekt "Lernquiz")
+
+Vollständige Liste der 12 Functions dort (`swift-worker` existiert NICHT (mehr), war nur eine
+falsche Annahme im alten Report): `dynamic-processor`, `mitarbeiter-anziehen`,
+`process-woerni-aufgabe`, `quick-api`, `quick-task`, `rapid-function`, `rechte-gatekeeper`,
+`smooth-handler`, `tageslage`, `team-admin`, `telegram-setup-webhook` (gelöscht, s.u.),
+`telegram-tageslage`.
+
+Ergebnisse, Code jeweils gelesen (nicht nur Kommentare geglaubt):
+
+- [x] **`team-admin`** — sauber: echter `auth.getUser()`-Check + serverseitige Rollenprüfung
+      (`inhaberin`) vor jeder Aktion (create_user/set_password/deactivate/reactivate).
+- [x] **`rechte-gatekeeper`** — sauber, sogar vorbildlich: feste Positivliste erlaubter
+      Aktionen (delete_person/create_entry/update_entry/delete_entry) + derselbe
+      Auth+Rollen-Check wie team-admin.
+- [x] **`telegram-setup-webhook`** — **war komplett ungeschützt** (keinerlei Auth-Check) und
+      hat bei jedem Aufruf Teile des Telegram-Bot-Tokens verraten (Länge + erste/letzte 4
+      Zeichen) sowie Bot-Status-Infos, öffentlich für jeden im Internet. War laut eigenem
+      Code-Kommentar ohnehin nur ein einmaliges Einrichtungs-Werkzeug ("kann danach gelöscht
+      werden") — **gelöscht**. Telegram-Bot funktioniert unverändert weiter (Webhook war schon
+      gesetzt).
+- [x] **`telegram-tageslage`** — sauber: prüft Telegrams eigenes Webhook-Secret
+      (`x-telegram-bot-api-secret-token`), reagiert nur auf 3 feste Trigger-Sätze, meldet sich
+      für die eigentliche Datenabfrage über ein Service-Konto sauber bei Supabase an (kein
+      Sonderweg). "Verify JWT" bleibt hier bewusst AUS (Telegram kann keinen Supabase-Token
+      mitschicken) — durch den Secret-Check trotzdem geschützt.
+- [x] **`tageslage`** — Code prüft nur, dass ein Authorization-Header *vorhanden* ist, nicht ob
+      er *gültig* ist; verlässt sich auf zwei externe Schutzschichten: Plattform-JWT-Verifikation
+      (Supabase-Einstellung) + RLS auf `ghd_aufgaben`. Die Plattform-Einstellung **"Verify JWT"
+      war ausgeschaltet** (Abweichung vom eigenen Code-Kommentar "nicht ausschalten") — **wieder
+      eingeschaltet**. RLS auf `ghd_aufgaben` war ohnehin bereits aktiv (siehe oben), hätte im
+      Ernstfall auch ohne die Plattform-Prüfung ungültige Tokens abgelehnt — praktisches Risiko
+      war dadurch begrenzt, aber die fehlende erste Schutzschicht war trotzdem ein echter Fund.
+- [x] **`process-woerni-aufgabe`** — 🔴 **schwerwiegendster Fund**: überhaupt keine Absicherung,
+      kompletter Anfrage-Body wurde 1:1 unverändert an die Anthropic-API durchgereicht. Jeder im
+      Internet hätte auf Mirjams Anthropic-Guthaben beliebige, auch teure Modelle/Anfragen
+      auslösen können (Modell, Textlänge, alles frei wählbar von außen) — praktisch ein offener
+      Zugang zu ihrem API-Guthaben, nur durch das ohnehin fehlende Auto-Aufladen (19€ Deckel)
+      begrenzt. Wird laut Mirjam noch gebraucht (genauer Aufrufer nicht bekannt, Logs leer) —
+      **gefixt**: derselbe `auth.getUser()`-Check wie bei team-admin/rechte-gatekeeper/
+      rapid-function ergänzt, Rest der Funktion (Body wird weiterhin 1:1 durchgereicht)
+      unverändert gelassen, um nichts Bestehendes zu brechen. **Falls in den nächsten Tagen
+      irgendein automatischer Wörni-Ablauf nicht mehr funktioniert, hier zuerst nachschauen** —
+      dann braucht der eigentliche Aufrufer vermutlich noch einen echten Supabase-Token, den er
+      bisher nicht mitgeschickt hat.
+
+**Noch zu prüfen (nächstes Mal):** `dynamic-processor`, `mitarbeiter-anziehen`, `quick-api`,
+`quick-task`, `smooth-handler` — Code jeweils noch nicht gelesen. Die vier generisch benannten
+(`dynamic-processor`, `quick-api`, `quick-task`, `smooth-handler`) sehen nach automatisch von
+Supabase vergebenen Platzhalternamen aus (könnten alte/verwaiste Test-Deployments von
+`rapid-function` sein) — trotzdem prüfen, nicht nur vermuten.
+
 ## NICHT erledigt — noch offen
 
-0. **⚠️ Neu entdeckt: viele weitere, nie geprüfte Edge Functions.** Beim Nachsehen, ob
-   `rapid-service` existiert (Antwort: nein, gibt's nicht, war nur eine Vermutung aus dem alten
-   Report), fiel auf: Im Hauptprojekt ("Lernquiz") liegen weit mehr Functions als die drei, die
-   der Security-Report je kannte (`rapid-function`, `rapid-service`, `swift-worker`). Gesehen
-   (Liste ging über den sichtbaren Bereich hinaus, evtl. unvollständig):
-   `dynamic-processor`, `mitarbeiter-anziehen`, `process-woerni-aufgabe`, `quick-api`,
-   `quick-task`, `rapid-function`, `rechte-gatekeeper`, `smooth-handler`, `tageslage`,
-   `team-admin`, `telegram-setup-webhook`, `telegram-tageslage` — und vermutlich mehr weiter
-   unten in der Liste (u.a. `swift-worker` selbst war noch nicht sichtbar).
-   **Keine davon wurde auf einen Auth-Check (`auth.getUser()`) geprüft.** Besonders
-   `rechte-gatekeeper` (Name deutet auf Berechtigungsprüfung) und `team-admin` (setzt
-   Passwörter) verdienen als erstes einen Blick. Mirjam wollte das bewusst auf ein andermal
-   verschieben — nicht vergessen, das ist potenziell die größte verbliebene unbekannte Fläche.
-1. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
-   `team-admin` auf), lagen aber in keinem der vier Repos und waren nicht einsehbar. Laut
-   Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard oder
-   `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben. (Siehe
-   auch Punkt 0 — das ist jetzt Teil eines größeren, noch unbekannten Kreises von Functions.)
+1. **Restliche Edge Functions prüfen** — siehe Liste direkt oberhalb.
 2. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht, siehe Begründung im Commit-Verlauf:
    ohne Netzwerkzugriff keine echten SRI-Hashes berechenbar, ein falscher Hash hätte die Seiten
    lahmgelegt. Betroffen: `cdn.jsdelivr.net`, `cdnjs.cloudflare.com`, `unpkg.com`,
