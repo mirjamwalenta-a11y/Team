@@ -1,0 +1,27 @@
+name: Deploy team-admin Edge Function
+
+# Läuft automatisch bei jeder Änderung an der Funktion auf dem Branch "mai"
+# (dem veröffentlichten Stand), und lässt sich zusätzlich manuell anstoßen.
+# Ersetzt das fehleranfällige manuelle Copy-Paste im Supabase-Dashboard:
+# der Code wird 1:1 aus diesem Repo deployed, kein Abtippen mehr nötig.
+on:
+  push:
+    branches: [mai]
+    paths:
+      - "supabase/functions/team-admin/**"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy team-admin
+        run: supabase functions deploy team-admin --project-ref wrxlaltgtgkdomklgrlj
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
