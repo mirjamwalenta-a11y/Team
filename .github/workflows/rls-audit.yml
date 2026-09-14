@@ -1,0 +1,109 @@
+name: RLS-Sicherheitscheck
+
+# Prüft automatisch (wöchentlich + bei jedem Push), ob im public-Schema
+# der Datenbank Tabellen ohne Row Level Security (RLS) existieren.
+# Genau dieser Fehler (fehlende RLS bei salon_personen) führte am
+# 2026-09-14 dazu, dass PIN-Hashes aller Mitarbeiterinnen und der Chefin
+# öffentlich über den anon-Key lesbar waren. Dieser Check soll verhindern,
+# dass sowas unbemerkt bleibt, statt erst durch einen Live-Fund entdeckt
+# zu werden.
+#
+# Einmaliges Setup (durch einen Menschen, nicht durch Claude):
+#   Repo-Settings -> Secrets and variables -> Actions -> New repository
+#   secret -> Name: SUPABASE_DB_URL -> Wert: die Postgres-Connection-
+#   String aus dem Supabase-Dashboard (Project Settings -> Database ->
+#   Connection string -> URI). Dieses Secret bleibt in GitHub, niemand
+#   (auch keine Claude-Session) sieht den Wert im Klartext.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # jeden Montag 06:00 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [ main, mai ]
+
+permissions:
+  issues: write
+
+jobs:
+  rls-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Secret vorhanden?
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::warning::SUPABASE_DB_URL ist nicht gesetzt — der RLS-Check kann nicht laufen. Siehe Kommentar oben in dieser Datei für das einmalige Setup."
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+        id: secret_check
+
+      - name: PostgreSQL-Client installieren
+        if: steps.secret_check.outputs.ok == 'true'
+        run: sudo apt-get update -y && sudo apt-get install -y postgresql-client
+
+      - name: Tabellen ohne RLS im public-Schema finden
+        if: steps.secret_check.outputs.ok == 'true'
+        run: |
+          UNPROTECTED=$(psql "${{ secrets.SUPABASE_DB_URL }}" -t -A -c "
+            select relname
+            from pg_class
+            join pg_namespace n on n.oid = pg_class.relnamespace
+            where n.nspname = 'public'
+              and relkind = 'r'
+              and relrowsecurity = false
+            order by relname;
+          ")
+          if [ -n "$UNPROTECTED" ]; then
+            echo "Tabellen ohne RLS gefunden:"
+            echo "$UNPROTECTED"
+            {
+              echo "UNPROTECTED<<EOF"
+              echo "$UNPROTECTED"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+            exit 1
+          else
+            echo "Alle Tabellen im public-Schema haben RLS aktiviert."
+          fi
+
+      - name: Issue anlegen, wenn ungeschützte Tabellen gefunden wurden
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              'Der automatische RLS-Check hat Tabellen **ohne Row Level Security** gefunden:',
+              '',
+              '```',
+              process.env.UNPROTECTED || '(siehe Workflow-Log)',
+              '```',
+              '',
+              'Das bedeutet: Diese Tabellen sind aktuell über den öffentlichen anon-Key',
+              'lesbar/schreibbar, wenn eine App sie verwendet. Bitte vor Live-Nutzung',
+              'absichern (siehe `supabase/migrations/` für Beispiele aus früheren Fixes).',
+            ].join('\n');
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security-rls-audit',
+            });
+
+            if (existing.length > 0) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔴 RLS-Sicherheitscheck: ungeschützte Tabelle(n) gefunden',
+                body,
+                labels: ['security-rls-audit'],
+              });
+            }
