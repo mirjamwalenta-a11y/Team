@@ -1083,8 +1083,10 @@ async function doOnboarding() {
     const { error: updErr } = await sbAuth.auth.updateUser({ password: pw });
     if (updErr) { alert('Fehler: ' + updErr.message); return; }
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
-    // Invite löschen
-    await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
+    // Invite löschen (best effort — ein Fehlschlag hier darf den Abschluss nicht blockieren)
+    try {
+      await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
+    } catch(e) { console.warn('Invite-Cleanup fehlgeschlagen:', e.message); }
     await startApp();
   } catch(e) {
     alert('Fehler: ' + e.message);
@@ -1116,10 +1118,12 @@ function showScreen(id) {
   }
 }
 
+const ALL_TABS = ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'];
+
 function switchTab(tab) {
   _currentTab = tab;
   // Alle Tabs im main verstecken
-  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'].forEach(t => {
+  ALL_TABS.forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   // Nav aktualisieren
@@ -1164,7 +1168,7 @@ function showCreate() {
 }
 
 function showInnerTab(tabId) {
-  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil'].forEach(t => {
+  ALL_TABS.forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   document.getElementById(tabId).classList.add('active');
@@ -1467,7 +1471,7 @@ async function doSendReaktion() {
         titel: 'Frage vom Team zu: ' + eintragTitel,
         prioritaet: 'diese-woche',
         gelesen: false,
-      }).catch(function(){});
+      }).catch(function(e){ console.warn('GHD-Ereignis (rueckmeldung_frage) fehlgeschlagen:', e.message); });
     }
     await showDetail(_currentEintragId);
   } catch(e) {
@@ -1526,7 +1530,7 @@ async function doCreateEintrag() {
         titel: 'Wichtige Mitteilung: ' + titel,
         prioritaet: 'heute',
         gelesen: false,
-      }).catch(function(){});
+      }).catch(function(e){ console.warn('GHD-Ereignis (wichtige_mitteilung) fehlgeschlagen:', e.message); });
     }
     await loadFeed();
     showFeed();
@@ -1851,12 +1855,17 @@ async function doDeactivate() {
     await supaPatch('teamapp_persons', `id=eq.${_deactivateId}`, { aktiv: false });
     // Echtes Login zusätzlich sperren (nicht nur die App-Markierung)
     const person = (_persons || []).find(p => p.id === _deactivateId);
+    let loginLockFailed = false;
     if (person && person.email) {
       try { await teamAdminCall('deactivate', person.email); }
-      catch(e) { console.warn('Login-Sperre fehlgeschlagen:', e.message); }
+      catch(e) { loginLockFailed = true; console.warn('Login-Sperre fehlgeschlagen:', e.message); }
     }
     closeOverlay('overlay-deactivate');
-    showToast('Deaktiviert');
+    if (loginLockFailed) {
+      alert('App-Status wurde auf "deaktiviert" gesetzt, aber die echte Login-Sperre ist fehlgeschlagen. Bitte erneut versuchen.');
+    } else {
+      showToast('Deaktiviert');
+    }
     await renderTeam();
   } catch(e) { alert('Fehler: ' + e.message); }
 }
@@ -1871,12 +1880,17 @@ async function doReactivate() {
     await supaPatch('teamapp_persons', `id=eq.${_reactivateId}`, { aktiv: true });
     // Echtes Login wieder freischalten
     const person = (_persons || []).find(p => p.id === _reactivateId);
+    let loginUnlockFailed = false;
     if (person && person.email) {
       try { await teamAdminCall('reactivate', person.email); }
-      catch(e) { console.warn('Login-Entsperrung fehlgeschlagen:', e.message); }
+      catch(e) { loginUnlockFailed = true; console.warn('Login-Entsperrung fehlgeschlagen:', e.message); }
     }
     closeOverlay('overlay-reactivate');
-    showToast('Reaktiviert');
+    if (loginUnlockFailed) {
+      alert('App-Status wurde auf "aktiv" gesetzt, aber die echte Login-Freigabe ist fehlgeschlagen. Bitte erneut versuchen.');
+    } else {
+      showToast('Reaktiviert');
+    }
     await renderTeam();
   } catch(e) { alert('Fehler: ' + e.message); }
 }
@@ -2093,7 +2107,7 @@ async function protWoerniSignal(titel) {
     titel: 'Neues Besprechungsprotokoll: ' + titel,
     prioritaet: 'diese-woche',
     gelesen: false,
-  }).catch(function(){});
+  }).catch(function(e){ console.warn('GHD-Ereignis (protokoll_neu) fehlgeschlagen:', e.message); });
   try {
     const SIGNAL_KEY = 'team-protokoll-neu';
     const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
