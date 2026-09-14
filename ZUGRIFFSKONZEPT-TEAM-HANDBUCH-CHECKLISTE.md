@@ -71,12 +71,15 @@ Parallelstruktur, die du vermeiden willst:
 
 - Zeile 464: `let TEAM = ['Mirjam','Alina','Mazen','Hassan','Ronya']` — eine
   von Hand gepflegte Namensliste, unabhängig von `teamapp_persons`.
-- Zeile 714: `const CHEFIN_EMAIL = 'mirjam.walenta@gmail.com'` — der
-  Admin-Bereich (Monatszuweisung) wird per hart codiertem
+- Zeile 714: `const CHEFIN_EMAIL = '<deine private E-Mail>'` — der
+  Admin-Bereich (Monatszuweisung) wurde per hart codiertem
   E-Mail-Vergleich freigeschaltet statt über `rolle === 'inhaberin'`.
+  **Behoben am 2026-09-14** (Repo `salon-checklist`, `toggleAdmin()`):
+  läuft jetzt über `teamapp_persons`/`rolle === 'inhaberin'`, keine
+  E-Mail-Adresse mehr im Code.
 
-Das ist der einzige Ort, an dem tatsächlich **deine** E-Mail-Adresse
-namentlich im Code steht und Zugriff regelt — nicht der Login selbst,
+Das war der einzige Ort, an dem tatsächlich **deine** E-Mail-Adresse
+namentlich im Code stand und Zugriff regelte — nicht der Login selbst,
 sondern nur dieser eine Admin-Schalter.
 
 **Fazit Frage 1:** Der Login selbst ist in allen drei Apps bereits
