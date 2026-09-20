@@ -256,3 +256,31 @@ Damit daraus kein halber Komfort-Fix wird, hier die genaue Definition:
    umstellen — ich kann das direkt im `salon-checklist`-Repo umsetzen und
    pushen, sobald du grünes Licht gibst (aktuell habe ich dort nur
    Lesezugriff).
+
+## Nachtrag 2026-09-20 — Live-Policy-Check
+
+Auf Anfrage `select * from pg_policies where tablename in (...)` gegen die
+Live-Datenbank gefahren. Ergebnis für die drei in dieser Migration
+behandelten Tabellen:
+
+- **`wissensbank_artikel`**: bereits korrekt abgesichert — SELECT/INSERT/
+  UPDATE/DELETE-Policies mit denselben Bedingungen wie in dieser Migration
+  vorbereitet, nur unter anderen Policy-Namen (vermutlich direkt im
+  Dashboard angelegt, nicht über diese Datei). Kein Handlungsbedarf mehr
+  für diese Tabelle — die Migration muss für sie **nicht** eingespielt
+  werden (würde nur doppelte Policies gleichen Inhalts anlegen).
+- **`teamapp_persons`**: **weiterhin offen, P0.** Die Policy "Eigene Zeile
+  oder Inhaberin darf ändern" erlaubt jeder Person, ihre eigene Zeile zu
+  ändern, ohne Einschränkung welcher Spalten — jede Mitarbeiterin kann sich
+  damit per direktem REST-Aufruf selbst `rolle:'inhaberin'` setzen. Fix
+  vorbereitet in `supabase/migrations/20260920120000_p0_teamapp_rolle_schutz_und_monatszuweisung.sql`
+  (Trigger statt RLS, weil RLS spaltenweise nicht einschränken kann).
+- **`salon_monatszuweisung`**: **weiterhin offen.** Alte weite Policies
+  ("Team schreibt"/"Team ändert"/"Team löscht", dazu `with_check: true`-
+  Varianten) stehen neben einer scheinbar einschränkenden, aber per ODER
+  wirkungslosen Policy mit hartcodierter privater E-Mail. Fix in derselben
+  Migration wie oben: alte Policies entfernen, rollenbasiert ersetzen.
+
+**Nächster Schritt:** Migration `20260920120000_...sql` von jemandem mit
+Supabase-Zugriff einspielen (Policy-Namen vorher gegen die Live-DB
+gegenchecken, falls sich seit 20.9. etwas geändert hat).
