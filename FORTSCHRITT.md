@@ -71,8 +71,13 @@ Nutzern geteilt.
      `abwesenheiten-ghd/rls_haertung_abwesenheit.sql` und
      `abwesenheiten-ghd/rls_haertung_abw_team_spalten.sql` — prüfen, ob diese schon eingespielt
      sind (Live-Test zeigte `abw_team` bereits als HTTP 401).
-2. **Passwörter zurücksetzen** — die `pw_hash`-Werte in `teamapp_persons` waren im Klartext
-   öffentlich lesbar. Alle betroffenen Supabase-Auth-Passwörter neu setzen, **Mirjam zuerst**.
+2. ~~**Passwörter zurücksetzen**~~ — **erledigt (bestätigt 2026-09-20 von Mirjam).** Die
+   `pw_hash`-Werte in `teamapp_persons` waren im Klartext öffentlich lesbar; alle betroffenen
+   Supabase-Auth-Passwörter wurden neu gesetzt. Die Spalte `pw_hash` selbst ist laut Live-Check
+   vom 20.9. auch aus der Tabelle verschwunden (`information_schema.columns` zeigt sie nicht
+   mehr). Hinweis für später: `auth.users.updated_at` ist **kein** verlässlicher Nachweis für
+   einen Passwort-Reset — es wird bei jedem Login aktualisiert, nicht nur bei einer
+   Passwort-Änderung.
 3. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
    `rapid-service` sind fertig codiert, aber nicht deployed. `supabase/functions/README.md`
    hat die genauen Schritte (Login, Secret setzen, Deploy, Test). `rapid-service`s
