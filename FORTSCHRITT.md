@@ -85,7 +85,8 @@ Nutzern geteilt.
    `team-admin` auf), lagen aber in keinem der vier Repos und waren für mich nicht einsehbar.
    Laut Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard
    oder `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
-5. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.
+5. ~~**Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.~~ — **erledigt** (von Mirjam
+   schon vor einiger Zeit gesetzt, am 2026-09-20 bestätigt).
 6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: kein Netzwerkzugriff, um
    echte SRI-Hashes zu berechnen oder zu prüfen, ob eine gepinnte Versionsnummer überhaupt
    existiert. Ein falscher/erfundener Hash hätte die Seiten in Produktion lahmgelegt (Browser
