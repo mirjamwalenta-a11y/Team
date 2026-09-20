@@ -79,12 +79,26 @@ Nutzern geteilt.
    Passwort-Änderung.
 3. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
    `rapid-service` sind fertig codiert, aber nicht deployed. `supabase/functions/README.md`
-   hat die genauen Schritte (Login, Secret setzen, Deploy, Test). `rapid-service`s
-   SYSTEM_PROMPTS-Liste ist ein Platzhalter — vor dem Deploy die echten Aufrufer prüfen.
-4. **swift-worker und team-admin verifizieren** — beide existieren bereits (team.html ruft
-   `team-admin` auf), lagen aber in keinem der vier Repos und waren für mich nicht einsehbar.
-   Laut Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard
-   oder `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
+   hat die genauen Schritte (Login, Secret setzen, Deploy, Test).
+   **Stand 2026-09-20:** `rapid-function`s SYSTEM_PROMPTS sind bereits korrekt für alle vier
+   bekannten Apps befüllt (`checkliste`/`einkauf`/`team`/`abwesenheiten`) — code-seitig fertig
+   zum Deployen. `rapid-service`s SYSTEM_PROMPTS-Liste ist weiterhin ein Platzhalter: nach
+   `rapid-service` in sieben Repos gesucht (Team, Mitarbeiterhandbuch, salon-checklist,
+   lager.greathairday, abwesenheiten-ghd, belege.greathairday, moment.greathairday) — kein
+   Aufrufer gefunden. Entweder ungenutzt/für später geplant, oder der Aufrufer liegt in einem
+   der übrigen Repos (dokumentenschrank-ghd, Lernquiz-Apps, haarnetzwerk, innungsapp,
+   index.greathairday) — auf Wunsch von Mirjam nicht weiter durchsucht. Der eigentliche Deploy
+   (`supabase login`/`deploy`) bleibt in jedem Fall Handarbeit mit CLI-Zugriff.
+4. ~~**team-admin verifizieren**~~ — **erledigt (2026-09-20).** Liegt jetzt fertig im Team-Repo
+   (`supabase/functions/team-admin/index.ts`, aus einer früheren Session). Code gegengelesen:
+   prüft serverseitig über den echten Session-Token, dass nur `rolle='inhaberin'` Konten
+   anlegen/Passwörter setzen/deaktivieren/reaktivieren darf — keine Client-seitige Prüfung,
+   kein vom Client mitgeschickter Rollenwert. Noch nicht deployed (siehe Punkt 3), aber der
+   Code selbst ist verifiziert.
+   **swift-worker weiterhin nicht auffindbar** — in denselben sieben Repos wie oben gesucht,
+   kein Treffer. Liegt vermutlich in einem der übrigen Repos oder muss direkt im
+   Supabase-Dashboard (Edge Functions-Liste) oder per `supabase functions download`
+   verifiziert werden.
 5. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.
 6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: kein Netzwerkzugriff, um
    echte SRI-Hashes zu berechnen oder zu prüfen, ob eine gepinnte Versionsnummer überhaupt
