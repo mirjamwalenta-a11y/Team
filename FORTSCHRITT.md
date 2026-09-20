@@ -86,17 +86,37 @@ Nutzern geteilt.
    Laut Anleitung prüft `swift-worker` die Inhaberinnen-Rolle serverseitig — das per Dashboard
    oder `supabase functions download` verifizieren, nicht nur dem Kommentar im Code glauben.
 5. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.
-6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: ich hatte keinen Netzwerkzugriff, um
+6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: kein Netzwerkzugriff, um
    echte SRI-Hashes zu berechnen oder zu prüfen, ob eine gepinnte Versionsnummer überhaupt
    existiert. Ein falscher/erfundener Hash hätte die Seiten in Produktion lahmgelegt (Browser
    blockiert Skripte bei SRI-Mismatch). Aktuell betroffen: `cdn.jsdelivr.net` (supabase-js, alle
    vier Apps), `cdnjs.cloudflare.com` (xlsx, Lager_index.html), `unpkg.com` (React/ReactDOM/
-   Babel, abwesenheiten.html), `cdn.tailwindcss.com`. Empfehlung: mit echtem Netzwerkzugriff auf
-   exakte Versionen pinnen und Hashes über srihash.org ziehen.
+   Babel, abwesenheiten.html), `cdn.tailwindcss.com`.
+   **Stand 2026-09-20:** erneut versucht, weiterhin kein Netzwerkzugriff — die Sandbox-Umgebung
+   blockt `cdn.jsdelivr.net`/`cdnjs.cloudflare.com`/`unpkg.com`/`srihash.org` über die
+   Proxy-Policy (`EGRESS_BLOCKED`, bestätigt per curl und WebFetch). Das ist eine feste
+   Einstellung der jeweiligen Session/Umgebung, keine, die sich während einer laufenden
+   Session ändert. Genauer Ablauf für eine Session/einen Menschen mit Netzwerkzugriff:
+   1. Für jede der vier CDN-URLs die aktuell tatsächlich ausgelieferte Version ermitteln
+      (z. B. `curl -sI <URL>` oder die Redirect-Ziel-URL bei "latest"-Pfaden ansehen).
+   2. Die `<script src="...">`-Tags in allen vier Apps auf diese exakte Version umstellen
+      (kein `@latest`/ungepinnter Pfad mehr).
+   3. Für jede gepinnte Datei den Hash über https://www.srihash.org/ (oder
+      `openssl dgst -sha384 -binary <Datei> | openssl base64 -A`) ziehen und als
+      `integrity="sha384-..."`- sowie `crossorigin="anonymous"`-Attribut ergänzen.
+   4. Danach die Seiten einmal im Browser laden und die Konsole auf SRI-Mismatch-Fehler
+      prüfen, bevor gepusht wird.
 7. **Live-Verifikation (Schritt 5 im Runbook)** — `bash rlstest.sh`, der Edge-Function-curl-Test
    und die MCP-Abfragen ("Tabellen ohne RLS" / "Policies mit anon-Zugriff") brauchen echten
-   Supabase-Zugriff. Nach dem Einspielen der Migrationen von einem Menschen oder einer Session
-   mit Supabase-MCP-Zugriff ausführen.
+   Supabase-Zugriff.
+   **Stand 2026-09-20:** ebenfalls weiterhin nicht möglich, gleicher Grund (`EGRESS_BLOCKED`
+   auf `*.supabase.co`). Die Live-Prüfungen in dieser Session liefen deshalb nicht über
+   `rlstest.sh`, sondern manuell per SQL-Abfragen, die Mirjam im Supabase-SQL-Editor
+   ausgeführt und deren Ergebnis sie hier eingefügt hat (siehe Session-Verlauf 2026-09-20:
+   `pg_policies`/`pg_class`-Checks für alle relevanten Tabellen, `pg_trigger`-Check für
+   `teamapp_persons_schuetze_sensible_felder`). Für eine vollautomatische Prüfung braucht es
+   entweder eine Session mit direktem Supabase-Zugriff (MCP oder CLI mit Service-Role-Key)
+   oder weiterhin diesen manuellen SQL-Editor-Umweg.
 8. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
    anon-Key des Lager-Projekts. Gleiches Muster wie L1, aber laut `CODE-VORSCHLAEGE-AGENT.md`
    "nicht Teil dieser GHD-Absicherung" — bewusst nicht angefasst, hier nur notiert.
