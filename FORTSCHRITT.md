@@ -57,22 +57,26 @@ Nutzern geteilt.
 
 ## NICHT erledigt — braucht Supabase-Zugriff (Mensch)
 
-1. **Migrationen einspielen** (`supabase/migrations/` in diesem Repo, Reihenfolge nach
-   Zeitstempel):
-   - `20260908143643_p0_teamapp_persons.sql` — **zuerst lesen**: der `drop column pw_hash`
-     darf erst nach dem Passwort-Reset laufen (siehe Punkt 2).
-   - `20260908143644_t3_teamapp_invites.sql`
-   - `20260908144000_l0_lager_data_umzug.sql` — enthält den manuellen Datenübertrag aus dem
-     Lager-Projekt (Schritt 2 in der Datei). **Ohne diesen Schritt bleibt der Lager-Sync in
-     Lager_index.html kaputt** (der Client-Fix ist bereits gepusht und erwartet die Tabelle
-     im Hauptprojekt).
-   - `20260908144500_rls_ghd_checkliste_einkauf.sql`
-   - Zusätzlich bereits vorhanden (nicht von mir verändert, aus einer früheren Session):
-     `abwesenheiten-ghd/rls_haertung_abwesenheit.sql` und
-     `abwesenheiten-ghd/rls_haertung_abw_team_spalten.sql` — prüfen, ob diese schon eingespielt
-     sind (Live-Test zeigte `abw_team` bereits als HTTP 401).
-2. **Passwörter zurücksetzen** — die `pw_hash`-Werte in `teamapp_persons` waren im Klartext
-   öffentlich lesbar. Alle betroffenen Supabase-Auth-Passwörter neu setzen, **Mirjam zuerst**.
+1. ~~**Migrationen einspielen**~~ — **erledigt (bestätigt 2026-09-20).** Live-Check
+   (`pg_policies`/`pg_class`) zeigt RLS aktiv + Policies vorhanden für alle Tabellen aus
+   `20260908143643_p0_teamapp_persons.sql`, `20260908143644_t3_teamapp_invites.sql` und
+   `20260908144500_rls_ghd_checkliste_einkauf.sql` (teamapp_persons, teamapp_invites,
+   ghd_ereignisse, ghd_aufgaben, ghd_aufgaben_vorlagen, ghd_aufgaben_verlauf, salon_checks,
+   einkauf_items, einkauf_listen, einkauf_flex, lager_bestellliste).
+   `20260908144000_l0_lager_data_umzug.sql`: Tabelle `lager_data` existiert im Hauptprojekt
+   mit RLS, ist aber leer — **kein Problem**, laut Mirjam läuft `Lager_index.html` im Alltag
+   normal. Die Annahme dieser Migration, es gäbe ein separates "altes Lager-Projekt"
+   (`lpuxvvfrrcnbuzafscyk`), war überholt/falsch — dieses Projekt ist tatsächlich das
+   **Belege**-Projekt (siehe `BELEGE_URL` in team.html), alle anderen Apps inkl. Lager hängen
+   am Hauptprojekt. `abw_team` RLS war laut Live-Test schon vor dieser Session aktiv (siehe
+   unten, "Nicht angefasst").
+2. ~~**Passwörter zurücksetzen**~~ — **erledigt (bestätigt 2026-09-20 von Mirjam).** Die
+   `pw_hash`-Werte in `teamapp_persons` waren im Klartext öffentlich lesbar; alle betroffenen
+   Supabase-Auth-Passwörter wurden neu gesetzt. Die Spalte `pw_hash` selbst ist laut Live-Check
+   vom 20.9. auch aus der Tabelle verschwunden (`information_schema.columns` zeigt sie nicht
+   mehr). Hinweis für später: `auth.users.updated_at` ist **kein** verlässlicher Nachweis für
+   einen Passwort-Reset — es wird bei jedem Login aktualisiert, nicht nur bei einer
+   Passwort-Änderung.
 3. **Edge Functions deployen** (`supabase/functions/` in diesem Repo): `rapid-function` und
    `rapid-service` sind fertig codiert, aber nicht deployed. `supabase/functions/README.md`
    hat die genauen Schritte (Login, Secret setzen, Deploy, Test). `rapid-service`s
