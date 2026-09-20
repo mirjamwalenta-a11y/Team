@@ -99,7 +99,8 @@ Nutzern geteilt.
    kein Treffer. Liegt vermutlich in einem der übrigen Repos oder muss direkt im
    Supabase-Dashboard (Edge Functions-Liste) oder per `supabase functions download`
    verifiziert werden.
-5. **Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.
+5. ~~**Anthropic-Dashboard:** monatliches Ausgabenlimit setzen.~~ — **erledigt** (von Mirjam
+   schon vor einiger Zeit gesetzt, am 2026-09-20 bestätigt).
 6. **CDN-Pinning + SRI (I1)** — bewusst NICHT gemacht: kein Netzwerkzugriff, um
    echte SRI-Hashes zu berechnen oder zu prüfen, ob eine gepinnte Versionsnummer überhaupt
    existiert. Ein falscher/erfundener Hash hätte die Seiten in Produktion lahmgelegt (Browser
