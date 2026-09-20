@@ -100,8 +100,12 @@ Nutzern geteilt.
 8. **os_aufgaben in Lager_index.html** (Zeilen ~1286-1304) — schreibt weiterhin mit dem
    anon-Key des Lager-Projekts. Gleiches Muster wie L1, aber laut `CODE-VORSCHLAEGE-AGENT.md`
    "nicht Teil dieser GHD-Absicherung" — bewusst nicht angefasst, hier nur notiert.
-9. **`alert('Fehler: '+e.message)`** — viele Stellen v.a. in team.html, geringes Risiko, nicht
-   pauschal umgeschrieben (siehe oben).
+9. ~~**`alert('Fehler: '+e.message)`**~~ — **erledigt (2026-09-20).** Alle 12 generischen
+   Stellen in team.html durch verständliche, handlungsbezogene Meldungen ersetzt; die
+   technische Meldung landet per `console.error` in der Entwicklerkonsole statt im Dialog.
+   Die zwei `updErr.message`-Stellen bei `sbAuth.auth.updateUser()` (Passwort setzen/ändern)
+   bewusst unverändert gelassen — von Supabase selbst gestaltete, für Endnutzer:innen sichere
+   Hinweise, kein Backend-Detail.
 
 ## Nicht angefasst (bereits sicher / bewusst unverändert)
 

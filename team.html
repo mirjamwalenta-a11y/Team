@@ -1087,7 +1087,8 @@ async function doOnboarding() {
     await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
     await startApp();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Registrierung fehlgeschlagen:', e.message);
+    alert('Registrierung fehlgeschlagen. Bitte nochmal versuchen oder Mirjam kontaktieren.');
   }
 }
 
@@ -1419,7 +1420,8 @@ async function doBestaetigen(eintragId) {
     // Feed im Hintergrund aktualisieren
     loadFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Bestätigen fehlgeschlagen:', e.message);
+    alert('Bestätigen fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1471,7 +1473,8 @@ async function doSendReaktion() {
     }
     await showDetail(_currentEintragId);
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Rückmeldung fehlgeschlagen:', e.message);
+    alert('Rückmeldung fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1531,7 +1534,8 @@ async function doCreateEintrag() {
     await loadFeed();
     showFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Beitrag konnte nicht gespeichert werden:', e.message);
+    alert('Beitrag konnte nicht gespeichert werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1617,7 +1621,8 @@ async function doEditSave() {
     await loadFeed();
     await showDetail(_currentEintragId);
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Speichern fehlgeschlagen:', e.message);
+    alert('Speichern fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1634,7 +1639,8 @@ async function doDeleteEintrag() {
     await loadFeed();
     showFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Löschen fehlgeschlagen:', e.message);
+    alert('Löschen fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1796,7 +1802,8 @@ async function doAddPerson() {
     showToast(`${name} hinzugefügt`);
     await renderTeam();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Person konnte nicht angelegt werden:', e.message);
+    alert('Person konnte nicht angelegt werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1834,7 +1841,8 @@ async function doPinSave() {
     closeOverlay('overlay-pin');
     showToast('Passwort gespeichert ✓');
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Passwort konnte nicht gespeichert werden:', e.message);
+    alert('Passwort konnte nicht gespeichert werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1858,7 +1866,10 @@ async function doDeactivate() {
     closeOverlay('overlay-deactivate');
     showToast('Deaktiviert');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Deaktivieren fehlgeschlagen:', e.message);
+    alert('Deaktivieren fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 function openReactivate(id, name) {
@@ -1878,7 +1889,10 @@ async function doReactivate() {
     closeOverlay('overlay-reactivate');
     showToast('Reaktiviert');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Reaktivieren fehlgeschlagen:', e.message);
+    alert('Reaktivieren fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 function openDeletePerson(id, name) {
@@ -1892,7 +1906,10 @@ async function doDeletePerson() {
     closeOverlay('overlay-delete-person');
     showToast('Gelöscht');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Löschen fehlgeschlagen:', e.message);
+    alert('Löschen fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1954,7 +1971,8 @@ async function doChangePw() {
     closeOverlay('overlay-pw');
     showToast('Passwort geändert ✓');
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Passwort ändern fehlgeschlagen:', e.message);
+    alert('Passwort ändern fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
