@@ -21,6 +21,9 @@
 --    Stufe 3 (eigene, spätere Migration): Lesen/Ändern/Löschen der
 --      Wörni-Tabellen nur noch für die Inhaberin.
 --
+--  Dazu (Abschnitt 6) eine eng begrenzte öffentliche Meldefunktion für
+--  die drei Stellen, die ohne Login melden.
+--
 --  Sicher mehrfach ausführbar.
 -- ════════════════════════════════════════════════════════════
 
@@ -211,3 +214,70 @@ grant execute on function public.ghd_aufgabe_melden(text, jsonb, boolean) to aut
 grant execute on function public.ghd_aufgabe_erledigt(text, text) to authenticated;
 grant execute on function public.ghd_ereignis_melden(text, text, text, text, jsonb, boolean) to authenticated;
 grant execute on function public.ghd_ereignis_erledigt(text, text) to authenticated;
+
+-- ── 6. Öffentliche Meldung ohne Login (eng begrenzt) ────────────
+-- Für die drei Stellen, die ohne Login im Hauptprojekt melden:
+--   Belege (Login liegt im Belege-Projekt), Innung (Trainer:innen mit
+--   Kennung + PIN), Schnuppertag (Bewerber:innen schicken den Test ab).
+-- Grenzen:
+--   * nur diese drei Meldungsarten (app + typ fest), sonst Fehler
+--   * kann nur melden, nie lesen; kein payload
+--   * Priorität nur aus einer festen Liste
+--   * höchstens max_offen ungelesene Einträge je Art; darüber hinaus
+--     wird nur der neueste überschrieben — wer die Funktion
+--     missbraucht, kann das Postfach der Inhaberin nicht fluten
+create or replace function public.ghd_ereignis_melden_oeffentlich(
+  p_app text,
+  p_typ text,
+  p_titel text,
+  p_prioritaet text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_max_offen int;
+  v_standard_prio text;
+  v_offen int;
+  v_neuestes public.ghd_ereignisse.id%type;
+  v_titel text := left(nullif(trim(p_titel), ''), 200);
+  v_prio text;
+begin
+  select m.max_offen, m.prio into v_max_offen, v_standard_prio
+    from (values
+      ('Belege',       'beleg_neu',                 1, 'diese-woche'),
+      ('Innung',       'interesse_gemeldet',        5, 'diese-woche'),
+      ('Schnuppertag', 'lehrling_test_abgeschickt', 5, 'heute')
+    ) as m(app, typ, max_offen, prio)
+   where m.app = p_app and m.typ = p_typ;
+  if v_max_offen is null then
+    raise exception 'Diese Meldung ist ohne Login nicht erlaubt';
+  end if;
+  if v_titel is null then
+    raise exception 'titel fehlt';
+  end if;
+  v_prio := case when p_prioritaet in ('heute', 'diese-woche', 'wann-moeglich')
+                 then p_prioritaet else v_standard_prio end;
+
+  select count(*) into v_offen from public.ghd_ereignisse
+   where app = p_app and typ = p_typ and gelesen = false;
+
+  if v_offen < v_max_offen then
+    insert into public.ghd_ereignisse (app, typ, titel, prioritaet, gelesen, erstellt_am)
+    values (p_app, p_typ, v_titel, v_prio, false, now());
+  else
+    select id into v_neuestes from public.ghd_ereignisse
+     where app = p_app and typ = p_typ and gelesen = false
+     order by erstellt_am desc nulls last, id desc
+     limit 1;
+    update public.ghd_ereignisse
+       set titel = v_titel, prioritaet = v_prio, erstellt_am = now()
+     where id = v_neuestes;
+  end if;
+end;
+$$;
+
+revoke all on function public.ghd_ereignis_melden_oeffentlich(text, text, text, text) from public;
+grant execute on function public.ghd_ereignis_melden_oeffentlich(text, text, text, text) to anon, authenticated;
