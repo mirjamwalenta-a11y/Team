@@ -53,8 +53,9 @@ grant execute on function public.teamapp_ist_inhaberin() to authenticated;
 
 -- ── 1. Aufgabe melden (ghd_aufgaben, über signal_key) ──────────
 -- Gibt es schon eine offene Aufgabe mit diesem signal_key, werden
--- nur Titel / nächster Schritt / Priorität aktualisiert (nur die
--- Felder, die mitgeschickt werden). Sonst wird sie neu angelegt.
+-- nur Titel und nächster Schritt aktualisiert (der nur, wenn
+-- mitgeschickt). Priorität, Fälligkeit usw. bleiben, wie die
+-- Inhaberin sie gesetzt hat. Sonst wird die Aufgabe neu angelegt.
 -- p_nur_neu = true: vorhandene offene Aufgabe unverändert lassen.
 -- Erlaubte Felder in p_daten: typ, titel, naechster_schritt,
 -- verantwortlich, prioritaet, faellig_am, app_kontext, fach_kontext,
@@ -87,7 +88,6 @@ begin
     update public.ghd_aufgaben
        set titel = v_titel,
            naechster_schritt = coalesce(v_schritt, naechster_schritt),
-           prioritaet = coalesce(v_prio, prioritaet),
            geaendert_am = now()
      where signal_key = p_signal_key and status is distinct from 'erledigt';
   else
