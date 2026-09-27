@@ -54,7 +54,8 @@ begin
   for p in select tablename, policyname from pg_policies
            where schemaname = 'public'
              and tablename in ('teamapp_persons', 'teamapp_invites')
-             and roles && array['anon', 'public']::name[] loop
+             and roles && array['anon', 'public']::name[]
+             and cmd = 'SELECT' loop  -- nur Lese-Policies (Schreibrechte: 20260927140000)
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;
 end $$;
@@ -88,7 +89,8 @@ begin
   alter table public.salon_personen enable row level security;
   for p in select policyname from pg_policies
            where schemaname = 'public' and tablename = 'salon_personen'
-             and roles && array['anon', 'public']::name[] loop
+             and roles && array['anon', 'public']::name[]
+             and cmd = 'SELECT' loop
     execute format('drop policy %I on public.salon_personen', p.policyname);
   end loop;
 end $$;
