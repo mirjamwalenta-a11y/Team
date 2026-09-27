@@ -1052,24 +1052,20 @@ document.getElementById('login-pw').addEventListener('keydown', e => {
 // ═══════════════════════════════════════════
 async function handleInvite(token) {
   try {
-    const rows = await supaGet('teamapp_invites', `token=eq.${token}`);
-    if (!rows || rows.length === 0) {
-      showScreen('screen-login');
-      return;
-    }
-    const invite = rows[0];
-    if (invite.laeuft_ab && new Date(invite.laeuft_ab) < new Date()) {
-      await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(token)}`).catch(() => {});
-      alert('Dieser Einladungslink ist abgelaufen. Bitte neuen Link anfordern.');
-      showScreen('screen-login');
-      return;
-    }
-    // Finde Person mit dieser E-Mail oder diesem Namen
-    const persons = await supaGet('teamapp_persons', `name=eq.${encodeURIComponent(invite.name)}`);
-    if (persons && persons.length > 0) {
-      _me = persons[0];
+    // Vor dem ersten Login gibt es keinen Lesezugriff auf teamapp_persons/-invites.
+    // Die Serverfunktion liefert genau die eingeladene Person (id, name, email),
+    // und nur bei gültigem, nicht abgelaufenem Code (Migration 20260927130000).
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/teamapp_einladung_person`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_token: token })
+    });
+    const person = r.ok ? await r.json() : null;
+    if (person && person.email) {
+      _me = person;
       showScreen('screen-onboarding');
     } else {
+      alert('Dieser Einladungslink ist ungültig oder abgelaufen. Bitte neuen Link anfordern.');
       showScreen('screen-login');
     }
   } catch(e) {
@@ -1096,6 +1092,9 @@ async function doOnboarding() {
     if (signInErr) { alert('Fehler: Anmeldung mit dem Anfangspasswort fehlgeschlagen. Bitte Mirjam kontaktieren.'); return; }
     const { error: updErr } = await sbAuth.auth.updateUser({ password: pw });
     if (updErr) { alert('Fehler: ' + updErr.message); return; }
+    // Jetzt angemeldet: vollständigen Personeneintrag (Rolle, aktiv, …) laden
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(_me.email)}`);
+    if (rows && rows.length > 0) _me = rows[0];
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
     // Invite löschen
     await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
