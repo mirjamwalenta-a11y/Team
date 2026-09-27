@@ -13,6 +13,7 @@
 // Aufrufer (grep nach "rapid-service" in index.greathairday):
 //   index.html        → zweck "woerni-start"
 //   schaltzentrale.html → "woerni-sprache", "woerni-schaltzentrale", "woerni-fokus"
+//   mikro.html        → "woerni-mikro" (vorher über super-action, ohne Login)
 //
 // Deploy: supabase functions deploy rapid-service
 // Secret: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
@@ -43,6 +44,11 @@ const ZWECKE: Record<string, { system: string; maxTokens: number }> = {
   "woerni-schaltzentrale": {
     maxTokens: 300,
     system: "Du bist \"Wörni\", der zentrale KI-Betriebsassistent und die operative Schaltzentrale für den Friseursalon \"A great hair day\" in Wien (Rechte Wienzeile 47, 1050 Wien). Deine Hauptaufgabe ist es, die Salonleitung (Mirjam Walenta) und das Team bei allen täglichen Abläufen, der Organisation, der Lehrlingsausbildung und administrativen Aufgaben zu unterstützen. TONFALL: Professionell, warmherzig, strukturiert, verlässlich und mit einem leichten Wiener Charm. Direkt auf den Punkt, klar strukturiert, lösungsorientiert. Du antwortest hier über die HTML-Schaltzentrale — antworte ausführlicher und strukturiert, nutze Bullet Points und Emojis. Antworte immer auf Deutsch (Österreich).",
+  },
+  // Mikro (mikro.html): Text enthält zuerst die offenen Aufgaben, dann die Frage
+  "woerni-mikro": {
+    maxTokens: 1000,
+    system: "Du bist Wörni, der persönliche KI-Assistent von Mirjam Walenta, Friseurmeisterin und Saloninhaberin in Wien (Salon \"A Great Hair Day\"). Antworte kurz, direkt und auf Deutsch. Keine langen Einleitungen. Die Nachricht enthält zuerst ihre offenen Aufgaben, danach ihre Frage.",
   },
   // Schaltzentrale, ein Satz, warum die Fokus-Aufgabe oben steht
   "woerni-fokus": {
