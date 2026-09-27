@@ -890,6 +890,20 @@ const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/te
 
 const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+// ── Wörni-Meldungen über Serverfunktionen (Team-Repo, Migration 20260927100000) ──
+// Die Apps lesen die Wörni-Tabellen nicht mehr selbst; die Funktionen
+// erledigen „schon da? dann aktualisieren, sonst anlegen“ auf dem Server.
+async function ghdRpc(fn, args) {
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if (!session?.access_token) throw new Error('Nicht angemeldet');
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
 async function supa(table, method = 'GET', body = null, filter = '') {
   const { data: { session } } = await sbAuth.auth.getSession();
   const isWrite = method !== 'GET';
@@ -1463,12 +1477,12 @@ async function doSendReaktion() {
     // ── GHD-EREIGNIS bei Frage-Rückmeldung ─────────────────────────
     if (_reaktionTyp === 'Frage') {
       const eintragTitel = (_eintraege.find(e => e.id === _currentEintragId) || {}).titel || 'Eintrag';
-      supa('ghd_ereignisse', 'POST', {
-        app: 'Team',
-        typ: 'rueckmeldung_frage',
-        titel: 'Frage vom Team zu: ' + eintragTitel,
-        prioritaet: 'diese-woche',
-        gelesen: false,
+      ghdRpc('ghd_ereignis_melden', {
+        p_app: 'Team',
+        p_typ: 'rueckmeldung_frage',
+        p_titel: 'Frage vom Team zu: ' + eintragTitel,
+        p_prioritaet: 'diese-woche',
+        p_zusammenfassen: false,
       }).catch(function(){});
     }
     await showDetail(_currentEintragId);
@@ -1523,12 +1537,12 @@ async function doCreateEintrag() {
     showToast('Veröffentlicht ✓');
     // ── GHD-EREIGNIS bei wichtigem Eintrag ────────────────────────
     if (wichtig) {
-      supa('ghd_ereignisse', 'POST', {
-        app: 'Team',
-        typ: 'wichtige_mitteilung',
-        titel: 'Wichtige Mitteilung: ' + titel,
-        prioritaet: 'heute',
-        gelesen: false,
+      ghdRpc('ghd_ereignis_melden', {
+        p_app: 'Team',
+        p_typ: 'wichtige_mitteilung',
+        p_titel: 'Wichtige Mitteilung: ' + titel,
+        p_prioritaet: 'heute',
+        p_zusammenfassen: false,
       }).catch(function(){});
     }
     await loadFeed();
@@ -2049,9 +2063,6 @@ function hideErr(id) {
 
 // ── PROTOKOLL ──
 var protEintraege = JSON.parse(localStorage.getItem('team-protokoll') || '[]');
-const GHD_URL_PROT = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
-const GHD_KEY_PROT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxOTAyMTIsImV4cCI6MjA1OTc2NjIxMn0.GHkqHB0DaJkV2R80MiIHJFqhU5TJiR5vHH7K0iNLPaY';
-const GHD_H_PROT = { "apikey": GHD_KEY_PROT, "Authorization": "Bearer " + GHD_KEY_PROT, "Content-Type": "application/json", "Prefer": "return=minimal" };
 
 function protSave() {
   localStorage.setItem('team-protokoll', JSON.stringify(protEintraege));
@@ -2105,40 +2116,27 @@ function protDelete(i) {
 
 async function protWoerniSignal(titel) {
   // ── GHD-EREIGNIS Protokoll ─────────────────────────────────
-  supa('ghd_ereignisse', 'POST', {
-    app: 'Team',
-    typ: 'protokoll_neu',
-    titel: 'Neues Besprechungsprotokoll: ' + titel,
-    prioritaet: 'diese-woche',
-    gelesen: false,
+  ghdRpc('ghd_ereignis_melden', {
+    p_app: 'Team',
+    p_typ: 'protokoll_neu',
+    p_titel: 'Neues Besprechungsprotokoll: ' + titel,
+    p_prioritaet: 'diese-woche',
+    p_zusammenfassen: false,
   }).catch(function(){});
   try {
-    const SIGNAL_KEY = 'team-protokoll-neu';
-    const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
-    const existing = await check.json();
-    if (Array.isArray(existing) && existing.length > 0) {
-      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt', {
-        method: 'PATCH', headers: GHD_H_PROT,
-        body: JSON.stringify({ titel: 'Neues Besprechungsprotokoll: ' + titel, geaendert_am: new Date().toISOString() })
-      });
-    } else {
-      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben', {
-        method: 'POST', headers: GHD_H_PROT,
-        body: JSON.stringify({
-          typ: 'team',
-          titel: 'Neues Besprechungsprotokoll: ' + titel,
-          naechster_schritt: 'Team-App öffnen → Protokoll lesen',
-          verantwortlich: 'mirjam',
-          prioritaet: 'diese-woche',
-          status: 'neu',
-          app_kontext: 'team',
-          fach_kontext: 'protokoll',
-          signal_key: SIGNAL_KEY,
-          erstellt_von: 'system',
-          erstellt_am: new Date().toISOString()
-        })
-      });
-    }
+    await ghdRpc('ghd_aufgabe_melden', {
+      p_signal_key: 'team-protokoll-neu',
+      p_daten: {
+        typ: 'team',
+        titel: 'Neues Besprechungsprotokoll: ' + titel,
+        naechster_schritt: 'Team-App öffnen → Protokoll lesen',
+        verantwortlich: 'mirjam',
+        prioritaet: 'diese-woche',
+        app_kontext: 'team',
+        fach_kontext: 'protokoll',
+        erstellt_von: 'system'
+      }
+    });
   } catch(e) { console.warn('Wörni Protokoll-Signal fehlgeschlagen:', e); }
 }
 
