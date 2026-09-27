@@ -12,10 +12,29 @@ supabase login                       # PAT aus dashboard/account/tokens
 supabase link --project-ref wrxlaltgtgkdomklgrlj
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy rapid-function
-supabase functions deploy rapid-service   # nach Prüfung der SYSTEM_PROMPTS, siehe TODO in der Datei
+supabase functions deploy rapid-service   # nur zusammen mit dem Wörni-PR in index.greathairday, siehe unten
 ```
 
 Danach im Anthropic-Dashboard ein monatliches Ausgabenlimit setzen.
+
+## rapid-service (Wörni) — nur zusammen mit index.greathairday einspielen
+
+`rapid-service` ist der Proxy für Wörni auf der Startseite und in der
+Schaltzentrale (`index.greathairday`). Die neue Fassung nimmt nur noch
+`{ zweck, text }` an und lässt nur die Inhaberin durch (Rolle wird auf dem
+Server gegen `teamapp_persons` geprüft). Die alte Fassung der Aufrufer
+schickt noch `model`/`system`/`messages` und bekommt dann 400.
+
+Reihenfolge, damit Wörni nicht ausfällt:
+
+1. PR in `index.greathairday` („Wörni: nur noch zweck + text“) mergen.
+2. Direkt danach `supabase functions deploy rapid-service`.
+3. Startseite neu laden, einmal mit Wörni sprechen, in der Schaltzentrale
+   einmal eine Sprach-Aufgabe anlegen: alle drei müssen antworten.
+
+Voraussetzung: `20260920120000_p0_teamapp_rolle_schutz_und_monatszuweisung.sql`
+ist eingespielt. Ohne den Trigger dort könnte sich eine Mitarbeiter:in
+selbst `rolle = 'inhaberin'` geben und damit auch diese Prüfung umgehen.
 
 ## swift-worker
 
