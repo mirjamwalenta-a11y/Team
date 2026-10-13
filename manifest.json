@@ -1,0 +1,18 @@
+{
+  "name": "Team · Great Hair Day",
+  "short_name": "Team",
+  "icons": [
+    {
+      "src": "https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1c1917",
+  "start_url": "./team.html",
+  "scope": "./",
+  "id": "./team.html"
+}
