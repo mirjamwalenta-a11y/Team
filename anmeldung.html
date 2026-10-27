@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Neueintritt">
+<meta name="theme-color" content="#1a1a1a">
+<title>Mirjam Walenta – A great hair day · Neueintritt</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: #e8e5e0;
+    --text: #1a1a1a;
+    --text-2: #6b6560;
+    --accent: #1a1a1a;
+    --accent-light: #f0ede8;
+    --red: #c0392b;
+    --orange: #b9770e;
+    --green: #27ae60;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: calc(12px + var(--safe-top)) 16px 12px; position: sticky; top: 0; z-index: 100;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(32px + var(--safe-bottom)); }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 10px; padding: 11px 16px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit; text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--accent-light); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--text-2); }
+  .btn-danger { background: transparent; color: var(--red); }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .btn-full { width: 100%; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── KARTEN ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px;
+  }
+  .card-click { cursor: pointer; }
+  .card-title { font-size: 16px; font-weight: 600; }
+  .muted { color: var(--text-2); font-size: 13px; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+    background: var(--accent-light); color: var(--text-2); vertical-align: middle;
+  }
+  .badge-lehrling { background: #e8f0fb; color: #2463a6; }
+  .progress { height: 6px; background: var(--accent-light); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .progress > div { height: 100%; background: var(--green); }
+  .hinweis {
+    background: #fff8e6; border: 1px solid #f1dfae; color: #6b4e00; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; line-height: 1.45; margin-bottom: 12px;
+  }
+  .leer { text-align: center; color: var(--text-2); padding: 40px 16px; font-size: 14px; line-height: 1.5; }
+
+  /* ── REITER IM DETAIL ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+  .tab {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+    border-radius: 99px; padding: 7px 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* ── FORMULAR ── */
+  .sec-title {
+    font-size: 12px; color: var(--text-2); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; margin: 18px 0 8px;
+  }
+  .sec-title:first-child { margin-top: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .f.voll { grid-column: 1 / -1; }
+  .f label { font-size: 13px; color: var(--text-2); font-weight: 500; }
+  .f input[type=text], .f input[type=date], .f input[type=email], .f input[type=tel],
+  .f input[type=number], .f select, .f textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    font-size: 16px; font-family: inherit; background: var(--surface); color: var(--text); outline: none;
+  }
+  .f textarea { resize: vertical; min-height: 64px; }
+  .f input:focus, .f select:focus, .f textarea:focus { border-color: var(--text); }
+  .f .warn { font-size: 12px; color: var(--orange); }
+  .f .ok { font-size: 12px; color: var(--green); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 99px;
+    padding: 7px 12px; font-size: 14px; cursor: pointer; font-family: inherit; color: var(--text);
+  }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── CHECKLISTE ── */
+  .todo { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .todo:last-child { border-bottom: none; }
+  .todo input { width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; accent-color: var(--green); }
+  .todo-text { font-size: 15px; line-height: 1.35; }
+  .todo-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+  .todo.erledigt .todo-text { color: var(--text-2); text-decoration: line-through; }
+  .frist { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 6px; margin-left: 4px; white-space: nowrap; }
+  .frist-ueber { background: #fdecea; color: var(--red); }
+  .frist-bald { background: #fff3dc; color: var(--orange); }
+  .frist-ok { background: var(--accent-light); color: var(--text-2); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%);
+    background: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 300;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── DRUCK ── */
+  #druck { display: none; }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff; }
+    #app, #toast { display: none !important; }
+    #druck { display: block; font-size: 11pt; color: #000; }
+    .blatt { page-break-after: always; }
+    .blatt:last-child { page-break-after: auto; }
+    .blatt h1 { font-size: 15pt; margin-bottom: 2mm; }
+    .blatt .kopf { font-size: 9pt; color: #444; margin-bottom: 5mm; line-height: 1.4; }
+    .blatt h2 {
+      font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; background: #eee;
+      padding: 1.5mm 2mm; margin: 4mm 0 1mm;
+    }
+    .blatt table { width: 100%; border-collapse: collapse; }
+    .blatt td { border-bottom: 0.3mm solid #bbb; padding: 1.6mm 2mm; vertical-align: top; }
+    .blatt td.l { width: 38%; color: #444; font-size: 9.5pt; }
+    .blatt .chk { font-family: monospace; }
+    .blatt .fuss { margin-top: 6mm; font-size: 8.5pt; color: #555; }
+    .blatt .unterschrift { display: flex; gap: 12mm; margin-top: 14mm; }
+    .blatt .unterschrift div { flex: 1; border-top: 0.3mm solid #000; padding-top: 1mm; font-size: 9pt; }
+  }
+
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title" id="kopf-titel">Neueintritt</div>
+        <div class="header-sub" id="kopf-sub">Anmeldung Mitarbeiter:innen &amp; Lehrlinge</div>
+      </div>
+      <div class="logo-mark">MW</div>
+    </div>
+  </div>
+
+  <!-- ════════ LISTE ════════ -->
+  <div class="wrap view active" id="v-liste">
+    <div class="btn-row" style="margin-bottom:14px">
+      <button class="btn btn-primary" style="flex:1" onclick="neu('lehrling')">＋ Lehrling</button>
+      <button class="btn btn-primary" style="flex:1" onclick="neu('ma')">＋ Mitarbeiter:in</button>
+    </div>
+    <div id="liste"></div>
+    <div class="sec-title" style="margin-top:24px">Einstellungen</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="zeigeView('v-betrieb')">Lehrbetrieb-Daten</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportJson()">Sicherung herunterladen</button>
+      <label class="btn btn-secondary btn-sm" for="import-input" style="cursor:pointer">Sicherung einspielen</label>
+      <input type="file" id="import-input" accept="application/json,.json" style="display:none" onchange="importJson(this)">
+      <a class="btn btn-ghost btn-sm" href="./team.html">← Team-App</a>
+    </div>
+    <p class="muted" style="margin-top:14px;line-height:1.5">
+      🔒 Alle Daten bleiben nur auf diesem Gerät (im Browser gespeichert) und werden nirgends hochgeladen.
+      Bitte regelmäßig eine Sicherung herunterladen und das Gerät mit Code sperren — hier stehen
+      Sozialversicherungsnummer und Bankdaten.
+    </p>
+  </div>
+
+  <!-- ════════ LEHRBETRIEB ════════ -->
+  <div class="wrap view" id="v-betrieb">
+    <div class="card">
+      <div class="sec-title">Lehrbetrieb / Arbeitgeberin</div>
+      <div class="grid" id="betrieb-form"></div>
+      <p class="muted" style="margin-top:12px">Wird einmal eingetragen und automatisch in alle Blätter übernommen.</p>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="zeigeView('v-liste')">Fertig</button>
+  </div>
+
+  <!-- ════════ DETAIL ════════ -->
+  <div class="wrap view" id="v-detail">
+    <div class="btn-row" style="margin-bottom:12px;justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" onclick="zurListe()">← Übersicht</button>
+      <button class="btn btn-danger btn-sm" onclick="loeschen()">Löschen</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-pane="p-daten" onclick="zeigePane(this)">1 · Daten</button>
+      <button class="tab" data-pane="p-check" onclick="zeigePane(this)">2 · Checkliste</button>
+      <button class="tab" data-pane="p-druck" onclick="zeigePane(this)">3 · Formulare</button>
+    </div>
+    <div class="pane active" id="p-daten"><div id="daten-form"></div></div>
+    <div class="pane" id="p-check"><div id="checkliste"></div></div>
+    <div class="pane" id="p-druck"><div id="formulare"></div></div>
+  </div>
+</div>
+
+<div id="druck"></div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Neueintritt — Anmeldung von Mitarbeiter:innen und Lehrlingen (Wien)
+// Alle Daten liegen nur lokal im Browser (localStorage), nichts geht an einen Server.
+// ═══════════════════════════════════════════════════════════════
+
+const SPEICHER = 'ghd_neueintritt_v1';
+const SPEICHER_BETRIEB = 'ghd_neueintritt_betrieb_v1';
+
+const BETRIEB_STANDARD = {
+  name: 'Mirjam Walenta – A great hair day',
+  adresse: 'Rechte Wienzeile 47, 1050 Wien',
+  tel: '01 586 31 30',
+  fax: '',
+  ausbildungsleiter: 'Mirjam Walenta',
+  email: '',
+  svnr: '',
+  fachkraefte: ''
+};
+
+const BETRIEB_FELDER = [
+  { k: 'name', l: 'Name des Betriebs', voll: true },
+  { k: 'adresse', l: 'Adresse', voll: true },
+  { k: 'tel', l: 'Telefon', t: 'tel' },
+  { k: 'fax', l: 'Fax' },
+  { k: 'ausbildungsleiter', l: 'Ausbildungsleiter:in' },
+  { k: 'email', l: 'E-Mail Ausbildungsleiter:in', t: 'email' },
+  { k: 'svnr', l: 'SV-Nr. Ausbildungsleiter:in', hilfe: 'svnr' },
+  { k: 'fachkraefte', l: 'Anzahl Fachkräfte', t: 'number' }
+];
+
+const SCHULTYPEN = [
+  'NMS / Mittelschule', 'PTS Polytechnische Schule', 'AHS ohne Matura', 'AHS mit Matura',
+  'BMS 1-jährig', 'BMS 3-jährig', 'BMS negativ', 'BHS (HAK, HTL, HLW …)', 'BHS ohne Matura / negativ',
+  'HS Hauptschule', 'KMS Kooperative Mittelschule', 'ASO Allgemeine Sonderschule',
+  'BS Berufsschule', 'BS Berufsschule negativ', 'Sonstige Schule'
+];
+const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Burgenland', 'Oberösterreich', 'Salzburg',
+  'Tirol', 'Vorarlberg', 'Kärnten', 'Steiermark', 'Ausland'];
+const ZUGANG = [
+  'Österreich / EU / EWR / Schweiz',
+  'Aufenthaltstitel mit freiem Arbeitsmarktzugang (z. B. Asyl, RWR-Karte plus)',
+  'Beschäftigungsbewilligung nötig',
+  'noch unklar'
+];
+
+// Formular: nur:'lehrling' / nur:'ma' blendet Felder je nach Art ein.
+const SEKTIONEN = [
+  { titel: 'Person', felder: [
+    { k: 'vorname', l: 'Vorname' },
+    { k: 'nachname', l: 'Familienname' },
+    { k: 'geschlecht', l: 'Geschlecht', t: 'seg', opts: ['w', 'm', 'd'] },
+    { k: 'svnr', l: 'Sozialversicherungsnummer', hilfe: 'svnr', ph: '1234 010190' },
+    { k: 'geburtsdatum', l: 'Geburtsdatum', t: 'date' },
+    { k: 'geburtsort', l: 'Geburtsort' },
+    { k: 'geburtsstaat', l: 'Geburtsstaat' },
+    { k: 'bundesland_geburt', l: 'Bundesland (Geburt)', t: 'select', opts: ['', ...BUNDESLAENDER], nur: 'lehrling' },
+    { k: 'staatsbuergerschaft', l: 'Staatsbürgerschaft', ph: 'Österreich' },
+    { k: 'religion', l: 'Religion', nur: 'lehrling' },
+    { k: 'muttersprache', l: 'Muttersprache', nur: 'lehrling' },
+    { k: 'zugang', l: 'Arbeitsmarktzugang', t: 'select', opts: ['', ...ZUGANG], voll: true }
+  ]},
+  { titel: 'Wohnadresse & Kontakt', felder: [
+    { k: 'strasse', l: 'Straße / Hausnr. / Tür', voll: true },
+    { k: 'plz', l: 'PLZ' },
+    { k: 'ort', l: 'Ort', ph: 'Wien' },
+    { k: 'tel', l: 'Telefon / Handy', t: 'tel' },
+    { k: 'email', l: 'E-Mail', t: 'email' }
+  ]},
+  { titel: 'Bank (für Lohn / Lehrlingsentschädigung)', felder: [
+    { k: 'bank', l: 'Bank' },
+    { k: 'iban', l: 'IBAN', hilfe: 'iban', ph: 'AT12 3456 …' }
+  ]},
+  { titel: 'Lehrverhältnis', nur: 'lehrling', felder: [
+    { k: 'lehrberuf', l: 'Lehrberuf' },
+    { k: 'lehrberuf2', l: '2. Lehrberuf (optional)' },
+    { k: 'beginn', l: 'Lehrzeit von', t: 'date' },
+    { k: 'ende', l: 'Lehrzeit bis', t: 'date', hilfe: 'ende' },
+    { k: 'lehrvertragsnr', l: 'Lehrvertragsnummer (kommt von der WKW)' },
+    { k: 'befristung_behaltezeit', l: 'Befristung Behaltezeit', t: 'seg', opts: ['ja', 'nein'] },
+    { k: 'anrechnungen', l: 'Anrechnungen aufgrund Schul-/Vorlehrzeiten', t: 'textarea', voll: true },
+    { k: 'vereinbarungen', l: 'Besondere Vereinbarungen', t: 'textarea', voll: true }
+  ]},
+  { titel: 'Erziehungsberechtigte / gesetzliche Vertreter', nur: 'lehrling', felder: [
+    { k: 'erziehung', l: 'Erziehungsberechtigt ist/sind', t: 'seg', voll: true,
+      opts: ['Eltern', 'nur Mutter', 'nur Vater', 'eigenberechtigt', 'Heim', 'Andere'] },
+    { k: 'vertreter_name', l: 'Vor- und Familienname gesetzl. Vertreter:in', voll: true },
+    { k: 'vertreter_gleiche_adresse', l: 'Adresse', t: 'seg', opts: ['wie Lehrling', 'andere'], voll: true },
+    { k: 'vertreter_strasse', l: 'Straße', voll: true, wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'vertreter_plz', l: 'PLZ', wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'vertreter_ort', l: 'Ort', wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'tel_mutter', l: 'Tel. Mutter', t: 'tel' },
+    { k: 'tel_vater', l: 'Tel. Vater', t: 'tel' },
+    { k: 'beruf_mutter', l: 'Beruf Mutter' },
+    { k: 'beruf_vater', l: 'Beruf Vater' },
+    { k: 'notfall', l: 'Notfallnummer (bei Eigenberechtigung)', t: 'tel', voll: true }
+  ]},
+  { titel: 'Vorbildung', nur: 'lehrling', felder: [
+    { k: 'letzte_schule', l: 'Letzte Schule (Name)', voll: true, ph: 'z. B. MS Kleine Sperlgasse' },
+    { k: 'schultyp', l: 'Schulart', t: 'select', opts: ['', ...SCHULTYPEN] },
+    { k: 'letzte_klasse', l: 'Letztbesuchte Klasse', ph: '4a' },
+    { k: 'schuljahr', l: 'Schuljahr', ph: '2025/26' },
+    { k: 'schulstufe', l: 'Schulstufe', ph: '9' },
+    { k: 'schul_bundesland', l: 'Bundesland der Schule', t: 'select', opts: ['', ...BUNDESLAENDER] },
+    { k: 'neunte_stufe', l: '9. Schulstufe / Abschluss', t: 'seg', opts: ['positiv', 'negativ'] },
+    { k: 'foerderbedarf', l: 'Vermerk sonderpäd. Förderbedarf', t: 'seg', opts: ['nein', 'ja'] },
+    { k: 'bisherige_lehrzeit', l: 'Bisherige Lehrzeit' },
+    { k: 'bisheriger_lehrberuf', l: 'im Lehrberuf' }
+  ]},
+  { titel: 'Dienstverhältnis', nur: 'ma', felder: [
+    { k: 'beginn', l: 'Eintrittsdatum', t: 'date' },
+    { k: 'position', l: 'Position', ph: 'Friseur:in' },
+    { k: 'stunden', l: 'Wochenstunden', t: 'number' },
+    { k: 'lap', l: 'Lehrabschlussprüfung (LAP)', t: 'seg', opts: ['ja', 'nein'] },
+    { k: 'notfall', l: 'Notfallkontakt (Name + Tel.)', voll: true }
+  ]},
+  { titel: 'Notizen', felder: [
+    { k: 'notizen', l: 'Interne Notizen', t: 'textarea', voll: true }
+  ]}
+];
+
+// ── Speicher ─────────────────────────────────────────────────
+let _alle = [];
+let _betrieb = { ...BETRIEB_STANDARD };
+let _aktiv = null;
+
+function laden() {
+  try { _alle = JSON.parse(localStorage.getItem(SPEICHER)) || []; } catch (e) { _alle = []; }
+  try { _betrieb = { ...BETRIEB_STANDARD, ...(JSON.parse(localStorage.getItem(SPEICHER_BETRIEB)) || {}) }; }
+  catch (e) { _betrieb = { ...BETRIEB_STANDARD }; }
+}
+function speichern() {
+  try {
+    localStorage.setItem(SPEICHER, JSON.stringify(_alle));
+    localStorage.setItem(SPEICHER_BETRIEB, JSON.stringify(_betrieb));
+  } catch (e) {
+    console.error(e);
+    showToast('Speichern nicht möglich – bitte Sicherung herunterladen');
+  }
+}
+function aktuell() { return _alle.find(p => p.id === _aktiv); }
+
+// ── Hilfsfunktionen ──────────────────────────────────────────
+function esc(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function datumDe(iso) {
+  if (!iso) return '';
+  const [j, m, t] = iso.split('-');
+  return `${t}.${m}.${j}`;
+}
+function isoAus(d) {
+  const z = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+}
+function plusTage(iso, n) { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n); return isoAus(d); }
+function plusMonate(iso, n) {
+  const d = new Date(iso + 'T12:00'); const tag = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  const letzter = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(tag, letzter));
+  return isoAus(d);
+}
+function heuteIso() { return isoAus(new Date()); }
+function alterAm(gebIso, amIso) {
+  if (!gebIso) return null;
+  const g = new Date(gebIso + 'T12:00'), a = new Date((amIso || heuteIso()) + 'T12:00');
+  let j = a.getFullYear() - g.getFullYear();
+  if (a.getMonth() < g.getMonth() || (a.getMonth() === g.getMonth() && a.getDate() < g.getDate())) j--;
+  return j;
+}
+function vollerName(p) { return [p.vorname, p.nachname].filter(Boolean).join(' ') || 'Ohne Namen'; }
+
+// Österreichische SV-Nr.: 10 Ziffern, 4. Ziffer ist Prüfziffer,
+// die letzten 6 meist das Geburtsdatum TTMMJJ.
+function svnrPruefen(roh) {
+  const s = String(roh || '').replace(/\s/g, '');
+  if (!s) return null;
+  if (!/^\d{10}$/.test(s)) return { ok: false, text: 'Die SV-Nr. hat 10 Ziffern.' };
+  const g = [3, 7, 9, 0, 5, 8, 4, 2, 1, 6];
+  let summe = 0;
+  for (let i = 0; i < 10; i++) summe += Number(s[i]) * g[i];
+  if (summe % 11 !== Number(s[3])) return { ok: false, text: 'Prüfziffer passt nicht – bitte nochmal von der e-card abschreiben.' };
+  return { ok: true, text: '✓ SV-Nr. gültig', geb: s.slice(4) };
+}
+function svnrFormat(roh) {
+  const s = String(roh || '').replace(/\s/g, '');
+  return /^\d{10}$/.test(s) ? s.slice(0, 4) + ' ' + s.slice(4) : roh;
+}
+function ibanPruefen(roh) {
+  const s = String(roh || '').replace(/\s/g, '').toUpperCase();
+  if (!s) return null;
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return { ok: false, text: 'Das sieht nicht wie eine IBAN aus.' };
+  if (s.startsWith('AT') && s.length !== 20) return { ok: false, text: 'Österreichische IBANs haben 20 Zeichen.' };
+  const umgestellt = (s.slice(4) + s.slice(0, 4)).replace(/[A-Z]/g, c => String(c.charCodeAt(0) - 55));
+  let rest = 0;
+  for (const z of umgestellt) rest = (rest * 10 + Number(z)) % 97;
+  return rest === 1 ? { ok: true, text: '✓ IBAN gültig' } : { ok: false, text: 'IBAN-Prüfsumme passt nicht – Tippfehler?' };
+}
+function ibanFormat(roh) {
+  return String(roh || '').replace(/\s/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim();
+}
+
+// ── Navigation ───────────────────────────────────────────────
+function zeigeView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  if (id === 'v-liste') { renderListe(); setKopf('Neueintritt', 'Anmeldung Mitarbeiter:innen & Lehrlinge'); }
+  if (id === 'v-betrieb') { renderBetrieb(); setKopf('Lehrbetrieb', 'Daten für alle Formulare'); }
+  window.scrollTo(0, 0);
+}
+function setKopf(t, s) {
+  document.getElementById('kopf-titel').textContent = t;
+  document.getElementById('kopf-sub').textContent = s;
+}
+function zeigePane(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === btn.dataset.pane));
+  if (btn.dataset.pane === 'p-check') renderCheckliste();
+  if (btn.dataset.pane === 'p-druck') renderFormulare();
+  window.scrollTo(0, 0);
+}
+function zurListe() { _aktiv = null; zeigeView('v-liste'); }
+
+// ── Übersicht ────────────────────────────────────────────────
+function renderListe() {
+  const el = document.getElementById('liste');
+  if (!_alle.length) {
+    el.innerHTML = `<div class="leer">Noch niemand angelegt.<br>
+      Lege einen Lehrling oder eine Mitarbeiterin an – du füllst die Daten <b>einmal</b> aus,
+      die App erstellt daraus Checkliste, Fristen und alle Anmeldeblätter.</div>`;
+    return;
+  }
+  const sortiert = [..._alle].sort((a, b) => (b.daten.beginn || '').localeCompare(a.daten.beginn || ''));
+  el.innerHTML = sortiert.map(p => {
+    const { erledigt, gesamt, ueberfaellig } = fortschritt(p);
+    const pct = gesamt ? Math.round(erledigt / gesamt * 100) : 0;
+    const art = p.art === 'lehrling'
+      ? '<span class="badge badge-lehrling">Lehrling</span>' : '<span class="badge">Mitarbeiter:in</span>';
+    return `<div class="card card-click" onclick="oeffnen('${esc(p.id)}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div class="card-title">${esc(vollerName(p.daten))}</div>${art}
+      </div>
+      <div class="muted" style="margin-top:4px">
+        ${p.daten.beginn ? 'Beginn ' + esc(datumDe(p.daten.beginn)) + ' · ' : ''}${erledigt} von ${gesamt} erledigt
+        ${ueberfaellig ? ` · <span style="color:var(--red);font-weight:600">${ueberfaellig} überfällig</span>` : ''}
+      </div>
+      <div class="progress"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function neu(art) {
+  const p = {
+    id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    art,
+    erstellt: new Date().toISOString(),
+    daten: art === 'lehrling'
+      ? { lehrberuf: 'Friseur:in / Stylist:in', ort: 'Wien', befristung_behaltezeit: 'ja', vertreter_gleiche_adresse: 'wie Lehrling', zugang: '' }
+      : { ort: 'Wien', zugang: '' },
+    erledigt: {}
+  };
+  _alle.push(p);
+  speichern();
+  oeffnen(p.id);
+}
+function oeffnen(id) {
+  _aktiv = id;
+  zeigeView('v-detail');
+  zeigePane(document.querySelector('.tab[data-pane="p-daten"]'));
+  renderDaten();
+}
+function loeschen() {
+  const p = aktuell(); if (!p) return;
+  if (!confirm(`${vollerName(p.daten)} mit allen Daten von diesem Gerät löschen?`)) return;
+  _alle = _alle.filter(x => x.id !== p.id);
+  speichern();
+  zurListe();
+}
+
+// ── Formular ─────────────────────────────────────────────────
+function feldHtml(f, d, ziel) {
+  const v = d[f.k] ?? '';
+  const id = `${ziel}-${f.k}`;
+  const on = `onchange="setze('${ziel}','${f.k}',this.value)"`;
+  let input;
+  if (f.t === 'select') {
+    input = `<select id="${id}" ${on}>${f.opts.map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '– bitte wählen –')}</option>`).join('')}</select>`;
+  } else if (f.t === 'textarea') {
+    input = `<textarea id="${id}" ${on}>${esc(v)}</textarea>`;
+  } else if (f.t === 'seg') {
+    input = `<div class="seg">${f.opts.map(o => `<button type="button" class="${o === v ? 'on' : ''}" onclick="setze('${ziel}','${f.k}','${esc(o)}',true)">${esc(o)}</button>`).join('')}</div>`;
+  } else {
+    const typ = f.t || 'text';
+    input = `<input id="${id}" type="${typ}" value="${esc(v)}" placeholder="${esc(f.ph || '')}" ${on}
+      ${typ === 'text' ? 'autocomplete="off"' : ''}>`;
+  }
+  return `<div class="f${f.voll ? ' voll' : ''}"><label for="${id}">${esc(f.l)}</label>${input}${hilfeHtml(f, d)}</div>`;
+}
+
+function hilfeHtml(f, d) {
+  if (f.hilfe === 'svnr') {
+    const r = svnrPruefen(d[f.k]);
+    return r ? `<div class="${r.ok ? 'ok' : 'warn'}">${esc(r.text)}</div>` : '';
+  }
+  if (f.hilfe === 'iban') {
+    const r = ibanPruefen(d[f.k]);
+    return r ? `<div class="${r.ok ? 'ok' : 'warn'}">${esc(r.text)}</div>` : '';
+  }
+  if (f.hilfe === 'ende' && d.beginn && !d.ende) {
+    return `<div class="muted">Wird automatisch auf 3 Jahre gesetzt.</div>`;
+  }
+  return '';
+}
+
+function renderDaten() {
+  const p = aktuell(); if (!p) return;
+  const d = p.daten;
+  setKopf(vollerName(d), p.art === 'lehrling' ? 'Lehrling' : 'Mitarbeiter:in');
+
+  let html = '';
+  const alter = alterAm(d.geburtsdatum, d.beginn);
+  if (p.art === 'lehrling' && alter !== null && alter < 18) {
+    html += `<div class="hinweis">Bei Beginn ${alter} Jahre alt — der Lehrvertrag braucht auch die Unterschrift
+      der gesetzlichen Vertreter, und das Kinder- und Jugendlichen-Beschäftigungsgesetz (KJBG) gilt.</div>`;
+  }
+  if (d.zugang === ZUGANG[2] || d.zugang === ZUGANG[3]) {
+    html += `<div class="hinweis">Arbeitsmarktzugang ${d.zugang === ZUGANG[3] ? 'noch unklar' : ': Bewilligung nötig'} — vor dem
+      ersten Arbeitstag beim AMS klären bzw. Beschäftigungsbewilligung beantragen.</div>`;
+  }
+
+  for (const s of SEKTIONEN) {
+    if (s.nur && s.nur !== p.art) continue;
+    const felder = s.felder.filter(f => (!f.nur || f.nur === p.art) && (!f.wenn || f.wenn(d)));
+    html += `<div class="card"><div class="sec-title">${esc(s.titel)}</div><div class="grid">
+      ${felder.map(f => feldHtml(f, d, 'p')).join('')}</div></div>`;
+  }
+  html += `<button class="btn btn-primary btn-full" onclick="zeigePane(document.querySelector('.tab[data-pane=&quot;p-check&quot;]'))">Weiter zur Checkliste →</button>`;
+  document.getElementById('daten-form').innerHTML = html;
+}
+
+function renderBetrieb() {
+  document.getElementById('betrieb-form').innerHTML = BETRIEB_FELDER.map(f => feldHtml(f, _betrieb, 'b')).join('');
+}
+
+// Ein Feld setzen. Leitet ein paar Werte automatisch ab (Geburtsdatum aus SV-Nr., Lehrende).
+function setze(ziel, k, wert, neuZeichnen) {
+  const fokusId = document.activeElement && document.activeElement.id;
+  if (ziel === 'b') {
+    _betrieb[k] = wert;
+    speichern();
+    renderBetrieb();
+    return;
+  }
+  const p = aktuell(); if (!p) return;
+  const d = p.daten;
+  if (k === 'svnr') wert = svnrFormat(wert.trim());
+  if (k === 'iban') wert = ibanFormat(wert);
+  d[k] = wert;
+
+  if (k === 'svnr' && !d.geburtsdatum) {
+    const r = svnrPruefen(wert);
+    if (r && r.ok) {
+      const t = r.geb.slice(0, 2), m = r.geb.slice(2, 4), j = Number(r.geb.slice(4));
+      const jahr = (2000 + j) > new Date().getFullYear() - 13 ? 1900 + j : 2000 + j;
+      const iso = `${jahr}-${m}-${t}`;
+      if (!isNaN(new Date(iso + 'T12:00'))) d.geburtsdatum = iso;
+    }
+  }
+  if (k === 'beginn' && p.art === 'lehrling' && wert && !d.ende) d.ende = plusTage(plusMonate(wert, 36), -1);
+  if ((k === 'geburtsdatum' || k === 'beginn') && p.art === 'lehrling' && !d.erziehung) {
+    const a = alterAm(d.geburtsdatum, d.beginn);
+    if (a !== null) d.erziehung = a >= 18 ? 'eigenberechtigt' : 'Eltern';
+  }
+  speichern();
+  // Nur neu zeichnen, wenn sich die Darstellung ändert (sonst springt der Fokus beim Tippen).
+  const abhaengig = ['svnr', 'iban', 'beginn', 'geburtsdatum', 'zugang', 'vertreter_gleiche_adresse'];
+  if (neuZeichnen || abhaengig.includes(k)) {
+    renderDaten();
+    if (fokusId) { const el = document.getElementById(fokusId); if (el && el !== document.activeElement) el.focus(); }
+  }
+  if (k === 'vorname' || k === 'nachname') setKopf(vollerName(d), p.art === 'lehrling' ? 'Lehrling' : 'Mitarbeiter:in');
+}
+
+// ── Checkliste mit Fristen ───────────────────────────────────
+// Jede Aufgabe: id, text, sub (Erklärung), frist (ISO-Datum oder null), gruppe.
+function aufgaben(p) {
+  const d = p.daten;
+  const b = d.beginn || null;
+  const lehrling = p.art === 'lehrling';
+  const alter = alterAm(d.geburtsdatum, b);
+  const minderjaehrig = alter !== null && alter < 18;
+  const bewilligung = d.zugang === ZUGANG[2] || d.zugang === ZUGANG[3];
+  const liste = [];
+  const a = (gruppe, id, text, sub, frist) => liste.push({ gruppe, id, text, sub, frist: frist || null });
+
+  // Unterlagen
+  const U = 'Unterlagen einsammeln';
+  if (lehrling) {
+    a(U, 'u_geburtsurkunde', 'Geburtsurkunde (Kopie)', 'Wird von der Berufsschule verlangt.');
+    a(U, 'u_meldezettel', 'Meldezettel (Kopie)');
+    a(U, 'u_staatsbuergerschaft', 'Staatsbürgerschaftsnachweis bzw. Reisepass (Kopie)');
+    a(U, 'u_zeugnis', 'Letztes Zeugnis (9. Schulstufe)');
+    a(U, 'u_ecard', 'e-card / SV-Nr. abgeschrieben');
+    if (d.erziehung === 'Heim' || d.erziehung === 'Andere') a(U, 'u_vormund', 'Vormundschaftsdekret / Obsorgenachweis');
+  } else {
+    a(U, 'u_meldezettel', 'Meldezettel (Kopie)');
+    a(U, 'u_lap', 'Lehrabschlussprüfung / LAP-Zeugnis (Kopie)');
+    a(U, 'u_ausweis', 'Lichtbildausweis (Kopie)');
+    a(U, 'u_ecard', 'e-card / SV-Nr. abgeschrieben');
+  }
+  if (bewilligung) a(U, 'u_aufenthalt', 'Aufenthaltstitel / Asylbescheid (Kopie)', 'Zeigt, ob freier Arbeitsmarktzugang besteht.');
+  a(U, 'u_bank', 'Bankverbindung / IBAN', d.iban && ibanPruefen(d.iban)?.ok ? 'Ist eingetragen ✓' : 'Fehlt noch in den Daten.');
+  a(U, 'u_foto', 'Foto digital (für Homepage, Facebook …)');
+  a(U, 'u_foto_ok', 'Schriftliche Einwilligung zur Foto-Veröffentlichung',
+    minderjaehrig ? 'Minderjährig: auch die Eltern unterschreiben lassen.' : 'DSGVO: Veröffentlichung nur mit Einwilligung.');
+
+  // Vor dem ersten Tag
+  const V = 'Vor dem ersten Arbeitstag';
+  if (bewilligung) a(V, 'v_ams', 'Beschäftigungsbewilligung beim AMS beantragen / Zugang klären',
+    'Ohne Bewilligung darf die Person nicht arbeiten.', b ? plusTage(b, -1) : null);
+  if (lehrling) {
+    a(V, 'v_lehrvertrag', 'Lehrvertrag unterschreiben',
+      minderjaehrig ? 'Lehrling, Lehrbetrieb und gesetzliche Vertreter unterschreiben.' : 'Lehrling und Lehrbetrieb unterschreiben.',
+      b ? plusTage(b, -1) : null);
+  } else {
+    a(V, 'v_dienstvertrag', 'Dienstvertrag / Dienstzettel ausstellen und unterschreiben', null, b ? plusTage(b, -1) : null);
+  }
+  a(V, 'v_oegk', 'Bei der ÖGK anmelden (ELDA bzw. Lohnverrechnung)',
+    'Muss vor Arbeitsantritt erfolgen – Daten an die Lohnverrechnung schicken.', b ? plusTage(b, -1) : null);
+  a(V, 'v_lohn', 'Stammdatenblatt an Lohnverrechnung', 'Blatt „Anmeldungsdaten“ unter 3 · Formulare.', b ? plusTage(b, -1) : null);
+
+  // Nach Beginn
+  const N = 'Nach Beginn';
+  if (lehrling) {
+    a(N, 'n_berufsschule', 'Bei der Berufsschule für Haar- und Körperpflege anmelden',
+      'Goldschlagstraße 137, 1140 Wien · Anmeldeblatt unter 3 · Formulare.', b ? plusTage(b, 14) : null);
+    a(N, 'n_wkw', 'Lehrvertrag bei der Lehrlingsstelle der WKW anmelden',
+      'Innerhalb von 3 Wochen ab Lehrbeginn · Daten-Blatt unter 3 · Formulare.', b ? plusTage(b, 21) : null);
+    a(N, 'n_lvnr', 'Lehrvertragsnummer von der WKW in die Daten eintragen', d.lehrvertragsnr ? 'Ist eingetragen ✓' : null);
+    if (minderjaehrig) {
+      a(N, 'n_kjbg', 'Jugendliche: Verzeichnis führen & Arbeitszeiten nach KJBG planen',
+        'Höchstens 8 h/Tag und 40 h/Woche, keine Nachtarbeit.', b);
+    }
+    a(N, 'n_unterweisung', 'Sicherheits-Unterweisung (Chemikalien, Geräte) dokumentieren', null, b ? plusTage(b, 7) : null);
+  } else {
+    a(N, 'n_unterweisung', 'Sicherheits-Unterweisung (Chemikalien, Geräte) dokumentieren', null, b ? plusTage(b, 7) : null);
+  }
+  a(N, 'n_teamapp', 'Konto in der Team-App anlegen', 'Team-App → Team → Mitarbeiter:in hinzufügen.', b);
+  a(N, 'n_dienstplan', 'In Dienstplan, Abwesenheiten und Handbuch aufnehmen', null, b);
+
+  // Später
+  const S = 'Später';
+  if (lehrling && b) {
+    a(S, 's_probezeit', 'Ende der Probezeit (3 Monate)', 'Bis dahin kann das Lehrverhältnis von beiden Seiten jederzeit gelöst werden.', plusTage(plusMonate(b, 3), -1));
+    a(S, 's_foerderung', 'Lehrbetriebsförderung (Basisförderung) nach dem 1. Lehrjahr bei der WKW beantragen', null, plusMonate(b, 12));
+    if (d.ende) a(S, 's_lap', 'Lehrabschlussprüfung anmelden', 'Rechtzeitig vor Lehrzeitende bei der Lehrlingsstelle.', plusMonate(d.ende, -4));
+    if (d.ende && d.befristung_behaltezeit !== 'nein') a(S, 's_behaltezeit', 'Ende der Behaltezeit (3 Monate nach Lehrzeitende)', null, plusMonate(d.ende, 3));
+  } else if (b) {
+    a(S, 's_probezeit', 'Ende der Probezeit (1 Monat, falls vereinbart)', null, plusTage(plusMonate(b, 1), -1));
+  }
+  return liste;
+}
+
+function fortschritt(p) {
+  const liste = aufgaben(p);
+  const heute = heuteIso();
+  let erledigt = 0, ueberfaellig = 0;
+  for (const t of liste) {
+    if (p.erledigt[t.id]) erledigt++;
+    else if (t.frist && t.frist < heute && !t.id.startsWith('s_')) ueberfaellig++;
+  }
+  return { erledigt, gesamt: liste.length, ueberfaellig };
+}
+
+function fristHtml(frist, erledigt) {
+  if (!frist || erledigt) return frist ? `<span class="frist frist-ok">${esc(datumDe(frist))}</span>` : '';
+  const heute = heuteIso();
+  const tage = Math.round((new Date(frist + 'T12:00') - new Date(heute + 'T12:00')) / 86400000);
+  const kl = tage < 0 ? 'frist-ueber' : tage <= 7 ? 'frist-bald' : 'frist-ok';
+  const txt = tage < 0 ? `überfällig seit ${datumDe(frist)}` : tage === 0 ? 'heute' : `bis ${datumDe(frist)}`;
+  return `<span class="frist ${kl}">${esc(txt)}</span>`;
+}
+
+function renderCheckliste() {
+  const p = aktuell(); if (!p) return;
+  const liste = aufgaben(p);
+  let html = '';
+  if (!p.daten.beginn) html += `<div class="hinweis">Trag unter „1 · Daten“ das Beginn-Datum ein, dann rechnet die App alle Fristen aus.</div>`;
+  const gruppen = [...new Set(liste.map(t => t.gruppe))];
+  for (const g of gruppen) {
+    html += `<div class="card"><div class="sec-title">${esc(g)}</div>`;
+    for (const t of liste.filter(x => x.gruppe === g)) {
+      const ok = !!p.erledigt[t.id];
+      html += `<label class="todo${ok ? ' erledigt' : ''}">
+        <input type="checkbox" ${ok ? 'checked' : ''} onchange="abhaken('${t.id}', this.checked)">
+        <div><div class="todo-text">${esc(t.text)} ${fristHtml(t.frist, ok)}</div>
+        ${t.sub ? `<div class="todo-sub">${esc(t.sub)}</div>` : ''}
+        ${ok && typeof p.erledigt[t.id] === 'string' ? `<div class="todo-sub">erledigt am ${esc(datumDe(p.erledigt[t.id]))}</div>` : ''}</div>
+      </label>`;
+    }
+    html += `</div>`;
+  }
+  document.getElementById('checkliste').innerHTML = html;
+}
+
+function abhaken(id, an) {
+  const p = aktuell(); if (!p) return;
+  if (an) p.erledigt[id] = heuteIso(); else delete p.erledigt[id];
+  speichern();
+  renderCheckliste();
+}
+
+// ── Formulare / Druck ────────────────────────────────────────
+const FORMULARE = {
+  lehrling: [
+    { id: 'berufsschule', titel: 'Anmeldung Berufsschule', sub: 'Berufsschule für Haar- und Körperpflege, 1140 Wien' },
+    { id: 'wkw', titel: 'Lehrvertrag – Daten für die Lehrlingsstelle', sub: 'Wirtschaftskammer Wien, Seite 2' },
+    { id: 'stamm', titel: 'Anmeldungsdaten (intern / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
+  ],
+  ma: [
+    { id: 'stamm', titel: 'Anmeldungsdaten (intern / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
+  ]
+};
+
+function renderFormulare() {
+  const p = aktuell(); if (!p) return;
+  const fehlt = pflichtFehlt(p);
+  let html = '';
+  if (fehlt.length) {
+    html += `<div class="hinweis">Noch leer: ${esc(fehlt.join(', '))}. Du kannst trotzdem drucken – die Felder bleiben dann frei.</div>`;
+  }
+  for (const f of FORMULARE[p.art]) {
+    html += `<div class="card">
+      <div class="card-title">${esc(f.titel)}</div>
+      <div class="muted" style="margin:2px 0 10px">${esc(f.sub)}</div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="drucken(['${f.id}'])">Drucken / PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="kopieren('${f.id}')">Als Text kopieren</button>
+      </div>
+    </div>`;
+  }
+  html += `<button class="btn btn-secondary btn-full" onclick="drucken(FORMULARE[aktuell().art].map(f => f.id))">Alles auf einmal drucken</button>
+    <p class="muted" style="margin-top:12px;line-height:1.5">Tipp: Im Druckdialog „Als PDF sichern“ wählen, dann kannst du das PDF
+    per Mail an Berufsschule, WKW oder Lohnverrechnung schicken. Die Original-Formulare der WKW und der
+    Berufsschule bleiben verbindlich – die Blätter hier enthalten dieselben Angaben in derselben Reihenfolge,
+    zum Beilegen oder Abschreiben.</p>`;
+  document.getElementById('formulare').innerHTML = html;
+}
+
+function pflichtFehlt(p) {
+  const d = p.daten;
+  const pflicht = [['vorname', 'Vorname'], ['nachname', 'Familienname'], ['svnr', 'SV-Nr.'], ['geburtsdatum', 'Geburtsdatum'],
+    ['strasse', 'Adresse'], ['beginn', 'Beginn'], ['iban', 'IBAN']];
+  if (p.art === 'lehrling') pflicht.push(['vertreter_name', 'gesetzl. Vertreter'], ['letzte_schule', 'letzte Schule']);
+  return pflicht.filter(([k]) => !d[k]).map(([, l]) => l);
+}
+
+function adresseVertreter(d) {
+  if (d.vertreter_gleiche_adresse === 'andere') return [d.vertreter_strasse, [d.vertreter_plz, d.vertreter_ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+function adresse(d) { return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', '); }
+
+// Liefert die Inhalte eines Blatts als Abschnitte [[Titel, [[Label, Wert], …]], …]
+function blattInhalt(id, p) {
+  const d = p.daten, B = _betrieb;
+  const ja = (bed) => bed ? '☒' : '☐';
+  if (id === 'berufsschule') {
+    return { titel: 'Anmeldung Berufsschule für Haar- und Körperpflege',
+      kopf: 'Goldschlagstraße 137, 1140 Wien · Tel. +43 1 599 16 95 805 · bs14gold137k@m56ssr.wien.at', teile: [
+      ['Lehrberuf', [['Lehrberuf', d.lehrberuf], ['2. Lehrberuf', d.lehrberuf2]]],
+      ['Schüler:in', [
+        ['Familienname', d.nachname], ['Vorname', d.vorname], ['Geschlecht', d.geschlecht],
+        ['Versicherungsnummer', d.svnr], ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', d.geburtsort],
+        ['Bundesland', d.bundesland_geburt], ['Geburtsstaat', d.geburtsstaat],
+        ['Staatsbürgerschaft', d.staatsbuergerschaft], ['Religion', d.religion], ['Muttersprache', d.muttersprache],
+        ['Wohnadresse', adresse(d)], ['Tel. oder Handy', d.tel]]],
+      ['Erziehungsberechtigt', [
+        ['Erziehungsberechtigt ist/sind', d.erziehung], ['Vor- und Familienname', d.vertreter_name],
+        ['Adresse', adresseVertreter(d)], ['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater],
+        ['Beruf Mutter', d.beruf_mutter], ['Beruf Vater', d.beruf_vater], ['Notfallnummer bei Eigenberechtigung', d.notfall]]],
+      ['Lehrbetrieb', [
+        ['Name', B.name], ['Adresse', B.adresse], ['Tel.', B.tel], ['Fax', B.fax],
+        ['Lehrzeit von – bis', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
+        ['Lehrvertragsnummer', d.lehrvertragsnr]]],
+      ['Vorbildung', [
+        ['Schuljahr', d.schuljahr], ['Schulstufe', d.schulstufe], ['Schulart', d.schultyp],
+        ['Letzte Schule', d.letzte_schule], ['Bundesland der Schule', d.schul_bundesland],
+        ['Neunte Schulstufe', d.neunte_stufe], ['Vermerk sonderpäd. Förderbedarf', d.foerderbedarf],
+        ['Bisherige Lehrzeit', d.bisherige_lehrzeit], ['im Lehrberuf', d.bisheriger_lehrberuf]]],
+      ['Beigelegte Dokumente', [
+        ['Geburtsurkunde', ja(p.erledigt.u_geburtsurkunde)], ['Meldezettel', ja(p.erledigt.u_meldezettel)],
+        ['Staatsbürgerschaftsnachweis', ja(p.erledigt.u_staatsbuergerschaft)], ['Zeugnisse', ja(p.erledigt.u_zeugnis)],
+        ['Lehrvertrag', ja(p.erledigt.v_lehrvertrag)],
+        ['Arbeitsbewilligung (wenn nicht EU-Bürger:in)', d.zugang === ZUGANG[0] ? 'nicht nötig' : ja(p.erledigt.v_ams || p.erledigt.u_aufenthalt)]]]
+    ]};
+  }
+  if (id === 'wkw') {
+    return { titel: 'Lehrvertrag – Angaben für die Lehrlingsstelle',
+      kopf: 'Lehrlingsstelle der Wirtschaftskammer Wien · Straße der Wiener Wirtschaft 1, 1020 Wien · T 01 514 50-2013 · lehrlingsstelle@wkw.at', teile: [
+      ['Lehrbetrieb', [
+        ['Lehrbetrieb', B.name], ['Adresse', B.adresse], ['Ausbildungsleiter:in', B.ausbildungsleiter],
+        ['E-Mail', B.email], ['SV-Nr. Ausbildungsleiter:in', B.svnr], ['Anzahl Fachkräfte', B.fachkraefte],
+        ['Befristung Behaltezeit', d.befristung_behaltezeit]]],
+      ['Lehrling', [
+        ['Geschlecht', d.geschlecht], ['Vorname', d.vorname], ['Nachname', d.nachname], ['SV-Nr.', d.svnr],
+        ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', [d.geburtsort, d.geburtsstaat].filter(Boolean).join(', ')],
+        ['Adresse', adresse(d)], ['E-Mail', d.email], ['Tel.-Nr.', d.tel], ['Staatsbürgerschaft', d.staatsbuergerschaft],
+        ['Letzte Schule', d.letzte_schule], ['Letztbesuchte Klasse', d.letzte_klasse], ['Abgeschlossen', d.neunte_stufe]]],
+      ['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)]]],
+      ['Lehrverhältnis', [
+        ['Lehrberuf', d.lehrberuf], ['Lehrzeit', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
+        ['Anrechnungen Schul-/Vorlehrzeiten', d.anrechnungen], ['Besondere Vereinbarungen', d.vereinbarungen]]]
+    ]};
+  }
+  if (id === 'stamm') {
+    const teile = [
+      ['Person', [['Name', vollerName(d)], ['Adresse', adresse(d)], ['Geburtstag', datumDe(d.geburtsdatum)],
+        ['Sozialversicherungsnummer', d.svnr], ['Staatsbürgerschaft', d.staatsbuergerschaft],
+        ['Arbeitsmarktzugang', d.zugang], ['Telefon', d.tel], ['E-Mail', d.email]]],
+      ['Bank', [['Bank', d.bank], ['IBAN', d.iban]]],
+      [p.art === 'lehrling' ? 'Lehrverhältnis' : 'Dienstverhältnis', p.art === 'lehrling'
+        ? [['Lehrberuf', d.lehrberuf], ['Beginn', datumDe(d.beginn)], ['Ende', datumDe(d.ende)], ['Lehrvertragsnummer', d.lehrvertragsnr]]
+        : [['Eintritt', datumDe(d.beginn)], ['Position', d.position], ['Wochenstunden', d.stunden], ['LAP', d.lap]]],
+      ['Unterlagen', [
+        ['Kopie Meldezettel', ja(p.erledigt.u_meldezettel)],
+        p.art === 'lehrling' ? ['Zeugnis 9. Schulstufe', ja(p.erledigt.u_zeugnis)] : ['Kopie LAP-Prüfung', ja(p.erledigt.u_lap)],
+        ['Foto digital (Homepage, Facebook …)', ja(p.erledigt.u_foto)], ['Foto-Einwilligung', ja(p.erledigt.u_foto_ok)]]]
+    ];
+    if (d.notfall || d.vertreter_name) teile.push(['Notfall', [['Gesetzl. Vertreter:in', d.vertreter_name], ['Notfallkontakt', d.notfall || d.tel_mutter || d.tel_vater]]]);
+    return { titel: 'Anmeldungsdaten', kopf: B.name + ' · ' + B.adresse, teile, unterschrift: true };
+  }
+  if (id === 'checkliste') {
+    const liste = aufgaben(p);
+    const gruppen = [...new Set(liste.map(t => t.gruppe))];
+    return { titel: 'Checkliste Neueintritt – ' + vollerName(d), kopf: B.name, teile: gruppen.map(g => [g,
+      liste.filter(t => t.gruppe === g).map(t => [ja(p.erledigt[t.id]) + ' ' + t.text, t.frist ? 'bis ' + datumDe(t.frist) : ''])]) };
+  }
+}
+
+function drucken(ids) {
+  const p = aktuell(); if (!p) return;
+  document.getElementById('druck').innerHTML = ids.map(id => {
+    const b = blattInhalt(id, p);
+    return `<div class="blatt"><h1>${esc(b.titel)}</h1><div class="kopf">${esc(b.kopf)}</div>
+      ${b.teile.map(([t, zeilen]) => `<h2>${esc(t)}</h2><table>${zeilen.map(([l, v]) =>
+        `<tr><td class="l">${esc(l)}</td><td>${esc(v || '')}</td></tr>`).join('')}</table>`).join('')}
+      ${b.unterschrift ? `<div class="unterschrift"><div>Datum</div><div>Unterschrift Mitarbeiter:in${p.art === 'lehrling' ? ' / Lehrling' : ''}</div></div>` : ''}
+      <div class="fuss">Erstellt am ${esc(datumDe(heuteIso()))} mit der Neueintritt-App · ${esc(_betrieb.name)}</div></div>`;
+  }).join('');
+  window.print();
+}
+
+function kopieren(id) {
+  const p = aktuell(); if (!p) return;
+  const b = blattInhalt(id, p);
+  const text = [b.titel, b.kopf, '', ...b.teile.flatMap(([t, zeilen]) =>
+    [t.toUpperCase(), ...zeilen.map(([l, v]) => `${l}: ${v || ''}`), ''])].join('\n');
+  const fertig = () => showToast('Kopiert – jetzt in Mail oder Formular einfügen');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(fertig, () => kopierenAlt(text, fertig));
+  } else kopierenAlt(text, fertig);
+}
+function kopierenAlt(text, fertig) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); fertig(); } catch (e) { showToast('Kopieren nicht möglich'); }
+  ta.remove();
+}
+
+// ── Sicherung ────────────────────────────────────────────────
+function exportJson() {
+  const blob = new Blob([JSON.stringify({ version: 1, betrieb: _betrieb, personen: _alle }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `neueintritt-sicherung-${heuteIso()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function importJson(input) {
+  const datei = input.files && input.files[0];
+  input.value = '';
+  if (!datei) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(r.result);
+      if (!j || !Array.isArray(j.personen)) throw new Error('kein gültiges Format');
+      const vorhanden = new Set(_alle.map(p => p.id));
+      let neuAnzahl = 0;
+      for (const p of j.personen) {
+        if (!p || typeof p.id !== 'string' || !p.daten || (p.art !== 'lehrling' && p.art !== 'ma')) continue;
+        p.erledigt = p.erledigt || {};
+        if (vorhanden.has(p.id)) _alle = _alle.map(x => x.id === p.id ? p : x);
+        else { _alle.push(p); neuAnzahl++; }
+      }
+      if (j.betrieb && typeof j.betrieb === 'object') _betrieb = { ...BETRIEB_STANDARD, ...j.betrieb };
+      speichern();
+      renderListe();
+      showToast(`Sicherung eingespielt (${neuAnzahl} neu)`);
+    } catch (e) {
+      console.error(e);
+      alert('Diese Datei konnte nicht gelesen werden. Bitte eine Sicherung aus dieser App wählen.');
+    }
+  };
+  r.readAsText(datei);
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+laden();
+renderListe();
+</script>
+</body>
+</html>
