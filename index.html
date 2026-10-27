@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co wss://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<script src="https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/ghd-sitzung.js" data-schluessel="teamapp_person"></script>  <!-- automatisch abmelden nach 15 min ohne Bedienung -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -878,6 +879,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/ghd-offline.js" data-schluessel="teamapp_person"></script>  <!-- offline nutzbar: Service Worker, gemerkte Daten, Nachsync -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/icon-512.png">
 <script>
 // ═══════════════════════════════════════════
 // SUPABASE CONFIG
@@ -886,9 +890,23 @@ const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
 const STORAGE_BUCKET = 'teamapp-anhaenge';
 const APP_URL = 'https://mirjamwalenta-a11y.github.io/Team/team.html';
-const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/swift-worker';
+const TEAM_ADMIN_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/team-admin';
 
 const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── Wörni-Meldungen über Serverfunktionen (Team-Repo, Migration 20260927100000) ──
+// Die Apps lesen die Wörni-Tabellen nicht mehr selbst; die Funktionen
+// erledigen „schon da? dann aktualisieren, sonst anlegen“ auf dem Server.
+async function ghdRpc(fn, args) {
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if (!session?.access_token) throw new Error('Nicht angemeldet');
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
 
 async function supa(table, method = 'GET', body = null, filter = '') {
   const { data: { session } } = await sbAuth.auth.getSession();
@@ -1038,24 +1056,20 @@ document.getElementById('login-pw').addEventListener('keydown', e => {
 // ═══════════════════════════════════════════
 async function handleInvite(token) {
   try {
-    const rows = await supaGet('teamapp_invites', `token=eq.${token}`);
-    if (!rows || rows.length === 0) {
-      showScreen('screen-login');
-      return;
-    }
-    const invite = rows[0];
-    if (invite.laeuft_ab && new Date(invite.laeuft_ab) < new Date()) {
-      await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(token)}`).catch(() => {});
-      alert('Dieser Einladungslink ist abgelaufen. Bitte neuen Link anfordern.');
-      showScreen('screen-login');
-      return;
-    }
-    // Finde Person mit dieser E-Mail oder diesem Namen
-    const persons = await supaGet('teamapp_persons', `name=eq.${encodeURIComponent(invite.name)}`);
-    if (persons && persons.length > 0) {
-      _me = persons[0];
+    // Vor dem ersten Login gibt es keinen Lesezugriff auf teamapp_persons/-invites.
+    // Die Serverfunktion liefert genau die eingeladene Person (id, name, email),
+    // und nur bei gültigem, nicht abgelaufenem Code (Migration 20260927130000).
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/teamapp_einladung_person`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_token: token })
+    });
+    const person = r.ok ? await r.json() : null;
+    if (person && person.email) {
+      _me = person;
       showScreen('screen-onboarding');
     } else {
+      alert('Dieser Einladungslink ist ungültig oder abgelaufen. Bitte neuen Link anfordern.');
       showScreen('screen-login');
     }
   } catch(e) {
@@ -1082,14 +1096,16 @@ async function doOnboarding() {
     if (signInErr) { alert('Fehler: Anmeldung mit dem Anfangspasswort fehlgeschlagen. Bitte Mirjam kontaktieren.'); return; }
     const { error: updErr } = await sbAuth.auth.updateUser({ password: pw });
     if (updErr) { alert('Fehler: ' + updErr.message); return; }
+    // Jetzt angemeldet: vollständigen Personeneintrag (Rolle, aktiv, …) laden
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(_me.email)}`);
+    if (rows && rows.length > 0) _me = rows[0];
     sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
-    // Invite löschen (best effort — ein Fehlschlag hier darf den Abschluss nicht blockieren)
-    try {
-      await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
-    } catch(e) { console.warn('Invite-Cleanup fehlgeschlagen:', e.message); }
+    // Invite löschen
+    await supaDelete('teamapp_invites', `token=eq.${encodeURIComponent(location.search.slice(8))}`);
     await startApp();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Registrierung fehlgeschlagen:', e.message);
+    alert('Registrierung fehlgeschlagen. Bitte nochmal versuchen oder Mirjam kontaktieren.');
   }
 }
 
@@ -1118,12 +1134,10 @@ function showScreen(id) {
   }
 }
 
-const ALL_TABS = ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'];
-
 function switchTab(tab) {
   _currentTab = tab;
   // Alle Tabs im main verstecken
-  ALL_TABS.forEach(t => {
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'].forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   // Nav aktualisieren
@@ -1168,7 +1182,7 @@ function showCreate() {
 }
 
 function showInnerTab(tabId) {
-  ALL_TABS.forEach(t => {
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil'].forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   document.getElementById(tabId).classList.add('active');
@@ -1423,7 +1437,8 @@ async function doBestaetigen(eintragId) {
     // Feed im Hintergrund aktualisieren
     loadFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Bestätigen fehlgeschlagen:', e.message);
+    alert('Bestätigen fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1465,17 +1480,18 @@ async function doSendReaktion() {
     // ── GHD-EREIGNIS bei Frage-Rückmeldung ─────────────────────────
     if (_reaktionTyp === 'Frage') {
       const eintragTitel = (_eintraege.find(e => e.id === _currentEintragId) || {}).titel || 'Eintrag';
-      supa('ghd_ereignisse', 'POST', {
-        app: 'Team',
-        typ: 'rueckmeldung_frage',
-        titel: 'Frage vom Team zu: ' + eintragTitel,
-        prioritaet: 'diese-woche',
-        gelesen: false,
-      }).catch(function(e){ console.warn('GHD-Ereignis (rueckmeldung_frage) fehlgeschlagen:', e.message); });
+      ghdRpc('ghd_ereignis_melden', {
+        p_app: 'Team',
+        p_typ: 'rueckmeldung_frage',
+        p_titel: 'Frage vom Team zu: ' + eintragTitel,
+        p_prioritaet: 'diese-woche',
+        p_zusammenfassen: false,
+      }).catch(function(){});
     }
     await showDetail(_currentEintragId);
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Rückmeldung fehlgeschlagen:', e.message);
+    alert('Rückmeldung fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1524,18 +1540,19 @@ async function doCreateEintrag() {
     showToast('Veröffentlicht ✓');
     // ── GHD-EREIGNIS bei wichtigem Eintrag ────────────────────────
     if (wichtig) {
-      supa('ghd_ereignisse', 'POST', {
-        app: 'Team',
-        typ: 'wichtige_mitteilung',
-        titel: 'Wichtige Mitteilung: ' + titel,
-        prioritaet: 'heute',
-        gelesen: false,
-      }).catch(function(e){ console.warn('GHD-Ereignis (wichtige_mitteilung) fehlgeschlagen:', e.message); });
+      ghdRpc('ghd_ereignis_melden', {
+        p_app: 'Team',
+        p_typ: 'wichtige_mitteilung',
+        p_titel: 'Wichtige Mitteilung: ' + titel,
+        p_prioritaet: 'heute',
+        p_zusammenfassen: false,
+      }).catch(function(){});
     }
     await loadFeed();
     showFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Beitrag konnte nicht gespeichert werden:', e.message);
+    alert('Beitrag konnte nicht gespeichert werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1621,7 +1638,8 @@ async function doEditSave() {
     await loadFeed();
     await showDetail(_currentEintragId);
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Speichern fehlgeschlagen:', e.message);
+    alert('Speichern fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1638,7 +1656,8 @@ async function doDeleteEintrag() {
     await loadFeed();
     showFeed();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Löschen fehlgeschlagen:', e.message);
+    alert('Löschen fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -1704,6 +1723,7 @@ async function renderTeam() {
       html += `
         <div style="margin-bottom:16px">
           <button class="btn btn-primary btn-full" onclick="openOverlay('overlay-add-person')">＋ Mitarbeiter:in hinzufügen</button>
+          <a class="btn btn-secondary btn-full" href="./anmeldung.html" style="margin-top:8px;text-decoration:none">📋 Neueintritt / Lehrling anmelden</a>
         </div>`;
     }
 
@@ -1800,7 +1820,8 @@ async function doAddPerson() {
     showToast(`${name} hinzugefügt`);
     await renderTeam();
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Person konnte nicht angelegt werden:', e.message);
+    alert('Person konnte nicht angelegt werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1838,7 +1859,8 @@ async function doPinSave() {
     closeOverlay('overlay-pin');
     showToast('Passwort gespeichert ✓');
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Passwort konnte nicht gespeichert werden:', e.message);
+    alert('Passwort konnte nicht gespeichert werden. Bitte nochmal versuchen.');
   }
 }
 
@@ -1855,19 +1877,17 @@ async function doDeactivate() {
     await supaPatch('teamapp_persons', `id=eq.${_deactivateId}`, { aktiv: false });
     // Echtes Login zusätzlich sperren (nicht nur die App-Markierung)
     const person = (_persons || []).find(p => p.id === _deactivateId);
-    let loginLockFailed = false;
     if (person && person.email) {
       try { await teamAdminCall('deactivate', person.email); }
-      catch(e) { loginLockFailed = true; console.warn('Login-Sperre fehlgeschlagen:', e.message); }
+      catch(e) { console.warn('Login-Sperre fehlgeschlagen:', e.message); }
     }
     closeOverlay('overlay-deactivate');
-    if (loginLockFailed) {
-      alert('App-Status wurde auf "deaktiviert" gesetzt, aber die echte Login-Sperre ist fehlgeschlagen. Bitte erneut versuchen.');
-    } else {
-      showToast('Deaktiviert');
-    }
+    showToast('Deaktiviert');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Deaktivieren fehlgeschlagen:', e.message);
+    alert('Deaktivieren fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 function openReactivate(id, name) {
@@ -1880,19 +1900,17 @@ async function doReactivate() {
     await supaPatch('teamapp_persons', `id=eq.${_reactivateId}`, { aktiv: true });
     // Echtes Login wieder freischalten
     const person = (_persons || []).find(p => p.id === _reactivateId);
-    let loginUnlockFailed = false;
     if (person && person.email) {
       try { await teamAdminCall('reactivate', person.email); }
-      catch(e) { loginUnlockFailed = true; console.warn('Login-Entsperrung fehlgeschlagen:', e.message); }
+      catch(e) { console.warn('Login-Entsperrung fehlgeschlagen:', e.message); }
     }
     closeOverlay('overlay-reactivate');
-    if (loginUnlockFailed) {
-      alert('App-Status wurde auf "aktiv" gesetzt, aber die echte Login-Freigabe ist fehlgeschlagen. Bitte erneut versuchen.');
-    } else {
-      showToast('Reaktiviert');
-    }
+    showToast('Reaktiviert');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Reaktivieren fehlgeschlagen:', e.message);
+    alert('Reaktivieren fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 function openDeletePerson(id, name) {
@@ -1906,7 +1924,10 @@ async function doDeletePerson() {
     closeOverlay('overlay-delete-person');
     showToast('Gelöscht');
     await renderTeam();
-  } catch(e) { alert('Fehler: ' + e.message); }
+  } catch(e) {
+    console.error('Löschen fehlgeschlagen:', e.message);
+    alert('Löschen fehlgeschlagen. Bitte nochmal versuchen.');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1968,7 +1989,8 @@ async function doChangePw() {
     closeOverlay('overlay-pw');
     showToast('Passwort geändert ✓');
   } catch(e) {
-    alert('Fehler: ' + e.message);
+    console.error('Passwort ändern fehlgeschlagen:', e.message);
+    alert('Passwort ändern fehlgeschlagen. Bitte nochmal versuchen.');
   }
 }
 
@@ -2045,9 +2067,6 @@ function hideErr(id) {
 
 // ── PROTOKOLL ──
 var protEintraege = JSON.parse(localStorage.getItem('team-protokoll') || '[]');
-const GHD_URL_PROT = 'https://lpuxvvfrrcnbuzafscyk.supabase.co';
-const GHD_KEY_PROT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwdXh2dmZycmNuYnV6YWZzY3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxOTAyMTIsImV4cCI6MjA1OTc2NjIxMn0.GHkqHB0DaJkV2R80MiIHJFqhU5TJiR5vHH7K0iNLPaY';
-const GHD_H_PROT = { "apikey": GHD_KEY_PROT, "Authorization": "Bearer " + GHD_KEY_PROT, "Content-Type": "application/json", "Prefer": "return=minimal" };
 
 function protSave() {
   localStorage.setItem('team-protokoll', JSON.stringify(protEintraege));
@@ -2101,40 +2120,27 @@ function protDelete(i) {
 
 async function protWoerniSignal(titel) {
   // ── GHD-EREIGNIS Protokoll ─────────────────────────────────
-  supa('ghd_ereignisse', 'POST', {
-    app: 'Team',
-    typ: 'protokoll_neu',
-    titel: 'Neues Besprechungsprotokoll: ' + titel,
-    prioritaet: 'diese-woche',
-    gelesen: false,
-  }).catch(function(e){ console.warn('GHD-Ereignis (protokoll_neu) fehlgeschlagen:', e.message); });
+  ghdRpc('ghd_ereignis_melden', {
+    p_app: 'Team',
+    p_typ: 'protokoll_neu',
+    p_titel: 'Neues Besprechungsprotokoll: ' + titel,
+    p_prioritaet: 'diese-woche',
+    p_zusammenfassen: false,
+  }).catch(function(){});
   try {
-    const SIGNAL_KEY = 'team-protokoll-neu';
-    const check = await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt&select=id', { headers: GHD_H_PROT });
-    const existing = await check.json();
-    if (Array.isArray(existing) && existing.length > 0) {
-      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben?signal_key=eq.' + SIGNAL_KEY + '&status=neq.erledigt', {
-        method: 'PATCH', headers: GHD_H_PROT,
-        body: JSON.stringify({ titel: 'Neues Besprechungsprotokoll: ' + titel, geaendert_am: new Date().toISOString() })
-      });
-    } else {
-      await fetch(GHD_URL_PROT + '/rest/v1/ghd_aufgaben', {
-        method: 'POST', headers: GHD_H_PROT,
-        body: JSON.stringify({
-          typ: 'team',
-          titel: 'Neues Besprechungsprotokoll: ' + titel,
-          naechster_schritt: 'Team-App öffnen → Protokoll lesen',
-          verantwortlich: 'mirjam',
-          prioritaet: 'diese-woche',
-          status: 'neu',
-          app_kontext: 'team',
-          fach_kontext: 'protokoll',
-          signal_key: SIGNAL_KEY,
-          erstellt_von: 'system',
-          erstellt_am: new Date().toISOString()
-        })
-      });
-    }
+    await ghdRpc('ghd_aufgabe_melden', {
+      p_signal_key: 'team-protokoll-neu',
+      p_daten: {
+        typ: 'team',
+        titel: 'Neues Besprechungsprotokoll: ' + titel,
+        naechster_schritt: 'Team-App öffnen → Protokoll lesen',
+        verantwortlich: 'mirjam',
+        prioritaet: 'diese-woche',
+        app_kontext: 'team',
+        fach_kontext: 'protokoll',
+        erstellt_von: 'system'
+      }
+    });
   } catch(e) { console.warn('Wörni Protokoll-Signal fehlgeschlagen:', e); }
 }
 
