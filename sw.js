@@ -6,7 +6,7 @@
 // Neue Seiten/Dateien dieser App hier bei `vorab` ergänzen.
 self.GHD_OFFLINE = {
   app: 'team',
-  version: '2026-10-27',
+  version: '2026-10-27b',
   start: './team.html',
   vorab: [
     './',
