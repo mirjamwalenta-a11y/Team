@@ -102,6 +102,11 @@
     -webkit-appearance: none;
   }
   input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  input[type="checkbox"] {
+    -webkit-appearance: checkbox; appearance: auto;
+    width: 20px; height: 20px; padding: 0; flex-shrink: 0;
+    accent-color: var(--accent); cursor: pointer;
+  }
   textarea { resize: none; line-height: 1.5; }
   .form-group { margin-bottom: 16px; }
   .form-error { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
@@ -440,6 +445,17 @@
     text-align: center;
   }
   .inaktiv-screen p { color: var(--text-2); line-height: 1.6; font-size: 15px; }
+
+  /* ── BREITE BILDSCHIRME (PC) ── */
+  @media (min-width: 760px) {
+    #screen-main {
+      max-width: 720px; margin: 0 auto;
+      border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .fab { right: calc(50% - 360px + 20px); }
+    .sheet { max-width: 720px; margin: 0 auto; }
+  }
 
   /* ── UTILS ── */
   .divider { height: 1px; background: var(--border); margin: 16px 0; }
