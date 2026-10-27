@@ -1,0 +1,73 @@
+# Live-Abgleich: GitHub Pages veröffentlicht die Apps aus dem Branch „hauptsächlich“,
+# gearbeitet wird aber auf „mai“. Nach jeder Übernahme in „mai“ bringt dieser Ablauf
+# die veröffentlichten Dateien automatisch auf denselben Stand – egal, welcher der
+# beiden Branches in den Pages-Einstellungen gerade eingestellt ist.
+#
+# Übernommen werden alle Dateien im Hauptordner mit .html/.js/.json/.png/.svg/.ico/
+# .webmanifest; index.html ist immer eine Kopie von team.html (Startseite /Team/).
+# Doku (.md) und supabase/ bleiben nur auf „mai“.
+
+name: Live-Abgleich
+
+on:
+  push:
+    branches: [mai]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: live-abgleich
+  cancel-in-progress: false
+
+jobs:
+  abgleich:
+    runs-on: ubuntu-latest
+    steps:
+      - name: mai auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: mai
+          path: quelle
+
+      - name: hauptsächlich auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: hauptsächlich
+          path: live
+
+      - name: Dateien übernehmen
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          # Veröffentlichte Dateien, die es auf mai nicht mehr gibt, entfernen (index.html ausgenommen).
+          for f in live/*.html live/*.js live/*.json live/*.png live/*.svg live/*.ico live/*.webmanifest; do
+            name="$(basename "$f")"
+            [ "$name" = "index.html" ] && continue
+            [ -e "quelle/$name" ] || git -C live rm -q -- "$name"
+          done
+          for f in quelle/*.html quelle/*.js quelle/*.json quelle/*.png quelle/*.svg quelle/*.ico quelle/*.webmanifest; do
+            cp "$f" live/
+          done
+          cp quelle/team.html live/index.html
+
+      - name: Committen und veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd live
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Live-Stand ist schon aktuell."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898232+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "Live-Abgleich mit mai (${GITHUB_SHA::7})"
+          git push origin HEAD:hauptsächlich
+          # Pushes über den Actions-Token stoßen nicht immer einen Pages-Build an – daher ausdrücklich anfordern.
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds" || echo "Pages-Build konnte nicht angefordert werden."
