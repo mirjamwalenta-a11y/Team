@@ -483,7 +483,14 @@ function datumDe(iso) {
 }
 function isoAus(d) {
   const z = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+  return `${String(d.getFullYear()).padStart(4, '0')}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+}
+// Datumsfelder melden beim Eintippen schon Zwischenstände wie „0002-11-02“ –
+// erst ein plausibles Jahr wird übernommen.
+const DATUMSFELDER = new Set(['beginn', 'ende', 'geburtsdatum']);
+function datumPlausibel(iso) {
+  const m = /^(\d{4})-\d{2}-\d{2}$/.exec(iso || '');
+  return !!m && Number(m[1]) >= 1900 && Number(m[1]) <= 2100;
 }
 function plusTage(iso, n) { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n); return isoAus(d); }
 function plusMonate(iso, n) {
@@ -745,9 +752,12 @@ function setze(ziel, k, wert, neuZeichnen) {
   const p = ziel === 's' ? _selbst : aktuell();
   if (!p) return;
   const d = p.daten;
+  // Unfertiges Datum: nichts speichern und nicht neu zeichnen, sonst springt die Eingabe beim Tippen zurück.
+  if (DATUMSFELDER.has(k) && wert && !datumPlausibel(wert)) return;
   if (k === 'svnr') wert = svnrFormat(wert.trim());
   if (k === 'iban') wert = ibanFormat(wert);
   d[k] = wert;
+  if (k === 'ende') d.ende_auto = false;
 
   if (k === 'svnr' && !d.geburtsdatum) {
     const r = svnrPruefen(wert);
@@ -758,14 +768,19 @@ function setze(ziel, k, wert, neuZeichnen) {
       if (!isNaN(new Date(iso + 'T12:00'))) d.geburtsdatum = iso;
     }
   }
-  if (k === 'beginn' && p.art === 'lehrling' && wert && !d.ende) d.ende = plusTage(plusMonate(wert, 36), -1);
+  // Lehrzeitende (3 Jahre) mitziehen, solange es nicht von Hand geändert wurde oder nicht zum Beginn passt.
+  if (k === 'beginn' && p.art === 'lehrling' && wert
+      && (!d.ende || d.ende_auto !== false || !datumPlausibel(d.ende) || d.ende <= wert)) {
+    d.ende = plusTage(plusMonate(wert, 36), -1);
+    d.ende_auto = true;
+  }
   if ((k === 'geburtsdatum' || k === 'beginn' || k === 'svnr') && p.art === 'lehrling' && !d.erziehung) {
     const a = alterAm(d.geburtsdatum, d.beginn);
     if (a !== null) d.erziehung = a >= 18 ? 'eigenberechtigt' : 'Eltern';
   }
   if (ziel === 's') entwurfSpeichern(); else speichern();
   // Nur neu zeichnen, wenn sich die Darstellung ändert (sonst springt der Fokus beim Tippen).
-  const abhaengig = ['svnr', 'iban', 'beginn', 'geburtsdatum', 'zugang', 'vertreter_gleiche_adresse'];
+  const abhaengig = ['svnr', 'iban', 'beginn', 'ende', 'geburtsdatum', 'zugang', 'vertreter_gleiche_adresse'];
   if (neuZeichnen || abhaengig.includes(k)) {
     if (ziel === 's') renderSelbst(); else renderDaten();
     if (fokusId) { const el = document.getElementById(fokusId); if (el && el !== document.activeElement) el.focus(); }
@@ -854,7 +869,7 @@ function linkBauen() {
   const d = p.daten;
   const vor = {};
   for (const k of ['vorname', 'nachname', 'lehrberuf', 'lehrberuf2', 'beginn', 'ende', 'position', 'ort', 'vertreter_gleiche_adresse']) {
-    if (d[k]) vor[k] = d[k];
+    if (d[k] && (!DATUMSFELDER.has(k) || datumPlausibel(d[k]))) vor[k] = d[k];
   }
   const nutzlast = {
     v: 1, id: p.id, art: p.art,
