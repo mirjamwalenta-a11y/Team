@@ -2,7 +2,8 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://mirjamwalenta-a11y.github.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<script src="https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/ghd-sitzung.js"></script>  <!-- automatisch abmelden nach 15 min ohne Bedienung -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Neueintritt">
@@ -201,6 +202,7 @@
       <div>
         <div class="header-title" id="kopf-titel">Neueintritt</div>
         <div class="header-sub" id="kopf-sub">Anmeldung Mitarbeiter:innen &amp; Lehrlinge</div>
+        <div class="header-sub" id="wolke-status" style="font-weight:600"></div>
       </div>
       <div class="logo-mark">MW</div>
     </div>
@@ -208,6 +210,11 @@
 
   <!-- ════════ LISTE ════════ -->
   <div class="wrap view active" id="v-liste">
+    <div id="wolke-hinweis" class="hinweis" style="display:none;border-color:#f3c2bc;background:#fdecea;color:#7b241c">
+      <b>Achtung: Deine Eingaben werden gerade nicht gesichert.</b> Bitte zuerst in der Team-App als Inhaberin anmelden,
+      dann hier über Team → „📋 Neueintritt“ wieder öffnen.
+      <div style="margin-top:8px"><a class="btn btn-primary btn-sm" href="./team.html">Zur Team-App anmelden</a></div>
+    </div>
     <div class="btn-row" style="margin-bottom:8px">
       <button class="btn btn-primary" style="flex:1" onclick="neu('lehrling')">＋ Lehrling</button>
       <button class="btn btn-primary" style="flex:1" onclick="neu('ma')">＋ Mitarbeiter:in</button>
@@ -224,9 +231,9 @@
       <a class="btn btn-ghost btn-sm" href="./team.html">← Team-App</a>
     </div>
     <p class="muted" style="margin-top:14px;line-height:1.5">
-      🔒 Alle Daten bleiben nur auf diesem Gerät (im Browser gespeichert) und werden nirgends hochgeladen.
-      Bitte regelmäßig eine Sicherung herunterladen und das Gerät mit Code sperren — hier stehen
-      Sozialversicherungsnummer und Bankdaten.
+      🔒 Alle Daten werden geschützt in Supabase gesichert – nur du als Inhaberin kannst sie sehen, auf jedem Gerät,
+      auf dem du angemeldet bist. Bitte das Gerät trotzdem mit Code sperren — hier stehen Sozialversicherungsnummer
+      und Bankdaten.
     </p>
   </div>
 
@@ -261,6 +268,7 @@
   <div class="wrap view" id="v-selbst"><div id="selbst"></div></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <div id="druck"></div>
 <div id="toast"></div>
 
@@ -429,6 +437,10 @@ function laden() {
   catch (e) { _betrieb = { ...BETRIEB_STANDARD }; }
 }
 function speichern() {
+  lokalSpeichern();
+  wolkePlanen();
+}
+function lokalSpeichern() {
   try {
     localStorage.setItem(SPEICHER, JSON.stringify(_alle));
     localStorage.setItem(SPEICHER_BETRIEB, JSON.stringify(_betrieb));
@@ -461,6 +473,11 @@ async function anhaengeLaden(key) {
   } catch (e) { console.error(e); return []; }
 }
 async function anhaengeSpeichern(key, liste) {
+  liste.forEach(a => { if (!a.id) a.id = neueUuid(); });
+  await anhaengeSpeichernLokal(key, liste);
+  if (!String(key).startsWith('entwurf:')) anhangGeaendert(key);
+}
+async function anhaengeSpeichernLokal(key, liste) {
   try {
     const db = await idb();
     await new Promise((res, rej) => {
@@ -646,6 +663,7 @@ function neu(art) {
 async function oeffnen(id) {
   _aktiv = id;
   _anh = await anhaengeLaden(id);
+  if (_wolke === 'ok' || _wolke === 'ausstehend') anhangAbgleich(id).catch(wolkeFehler);
   _stbWahl = null;
   zeigeView('v-detail');
   zeigePane(document.querySelector('.tab[data-pane="p-daten"]'));
@@ -1615,6 +1633,250 @@ async function sicherungEinspielen(j) {
   showToast(`Sicherung eingespielt (${neuAnzahl} neu)`);
 }
 
+// ── Wolke: Supabase ist der feste Speicher, der Browser nur Zwischenspeicher ──
+// Nur die Inhaberin hat Zugriff (RLS, Migration 20261028120000). Abgleich in drei Wegen:
+// _stand[id] = zuletzt mit der Wolke bestätigter Stand. Lokal ≠ _stand → noch hochzuladen.
+// In der Wolke, aber nicht lokal und kein _stand → kam von einem anderen Gerät.
+// Lokal gelöscht (in _stand, nicht in _alle) → in der Wolke löschen.
+const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
+const SPEICHER_STAND = SPEICHER + '_stand';
+let _sb = null;
+let _wolke = 'aus';      // aus | laedt | ok | ausstehend | offline | abgemeldet | keinZugriff
+let _stand = { personen: {}, betrieb: null, anh: {} };
+let _wolkeTimer = null, _wolkeLaeuft = false, _wolkeNochmal = false;
+
+function standLaden() {
+  try { _stand = { personen: {}, betrieb: null, anh: {}, ...(JSON.parse(localStorage.getItem(SPEICHER_STAND)) || {}) }; }
+  catch (e) { _stand = { personen: {}, betrieb: null, anh: {} }; }
+}
+function standSpeichern() {
+  try { localStorage.setItem(SPEICHER_STAND, JSON.stringify(_stand)); } catch (e) { console.error(e); }
+}
+function personZeile(p) {
+  return { id: p.id, art: p.art, daten: p.daten || {}, erledigt: p.erledigt || {},
+    meta: { erstellt: p.erstellt || null, vomLehrling: p.vomLehrling || null, linkGeschickt: p.linkGeschickt || null } };
+}
+function personJson(p) { return JSON.stringify(personZeile(p)); }
+function personAusZeile(z) {
+  const m = z.meta || {};
+  const p = { id: z.id, art: z.art, daten: z.daten || {}, erledigt: z.erledigt || {}, erstellt: m.erstellt || z.erstellt };
+  if (m.vomLehrling) p.vomLehrling = m.vomLehrling;
+  if (m.linkGeschickt) p.linkGeschickt = m.linkGeschickt;
+  return p;
+}
+function betriebJson() { return JSON.stringify(_betrieb); }
+
+function wolkeStatus(s) {
+  _wolke = s;
+  const el = document.getElementById('wolke-status');
+  if (!el) return;
+  const T = {
+    laedt: ['☁️ Wird geladen …', 'var(--text-2)'],
+    ok: ['☁️ Gesichert', 'var(--green)'],
+    ausstehend: ['⏳ Wird gesichert …', 'var(--orange)'],
+    offline: ['⚠️ Offline – wird gesichert, sobald Internet da ist', 'var(--orange)'],
+    abgemeldet: ['⚠️ Nicht angemeldet – nichts wird gesichert', 'var(--red)'],
+    keinZugriff: ['⚠️ Nur für die Inhaberin – nichts wird gesichert', 'var(--red)'],
+    fehlt: ['⚠️ Datenbank noch nicht eingerichtet – nur auf diesem Gerät gespeichert', 'var(--red)']
+  };
+  const [text, farbe] = T[s] || ['', ''];
+  el.textContent = text; el.style.color = farbe;
+  const hin = document.getElementById('wolke-hinweis');
+  if (hin) hin.style.display = (s === 'abgemeldet' || s === 'keinZugriff') ? 'block' : 'none';
+}
+
+async function wolkeToken() {
+  if (!_sb) return null;
+  try { const { data: { session } } = await _sb.auth.getSession(); return session?.access_token || null; }
+  catch (e) { console.error(e); return null; }
+}
+async function rest(pfad, methode = 'GET', body = null, prefer = '') {
+  const token = await wolkeToken();
+  if (!token) { const e = new Error('abgemeldet'); e.abgemeldet = true; throw e; }
+  const r = await fetch(`${SUPA_URL}/rest/v1/${pfad}`, {
+    method: methode,
+    headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (r.status === 401 || r.status === 403) { const e = new Error('kein Zugriff ' + r.status + ' ' + await r.text()); e.keinZugriff = true; throw e; }
+  if (r.status === 404) { const e = new Error('fehlt ' + await r.text()); e.fehlt = true; throw e; }
+  if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+function wolkeFehler(e) {
+  console.error(e);
+  if (e.abgemeldet) wolkeStatus('abgemeldet');
+  else if (e.keinZugriff) wolkeStatus('keinZugriff');
+  else if (e.fehlt) wolkeStatus('fehlt');
+  else wolkeStatus(navigator.onLine === false ? 'offline' : 'ausstehend');
+}
+
+async function wolkeStart() {
+  standLaden();
+  if (typeof supabase === 'undefined') { wolkeStatus('offline'); return; }
+  _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+  if (!(await wolkeToken())) { wolkeStatus('abgemeldet'); return; }
+  try {
+    const ist = await rest('rpc/teamapp_ist_inhaberin', 'POST', {});
+    if (ist !== true) { wolkeStatus('keinZugriff'); return; }
+  } catch (e) { wolkeFehler(e); return; }
+  wolkeStatus('laedt');
+  await wolkeAbgleich(true);
+  addEventListener('online', () => wolkePlanen(0));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wolkeAbgleich(true); });
+}
+
+function wolkePlanen(ms = 800) {
+  if (!_sb || ['abgemeldet', 'keinZugriff', 'aus', 'fehlt'].includes(_wolke)) return;
+  wolkeStatus('ausstehend');
+  clearTimeout(_wolkeTimer);
+  _wolkeTimer = setTimeout(() => wolkeAbgleich(false), ms);
+}
+
+// holen=true: zuerst den Wolken-Stand holen und zusammenführen, dann Ausstehendes hochladen.
+async function wolkeAbgleich(holen) {
+  if (_wolkeLaeuft) { _wolkeNochmal = true; return; }
+  _wolkeLaeuft = true;
+  try {
+    if (holen) await wolkeHolen();
+    await wolkeHochladen();
+    wolkeStatus('ok');
+  } catch (e) { wolkeFehler(e); }
+  finally {
+    _wolkeLaeuft = false;
+    if (_wolkeNochmal) { _wolkeNochmal = false; wolkePlanen(0); }
+  }
+}
+
+async function wolkeHolen() {
+  const [zeilen, betrieb] = await Promise.all([
+    rest('neueintritt_personen?select=id,art,daten,erledigt,meta,erstellt'),
+    rest('neueintritt_betrieb?select=daten&id=eq.1')
+  ]);
+  const wolkeIds = new Set();
+  let geaendert = false;
+  for (const z of zeilen) {
+    wolkeIds.add(z.id);
+    const cj = JSON.stringify(personZeile(personAusZeile(z)));
+    const i = _alle.findIndex(p => p.id === z.id);
+    if (i < 0) {
+      if (_stand.personen[z.id]) continue;              // hier gelöscht → wird beim Hochladen in der Wolke gelöscht
+      _alle.push(personAusZeile(z)); geaendert = true;  // neu von einem anderen Gerät
+    } else if (personJson(_alle[i]) === _stand.personen[z.id] && personJson(_alle[i]) !== cj) {
+      _alle[i] = personAusZeile(z); geaendert = true;   // hier unverändert, woanders geändert
+    } else if (!_stand.personen[z.id] && personJson(_alle[i]) !== cj) {
+      continue;                                         // beides geändert, hier noch nie abgeglichen → lokal gewinnt
+    }
+    if (personJson(_alle[i] || personAusZeile(z)) === cj) _stand.personen[z.id] = cj;
+  }
+  // Lokal vorhanden, aber nicht (mehr) in der Wolke
+  for (const p of [..._alle]) {
+    if (wolkeIds.has(p.id) || !_stand.personen[p.id]) continue;   // noch nie oben → wird hochgeladen
+    if (personJson(p) === _stand.personen[p.id]) {                // woanders gelöscht, hier unverändert
+      _alle = _alle.filter(x => x.id !== p.id); delete _stand.personen[p.id]; delete _stand.anh[p.id];
+      await anhaengeSpeichernLokal(p.id, []);
+      if (_aktiv === p.id) zurListe();
+      geaendert = true;
+    } else delete _stand.personen[p.id];                          // hier geändert → wieder hochladen
+  }
+  if (betrieb && betrieb[0]) {
+    const bj = JSON.stringify({ ...BETRIEB_STANDARD, ...(betrieb[0].daten || {}) });
+    if (betriebJson() === _stand.betrieb || _stand.betrieb === null && betriebJson() === JSON.stringify(BETRIEB_STANDARD)) {
+      if (betriebJson() !== bj) { _betrieb = JSON.parse(bj); geaendert = true; }
+      _stand.betrieb = bj;
+    }
+  }
+  standSpeichern();
+  if (geaendert) {
+    lokalSpeichern();
+    if (document.getElementById('v-liste').classList.contains('active')) renderListe();
+    if (document.getElementById('v-betrieb').classList.contains('active')) renderBetrieb();
+    if (_aktiv && document.getElementById('v-detail').classList.contains('active')) {
+      const pane = document.querySelector('.tab.active');
+      if (pane) zeigePane(pane);
+      if (pane && pane.dataset.pane === 'p-daten') renderDaten();
+    }
+  }
+}
+
+async function wolkeHochladen() {
+  // Personen anlegen/ändern
+  const offen = _alle.filter(p => personJson(p) !== _stand.personen[p.id]);
+  for (const p of offen) {
+    const json = personJson(p);
+    await rest('neueintritt_personen', 'POST', personZeile(p), 'resolution=merge-duplicates,return=minimal');
+    _stand.personen[p.id] = json;
+    standSpeichern();
+  }
+  // Hier gelöschte Personen in der Wolke löschen (Fotos gehen per Fremdschlüssel mit)
+  const ids = new Set(_alle.map(p => p.id));
+  for (const id of Object.keys(_stand.personen)) {
+    if (ids.has(id)) continue;
+    await rest('neueintritt_personen?id=eq.' + encodeURIComponent(id), 'DELETE', null, 'return=minimal');
+    delete _stand.personen[id]; delete _stand.anh[id];
+    standSpeichern();
+  }
+  // Lehrbetrieb
+  if (betriebJson() !== _stand.betrieb) {
+    const json = betriebJson();
+    await rest('neueintritt_betrieb', 'POST', { id: 1, daten: _betrieb }, 'resolution=merge-duplicates,return=minimal');
+    _stand.betrieb = json;
+    standSpeichern();
+  }
+  // Fotos aller Personen abgleichen, bei denen sich lokal etwas geändert hat
+  for (const p of _alle) {
+    if (_stand.anh[p.id] === undefined || (_stand.anhOffen || {})[p.id]) await anhangAbgleich(p.id);
+  }
+}
+
+// Fotos einer Person: Wolke ∪ lokal, mit Löschungen in beide Richtungen.
+async function anhangAbgleich(personId) {
+  const lokal = await anhaengeLaden(personId);
+  lokal.forEach(a => { if (!a.id) a.id = neueUuid(); });
+  const wolke = await rest('neueintritt_anhaenge?select=id&person_id=eq.' + encodeURIComponent(personId));
+  const wolkeIds = new Set(wolke.map(z => z.id));
+  const bekannt = new Set(_stand.anh[personId] || []);
+  const lokalIds = new Set(lokal.map(a => a.id));
+  let liste = lokal.filter(a => wolkeIds.has(a.id) || !bekannt.has(a.id));     // woanders gelöschte entfernen
+  for (const a of liste) {
+    if (wolkeIds.has(a.id)) continue;
+    await rest('neueintritt_anhaenge', 'POST', { id: a.id, person_id: personId, typ: a.typ, w: a.w, h: a.h,
+      datum: a.datum || null, data_url: a.dataUrl }, 'resolution=merge-duplicates,return=minimal');
+  }
+  const weg = [...wolkeIds].filter(id => !lokalIds.has(id) && bekannt.has(id));  // hier gelöschte
+  if (weg.length) await rest('neueintritt_anhaenge?id=in.(' + weg.join(',') + ')', 'DELETE', null, 'return=minimal');
+  const neu = [...wolkeIds].filter(id => !lokalIds.has(id) && !bekannt.has(id)); // woanders hinzugefügte
+  if (neu.length) {
+    const zeilen = await rest('neueintritt_anhaenge?select=id,typ,w,h,datum,data_url&id=in.(' + neu.join(',') + ')');
+    liste = liste.concat(zeilen.map(z => ({ id: z.id, typ: z.typ, w: z.w, h: z.h, datum: z.datum, dataUrl: z.data_url })));
+  }
+  await anhaengeSpeichernLokal(personId, liste);
+  _stand.anh[personId] = liste.map(a => a.id);
+  if (_stand.anhOffen) delete _stand.anhOffen[personId];
+  standSpeichern();
+  if (_aktiv === personId && JSON.stringify(_anh.map(a => a.id)) !== JSON.stringify(liste.map(a => a.id))) {
+    _anh = liste; _stbWahl = null;
+    const el = document.getElementById('dok-p');
+    if (el) el.innerHTML = dokHtml(aktuell().art, _anh, 'p');
+    if (document.querySelector('.tab.active')?.dataset.pane === 'p-druck') renderFormulare();
+  }
+}
+function anhangGeaendert(personId) {
+  _stand.anhOffen = _stand.anhOffen || {};
+  _stand.anhOffen[personId] = true;
+  standSpeichern();
+  wolkePlanen();
+}
+function neueUuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 let _toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1641,6 +1903,7 @@ function showToast(msg) {
   }
   laden();
   renderListe();
+  wolkeStart();
 })();
 </script>
 </body>

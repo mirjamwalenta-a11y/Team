@@ -154,3 +154,17 @@ Nutzern geteilt.
 Kann von dieser Session aus nicht abschließend bestätigt werden (kein Supabase-Zugriff). Nach
 Erledigung der Punkte oben: `bash rlstest.sh` laufen lassen und gegen die Ziel-Ausgabe in
 `FIX-ANLEITUNG-AGENT.md` prüfen.
+
+## Neueintritt-App: Daten in Supabase (2026-10-28)
+
+`anmeldung.html` speichert nicht mehr nur im Browser, sondern in Supabase (Browser = Zwischenspeicher/offline).
+Grund: Daten waren wiederholt „weg“ (anderes Gerät/Browser, Browser leert Speicher).
+
+- **Migration einspielen:** `supabase/migrations/20261028120000_neueintritt_tabellen.sql` — Tabellen
+  `neueintritt_personen`, `neueintritt_anhaenge`, `neueintritt_betrieb`, RLS nur Inhaberin
+  (`teamapp_ist_inhaberin()`), kein anon-Zugriff. Bis dahin zeigt das Tool „Datenbank noch nicht
+  eingerichtet“ und speichert weiter nur lokal.
+- Anmeldung kommt aus der Team-App (gleiche Supabase-Sitzung). Nicht angemeldet / keine Inhaberin →
+  roter Hinweis, nichts wird gesichert.
+- Lokale Altdaten werden beim ersten Öffnen mit Anmeldung automatisch hochgeladen.
+- Der Lehrling (Ausfüll-Link) schreibt weiterhin **nicht** in die Datenbank.
