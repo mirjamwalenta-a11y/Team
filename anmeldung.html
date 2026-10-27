@@ -357,7 +357,7 @@ const SEKTIONEN = [
     { k: 'anrechnungen', l: 'Anrechnungen aufgrund Schul-/Vorlehrzeiten', t: 'textarea', voll: true },
     { k: 'vereinbarungen', l: 'Besondere Vereinbarungen', t: 'textarea', voll: true }
   ]},
-  { titel: 'Erziehungsberechtigte / gesetzliche Vertreter', nur: 'lehrling', felder: [
+  { titel: 'Erziehungsberechtigte / gesetzliche Vertreter', nur: 'lehrling', wenn: d => !volljaehrig(d), felder: [
     { k: 'erziehung', l: 'Erziehungsberechtigt ist/sind', t: 'seg', voll: true,
       opts: ['Eltern', 'nur Mutter', 'nur Vater', 'eigenberechtigt', 'Heim', 'Andere'] },
     { k: 'vertreter_name', l: 'Vor- und Familienname gesetzl. Vertreter:in', voll: true },
@@ -370,6 +370,9 @@ const SEKTIONEN = [
     { k: 'beruf_mutter', l: 'Beruf Mutter' },
     { k: 'beruf_vater', l: 'Beruf Vater' },
     { k: 'notfall', l: 'Notfallnummer (bei Eigenberechtigung)', t: 'tel', voll: true }
+  ]},
+  { titel: 'Notfallkontakt', nur: 'lehrling', wenn: d => volljaehrig(d), felder: [
+    { k: 'notfall', l: 'Notfallnummer (Name + Tel.)', t: 'tel', voll: true }
   ]},
   { titel: 'Vorbildung', nur: 'lehrling', felder: [
     { k: 'letzte_schule', l: 'Letzte Schule (Name)', voll: true, ph: 'z. B. MS Kleine Sperlgasse' },
@@ -402,10 +405,10 @@ const JPEG_DATAURL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
 // Dokumente als Foto. check = Checklisten-Punkt, der beim Hinzufügen abgehakt wird.
 const DOKTYPEN = [
   { typ: 'meldezettel', l: 'Meldezettel', check: 'u_meldezettel' },
-  { typ: 'zeugnis', l: 'Letztes Zeugnis (9. Schulstufe)', check: 'u_zeugnis', nur: 'lehrling' },
+  { typ: 'zeugnis', l: 'Letztes Zeugnis (9. Schulstufe)', check: 'u_zeugnis', nur: 'lehrling', stb: false },
   { typ: 'lap', l: 'LAP-Zeugnis', check: 'u_lap', nur: 'ma' },
   { typ: 'ausweis', l: 'Reisepass / Ausweis', check: { lehrling: 'u_staatsbuergerschaft', ma: 'u_ausweis' } },
-  { typ: 'geburtsurkunde', l: 'Geburtsurkunde', check: 'u_geburtsurkunde', nur: 'lehrling' },
+  { typ: 'geburtsurkunde', l: 'Geburtsurkunde', check: 'u_geburtsurkunde', nur: 'lehrling', stb: false },
   { typ: 'ecard', l: 'e-card', check: 'u_ecard' },
   { typ: 'aufenthalt', l: 'Aufenthaltstitel / Asylbescheid (nur wenn nicht EU)', check: 'u_aufenthalt' },
   { typ: 'foto', l: 'Porträtfoto (für Homepage)', check: 'u_foto', stb: false }
@@ -508,6 +511,13 @@ function alterAm(gebIso, amIso) {
   if (a.getMonth() < g.getMonth() || (a.getMonth() === g.getMonth() && a.getDate() < g.getDate())) j--;
   return j;
 }
+// Volljährig zu Lehrbeginn (ohne Beginn: heute). Dann gibt es keine Eltern-Daten.
+function volljaehrig(d) {
+  const a = alterAm(d.geburtsdatum, d.beginn || heuteIso());
+  return a !== null && a >= 18;
+}
+const ELTERN_FELDER = ['vertreter_name', 'vertreter_gleiche_adresse', 'vertreter_strasse', 'vertreter_plz', 'vertreter_ort',
+  'tel_mutter', 'tel_vater', 'beruf_mutter', 'beruf_vater'];
 function vollerName(p) { return [p.vorname, p.nachname].filter(Boolean).join(' ') || 'Ohne Namen'; }
 function dateiName(s) { return String(s).replace(/[^\p{L}\p{N} _-]+/gu, '').trim().replace(/\s+/g, '-') || 'Anmeldung'; }
 
@@ -689,7 +699,7 @@ function hilfeHtml(f, d) {
 function formularHtml(art, d, ziel, mitIntern) {
   let html = '';
   for (const s of SEKTIONEN) {
-    if ((s.nur && s.nur !== art) || (s.intern && !mitIntern)) continue;
+    if ((s.nur && s.nur !== art) || (s.intern && !mitIntern) || (s.wenn && !s.wenn(d))) continue;
     const felder = s.felder.filter(f => (!f.nur || f.nur === art) && (!f.wenn || f.wenn(d)) && (mitIntern || !f.intern));
     if (!felder.length) continue;
     html += `<div class="card"><div class="sec-title">${esc(s.titel)}</div><div class="grid">
@@ -774,9 +784,9 @@ function setze(ziel, k, wert, neuZeichnen) {
     d.ende = plusTage(plusMonate(wert, 36), -1);
     d.ende_auto = true;
   }
-  if ((k === 'geburtsdatum' || k === 'beginn' || k === 'svnr') && p.art === 'lehrling' && !d.erziehung) {
-    const a = alterAm(d.geburtsdatum, d.beginn);
-    if (a !== null) d.erziehung = a >= 18 ? 'eigenberechtigt' : 'Eltern';
+  if ((k === 'geburtsdatum' || k === 'beginn' || k === 'svnr') && p.art === 'lehrling' && d.geburtsdatum) {
+    if (volljaehrig(d)) d.erziehung = 'eigenberechtigt';
+    else if (!d.erziehung || d.erziehung === 'eigenberechtigt') d.erziehung = 'Eltern';
   }
   if (ziel === 's') entwurfSpeichern(); else speichern();
   // Nur neu zeichnen, wenn sich die Darstellung ändert (sonst springt der Fokus beim Tippen).
@@ -968,7 +978,7 @@ function selbstFehlt() {
   const fehlt = [];
   const pflicht = [['vorname', 'Vorname'], ['nachname', 'Familienname'], ['geburtsdatum', 'Geburtsdatum'],
     ['svnr', 'Sozialversicherungsnummer'], ['strasse', 'Straße'], ['plz', 'PLZ'], ['ort', 'Ort'], ['tel', 'Telefon']];
-  if (_selbst.art === 'lehrling') pflicht.push(['vertreter_name', 'Name der Eltern / gesetzl. Vertreter']);
+  if (_selbst.art === 'lehrling' && !volljaehrig(d)) pflicht.push(['vertreter_name', 'Name der Eltern / gesetzl. Vertreter']);
   for (const [k, l] of pflicht) if (!d[k]) fehlt.push(l);
   if (d.svnr && !svnrPruefen(d.svnr).ok) fehlt.push('gültige Sozialversicherungsnummer');
   if (d.iban && !ibanPruefen(d.iban).ok) fehlt.push('gültige IBAN');
@@ -984,7 +994,9 @@ async function selbstAbschicken() {
   if (!_anh.some(a => a.typ === 'meldezettel')) ohne.push('Foto vom Meldezettel');
   if (ohne.length && !confirm(`Noch ohne ${ohne.join(' und ')}. Trotzdem schon abschicken?`)) return;
 
-  const inhalt = { typ: ANTWORT_TYP, v: 1, id: _selbst.id, art: _selbst.art, gesendet: new Date().toISOString(), daten: d, anhaenge: _anh };
+  const daten = { ...d };
+  if (volljaehrig(d)) ELTERN_FELDER.forEach(k => delete daten[k]);
+  const inhalt = { typ: ANTWORT_TYP, v: 1, id: _selbst.id, art: _selbst.art, gesendet: new Date().toISOString(), daten, anhaenge: _anh };
   const name = `Anmeldung-${dateiName(vollerName(d))}.json`;
   const datei = new File([JSON.stringify(inhalt)], name, { type: 'application/json' });
   const leiter = _selbst.b.leiter || '';
@@ -1141,24 +1153,23 @@ function abhaken(id, an) {
 // ── Formulare / Druck / PDF ──────────────────────────────────
 const FORMULARE = {
   lehrling: [
-    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank, Lehrverhältnis', stb: true },
-    { id: 'wkw', titel: 'Lehrvertrag – Daten für die Lehrlingsstelle', sub: 'Wirtschaftskammer Wien, Seite 2', stb: true },
-    { id: 'berufsschule', titel: 'Anmeldung Berufsschule', sub: 'Berufsschule für Haar- und Körperpflege, 1140 Wien', stb: false },
-    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen', stb: false }
+    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Nur Daten des Lehrlings, mit Bank – ohne Eltern' },
+    { id: 'wkw', titel: 'Lehrvertrag – Daten für die Lehrlingsstelle', sub: 'Wirtschaftskammer Wien, Seite 2 · ohne Bankdaten' },
+    { id: 'berufsschule', titel: 'Anmeldung Berufsschule', sub: 'Berufsschule für Haar- und Körperpflege, 1140 Wien · ohne Bankdaten' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
   ],
   ma: [
-    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank, Dienstverhältnis', stb: true },
-    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen', stb: false }
+    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank, Dienstverhältnis' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
   ]
 };
-let _stbWahl = null;   // { blaetter: Set, fotos: Set(index) } für die offene Person
+let _stbWahl = null;   // { fotos: Set(index) } für die offene Person – Blatt ist immer nur „stamm“
 
 function renderFormulare() {
   const p = aktuell(); if (!p) return;
   if (!_stbWahl || _stbWahl.id !== p.id) {
     _stbWahl = {
       id: p.id,
-      blaetter: new Set(FORMULARE[p.art].filter(f => f.stb).map(f => f.id)),
       fotos: new Set(_anh.map((a, i) => ({ a, i })).filter(x => (DOKTYPEN.find(t => t.typ === x.a.typ) || {}).stb !== false).map(x => x.i))
     };
   }
@@ -1172,11 +1183,9 @@ function renderFormulare() {
   const stb = _betrieb.stb_name || 'Steuerberater:in';
   html += `<div class="card">
     <div class="card-title">📤 An ${esc(stb)} senden</div>
-    <div class="muted" style="margin:2px 0 10px">Ein PDF mit den ausgewählten Blättern und Dokument-Fotos.
+    <div class="muted" style="margin:2px 0 10px">Ein PDF mit den Anmeldungsdaten – nur Daten ${p.art === 'lehrling' ? 'des Lehrlings' : 'der Person'}
+      inkl. Bank, ohne Eltern – und den ausgewählten Dokument-Fotos.
       ${_betrieb.stb_email ? 'Geht an ' + esc(_betrieb.stb_email) + '.' : '<a href="#" onclick="zeigeView(\'v-betrieb\');return false">E-Mail der Steuerberatung eintragen</a>'}</div>
-    <div class="sec-title" style="margin-top:6px">Blätter</div>
-    ${FORMULARE[p.art].map(f => `<label class="wahl"><input type="checkbox" ${_stbWahl.blaetter.has(f.id) ? 'checked' : ''}
-      onchange="stbWahl('blaetter','${f.id}',this.checked)">${esc(f.titel)}</label>`).join('')}
     <div class="sec-title">Dokumente</div>
     ${_anh.length ? _anh.map((a, i) => {
       const t = DOKTYPEN.find(x => x.typ === a.typ);
@@ -1214,7 +1223,8 @@ function pflichtFehlt(p) {
   const d = p.daten;
   const pflicht = [['vorname', 'Vorname'], ['nachname', 'Familienname'], ['svnr', 'SV-Nr.'], ['geburtsdatum', 'Geburtsdatum'],
     ['strasse', 'Adresse'], ['beginn', 'Beginn'], ['iban', 'IBAN']];
-  if (p.art === 'lehrling') pflicht.push(['vertreter_name', 'gesetzl. Vertreter'], ['letzte_schule', 'letzte Schule']);
+  if (p.art === 'lehrling') pflicht.push(['letzte_schule', 'letzte Schule']);
+  if (p.art === 'lehrling' && !volljaehrig(d)) pflicht.push(['vertreter_name', 'gesetzl. Vertreter']);
   return pflicht.filter(([k]) => !d[k]).map(([, l]) => l);
 }
 
@@ -1238,10 +1248,11 @@ function blattInhalt(id, p) {
         ['Bundesland', d.bundesland_geburt], ['Geburtsstaat', d.geburtsstaat],
         ['Staatsbürgerschaft', d.staatsbuergerschaft], ['Religion', d.religion], ['Muttersprache', d.muttersprache],
         ['Wohnadresse', adresse(d)], ['Tel. oder Handy', d.tel]]],
-      ['Erziehungsberechtigt', [
-        ['Erziehungsberechtigt ist/sind', d.erziehung], ['Vor- und Familienname', d.vertreter_name],
-        ['Adresse', adresseVertreter(d)], ['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater],
-        ['Beruf Mutter', d.beruf_mutter], ['Beruf Vater', d.beruf_vater], ['Notfallnummer bei Eigenberechtigung', d.notfall]]],
+      ['Erziehungsberechtigt', volljaehrig(d)
+        ? [['Erziehungsberechtigt ist/sind', 'eigenberechtigt'], ['Notfallnummer bei Eigenberechtigung', d.notfall]]
+        : [['Erziehungsberechtigt ist/sind', d.erziehung], ['Vor- und Familienname', d.vertreter_name],
+          ['Adresse', adresseVertreter(d)], ['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater],
+          ['Beruf Mutter', d.beruf_mutter], ['Beruf Vater', d.beruf_vater]]],
       ['Lehrbetrieb', [
         ['Name', B.name], ['Adresse', B.adresse], ['Tel.', B.tel], ['Fax', B.fax],
         ['Lehrzeit von – bis', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
@@ -1270,7 +1281,7 @@ function blattInhalt(id, p) {
         ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', [d.geburtsort, d.geburtsstaat].filter(Boolean).join(', ')],
         ['Adresse', adresse(d)], ['E-Mail', d.email], ['Tel.-Nr.', d.tel], ['Staatsbürgerschaft', d.staatsbuergerschaft],
         ['Letzte Schule', d.letzte_schule], ['Letztbesuchte Klasse', d.letzte_klasse], ['Abgeschlossen', d.neunte_stufe]]],
-      ['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)]]],
+      ...(volljaehrig(d) ? [] : [['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)]]]]),
       ['Lehrverhältnis', [
         ['Lehrberuf', d.lehrberuf], ['Lehrzeit', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
         ['Anrechnungen Schul-/Vorlehrzeiten', d.anrechnungen], ['Besondere Vereinbarungen', d.vereinbarungen]]]
@@ -1290,7 +1301,7 @@ function blattInhalt(id, p) {
         p.art === 'lehrling' ? ['Zeugnis 9. Schulstufe', ja(p.erledigt.u_zeugnis)] : ['Kopie LAP-Prüfung', ja(p.erledigt.u_lap)],
         ['Foto digital (Homepage, Facebook …)', ja(p.erledigt.u_foto)], ['Foto-Einwilligung', ja(p.erledigt.u_foto_ok)]]]
     ];
-    if (d.notfall || d.vertreter_name) teile.push(['Notfall', [['Gesetzl. Vertreter:in', d.vertreter_name], ['Notfallkontakt', d.notfall || d.tel_mutter || d.tel_vater]]]);
+    if (d.notfall) teile.push(['Notfall', [['Notfallkontakt', d.notfall]]]);
     return { titel: 'Anmeldungsdaten', kopf: B.name + ' · ' + B.adresse, teile, unterschrift: true };
   }
   if (id === 'checkliste') {
@@ -1449,10 +1460,8 @@ function pdfErstellen(p, blaetter, fotos) {
 
 function stbPdf() {
   const p = aktuell(); if (!p) return null;
-  const blaetter = FORMULARE[p.art].map(f => f.id).filter(id => _stbWahl.blaetter.has(id));
   const fotos = _anh.filter((_, i) => _stbWahl.fotos.has(i));
-  if (!blaetter.length && !fotos.length) { alert('Bitte mindestens ein Blatt oder Dokument auswählen.'); return null; }
-  const bytes = pdfErstellen(p, blaetter, fotos);
+  const bytes = pdfErstellen(p, ['stamm'], fotos);
   return new File([bytes], `Anmeldung-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
 }
 
