@@ -134,6 +134,20 @@
   .frist-bald { background: #fff3dc; color: var(--orange); }
   .frist-ok { background: var(--accent-light); color: var(--text-2); }
 
+  /* ── DOKUMENT ANSEHEN / BEARBEITEN ── */
+  #dok-ansicht {
+    position: fixed; inset: 0; z-index: 250; background: rgba(0,0,0,.88); display: none;
+    flex-direction: column; padding: calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));
+  }
+  #dok-ansicht.offen { display: flex; }
+  #dok-ansicht .bild { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  #dok-ansicht img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; background: #fff; }
+  #dok-ansicht .leiste { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  #dok-ansicht select {
+    border-radius: 10px; padding: 9px 10px; font-size: 15px; font-family: inherit; border: none; max-width: 100%;
+  }
+  .dok-bild img { cursor: zoom-in; }
+
   /* ── TOAST ── */
   #toast {
     position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%);
@@ -270,6 +284,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <div id="druck"></div>
+<div id="dok-ansicht" role="dialog" aria-modal="true" aria-label="Dokument"></div>
 <div id="toast"></div>
 
 <script>
@@ -851,7 +866,8 @@ function dokHtml(art, anh, ziel) {
         <label class="btn btn-secondary btn-sm" style="cursor:pointer;flex-shrink:0">📷 ${bilder.length ? 'Seite dazu' : 'Foto'}
           <input type="file" accept="image/*" multiple style="display:none" onchange="dokHinzu('${ziel}','${t.typ}',this)"></label>
       </div>
-      <div class="dok-bilder">${bilder.map(({ a, i }) => `<div class="dok-bild"><img src="${esc(a.dataUrl)}" alt="${esc(t.l)}">
+      <div class="dok-bilder">${bilder.map(({ a, i }) => `<div class="dok-bild"><img src="${esc(a.dataUrl)}" alt="${esc(t.l)}"
+          onclick="dokZeigen('${ziel}',${i})" title="Antippen zum Ansehen und Bearbeiten">
         <button type="button" onclick="dokWeg('${ziel}',${i})" aria-label="Foto entfernen">×</button></div>`).join('')}</div>
     </div>`;
   }).join('');
@@ -884,25 +900,20 @@ async function dokHinzu(ziel, typ, input) {
     catch (e) { console.error(e); alert('Dieses Bild konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) wählen.'); }
   }
   if (!neu.length) return;
-  if (ziel === 's') {
-    _anh.push(...neu);
-    await anhaengeSpeichern('entwurf:' + _selbst.id, _anh);
-    document.getElementById('dok-s').innerHTML = dokHtml(_selbst.art, _anh, 's');
-  } else {
-    const p = aktuell(); if (!p) return;
-    _anh.push(...neu);
-    _stbWahl = null;
-    await anhaengeSpeichern(p.id, _anh);
-    const t = DOKTYPEN.find(x => x.typ === typ);
-    if (t && !p.erledigt[dokCheck(t, p.art)]) { p.erledigt[dokCheck(t, p.art)] = heuteIso(); speichern(); }
-    document.getElementById('dok-p').innerHTML = dokHtml(p.art, _anh, 'p');
-  }
+  _anh.push(...neu);
+  await dokSichern(ziel);
   showToast('Foto gespeichert');
 }
 
 async function dokWeg(ziel, i) {
   if (!confirm('Dieses Foto entfernen?')) return;
   _anh.splice(i, 1);
+  dokZu();
+  await dokSichern(ziel);
+}
+
+// Fotos speichern und Liste neu zeichnen (Lehrling: Entwurf am Handy, Inhaberin: inkl. Supabase).
+async function dokSichern(ziel) {
   if (ziel === 's') {
     await anhaengeSpeichern('entwurf:' + _selbst.id, _anh);
     document.getElementById('dok-s').innerHTML = dokHtml(_selbst.art, _anh, 's');
@@ -910,8 +921,65 @@ async function dokWeg(ziel, i) {
     const p = aktuell(); if (!p) return;
     _stbWahl = null;
     await anhaengeSpeichern(p.id, _anh);
+    for (const a of _anh) {
+      const t = DOKTYPEN.find(x => x.typ === a.typ);
+      if (t && !p.erledigt[dokCheck(t, p.art)]) { p.erledigt[dokCheck(t, p.art)] = heuteIso(); speichern(); }
+    }
     document.getElementById('dok-p').innerHTML = dokHtml(p.art, _anh, 'p');
   }
+}
+
+// Großansicht: ansehen, drehen, ersetzen, anderem Dokument zuordnen, löschen.
+// Jede Änderung bekommt eine neue ID – so gleicht die Wolke das alte Foto als gelöscht ab.
+function dokZeigen(ziel, i) {
+  const a = _anh[i]; if (!a) return;
+  const art = ziel === 's' ? _selbst.art : aktuell().art;
+  const el = document.getElementById('dok-ansicht');
+  el.innerHTML = `<div class="bild"><img src="${esc(a.dataUrl)}" alt="Dokument"></div>
+    <div class="leiste">
+      <select aria-label="Dokument" onchange="dokTypAendern('${ziel}',${i},this.value)">
+        ${dokTypen(art).map(t => `<option value="${esc(t.typ)}"${t.typ === a.typ ? ' selected' : ''}>${esc(t.l)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="leiste">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="dokDrehen('${ziel}',${i})">↻ Drehen</button>
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer">📷 Ersetzen
+        <input type="file" accept="image/*" style="display:none" onchange="dokErsetzen('${ziel}',${i},this)"></label>
+      <button type="button" class="btn btn-secondary btn-sm" style="color:var(--red)" onclick="dokWeg('${ziel}',${i})">🗑 Löschen</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="dokZu()">Fertig</button>
+    </div>`;
+  el.classList.add('offen');
+}
+function dokZu() { document.getElementById('dok-ansicht').classList.remove('offen'); }
+
+async function dokTypAendern(ziel, i, typ) {
+  const a = _anh[i]; if (!a || a.typ === typ) return;
+  _anh[i] = { ...a, typ, id: undefined };
+  await dokSichern(ziel);
+  showToast('Zugeordnet');
+}
+async function dokDrehen(ziel, i) {
+  const a = _anh[i]; if (!a) return;
+  const img = await new Promise((res, rej) => { const x = new Image(); x.onload = () => res(x); x.onerror = rej; x.src = a.dataUrl; });
+  const c = document.createElement('canvas');
+  c.width = img.naturalHeight; c.height = img.naturalWidth;
+  const ctx = c.getContext('2d');
+  ctx.translate(c.width, 0); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(img, 0, 0);
+  _anh[i] = { ...a, dataUrl: c.toDataURL('image/jpeg', 0.85), w: c.width, h: c.height, id: undefined };
+  await dokSichern(ziel);
+  dokZeigen(ziel, i);
+}
+async function dokErsetzen(ziel, i, input) {
+  const datei = input.files && input.files[0];
+  input.value = '';
+  if (!datei || !_anh[i]) return;
+  try {
+    _anh[i] = { typ: _anh[i].typ, ...(await bildVerkleinern(datei)), datum: heuteIso() };
+  } catch (e) { console.error(e); alert('Dieses Bild konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) wählen.'); return; }
+  await dokSichern(ziel);
+  dokZeigen(ziel, i);
+  showToast('Foto ersetzt');
 }
 
 // ── Link für den Lehrling ────────────────────────────────────
