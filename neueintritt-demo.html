@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://mirjamwalenta-a11y.github.io https://cdnjs.cloudflare.com; worker-src blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Neueintritt">
+<meta name="theme-color" content="#1a1a1a">
+<title>Neueintritt digital – Projekt &amp; Demo</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: #e8e5e0;
+    --text: #1a1a1a;
+    --text-2: #6b6560;
+    --accent: #1a1a1a;
+    --accent-light: #f0ede8;
+    --red: #c0392b;
+    --orange: #b9770e;
+    --green: #27ae60;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: calc(12px + var(--safe-top)) 16px 12px; position: relative; z-index: 1;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(32px + var(--safe-bottom)); }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 10px; padding: 11px 16px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit; text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--accent-light); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--text-2); }
+  .btn-danger { background: transparent; color: var(--red); }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .btn-full { width: 100%; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── KARTEN ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px;
+  }
+  .card-click { cursor: pointer; }
+  .card-title { font-size: 16px; font-weight: 600; }
+  .muted { color: var(--text-2); font-size: 13px; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+    background: var(--accent-light); color: var(--text-2); vertical-align: middle;
+  }
+  .badge-lehrling { background: #e8f0fb; color: #2463a6; }
+  .progress { height: 6px; background: var(--accent-light); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .progress > div { height: 100%; background: var(--green); }
+  .hinweis {
+    background: #fff8e6; border: 1px solid #f1dfae; color: #6b4e00; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; line-height: 1.45; margin-bottom: 12px;
+  }
+  .leer { text-align: center; color: var(--text-2); padding: 40px 16px; font-size: 14px; line-height: 1.5; }
+
+  /* ── REITER IM DETAIL ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+  .tab {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+    border-radius: 99px; padding: 7px 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* ── FORMULAR ── */
+  .sec-title {
+    font-size: 12px; color: var(--text-2); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; margin: 18px 0 8px;
+  }
+  .sec-title:first-child { margin-top: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .f.voll { grid-column: 1 / -1; }
+  .f label { font-size: 13px; color: var(--text-2); font-weight: 500; }
+  .f input[type=text], .f input[type=date], .f input[type=email], .f input[type=tel],
+  .f input[type=number], .f select, .f textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    font-size: 16px; font-family: inherit; background: var(--surface); color: var(--text); outline: none;
+  }
+  .f textarea { resize: vertical; min-height: 64px; }
+  .f input:focus, .f select:focus, .f textarea:focus { border-color: var(--text); }
+  .f .warn { font-size: 12px; color: var(--orange); }
+  .f .ok { font-size: 12px; color: var(--green); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 99px;
+    padding: 7px 12px; font-size: 14px; cursor: pointer; font-family: inherit; color: var(--text);
+  }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── CHECKLISTE ── */
+  .todo { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .todo:last-child { border-bottom: none; }
+  .todo input { width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; accent-color: var(--green); }
+  .todo-text { font-size: 15px; line-height: 1.35; }
+  .todo-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+  .todo.erledigt .todo-text { color: var(--text-2); text-decoration: line-through; }
+  .frist { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 6px; margin-left: 4px; white-space: nowrap; }
+  .frist-ueber { background: #fdecea; color: var(--red); }
+  .frist-bald { background: #fff3dc; color: var(--orange); }
+  .frist-ok { background: var(--accent-light); color: var(--text-2); }
+
+  /* ── DOKUMENT ANSEHEN / BEARBEITEN ── */
+  #dok-ansicht {
+    position: fixed; inset: 0; z-index: 250; background: rgba(0,0,0,.88); display: none;
+    flex-direction: column; padding: calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));
+  }
+  #dok-ansicht.offen { display: flex; }
+  #dok-ansicht .bild { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  #dok-ansicht img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; background: #fff; }
+  #dok-ansicht .leiste { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  #dok-ansicht select {
+    border-radius: 10px; padding: 9px 10px; font-size: 15px; font-family: inherit; border: none; max-width: 100%;
+  }
+  .dok-bild img { cursor: zoom-in; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%);
+    background: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 300;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── DRUCK ── */
+  #druck { display: none; }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff; }
+    #app, #toast, #intro { display: none !important; }
+    #druck { display: block; font-size: 11pt; color: #000; }
+    .blatt { page-break-after: always; }
+    .blatt:last-child { page-break-after: auto; }
+    .blatt h1 { font-size: 15pt; margin-bottom: 2mm; }
+    .blatt .kopf { font-size: 9pt; color: #444; margin-bottom: 5mm; line-height: 1.4; }
+    .blatt h2 {
+      font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; background: #eee;
+      padding: 1.5mm 2mm; margin: 4mm 0 1mm;
+    }
+    .blatt table { width: 100%; border-collapse: collapse; }
+    .blatt td { border-bottom: 0.3mm solid #bbb; padding: 1.6mm 2mm; vertical-align: top; }
+    .blatt td.l { width: 38%; color: #444; font-size: 9.5pt; }
+    .blatt .chk { font-family: monospace; }
+    .blatt .fuss { margin-top: 6mm; font-size: 8.5pt; color: #555; }
+    .blatt .unterschrift { display: flex; gap: 12mm; margin-top: 14mm; }
+    .blatt .unterschrift div { flex: 1; border-top: 0.3mm solid #000; padding-top: 1mm; font-size: 9pt; }
+  }
+
+  /* ── DOKUMENTE ── */
+  .dok { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .dok:last-child { border-bottom: none; }
+  .dok-kopf { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .dok-name { font-size: 15px; }
+  .dok-bilder { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .dok-bilder:empty { display: none; }
+  .dok-bild { position: relative; }
+  .dok-bild img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+  .dok-bild button {
+    position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+    border: none; background: var(--red); color: #fff; font-size: 13px; line-height: 22px; cursor: pointer;
+  }
+  .wahl { display: flex; gap: 10px; align-items: center; padding: 6px 0; font-size: 14px; }
+  .wahl input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .ok-box {
+    background: #eaf7ef; border: 1px solid #bfe5cc; color: #1e6b3d; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; line-height: 1.45; margin-bottom: 12px;
+  }
+  .info-zeile { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .info-zeile:last-child { border-bottom: none; }
+  .info-zeile span:first-child { color: var(--text-2); }
+  .info-zeile span:last-child { text-align: right; }
+
+  /* ── PROJEKT-VORSTELLUNG ── */
+  :root { color-scheme: light; }
+  html { scroll-behavior: smooth; }
+  #intro h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.1; letter-spacing: -0.8px; margin: 10px 0 14px; }
+  #intro h2 { font-size: 22px; letter-spacing: -0.3px; margin-bottom: 16px; }
+  #intro h3 { font-size: 16px; margin-bottom: 8px; }
+  #intro p { line-height: 1.55; }
+  .hero { background: var(--accent); color: #fff; padding: 56px 16px 48px; }
+  .hero-in, .block-in { max-width: 860px; margin: 0 auto; }
+  .kicker { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; opacity: .7; font-weight: 600; }
+  .lead { font-size: 17px; opacity: .9; max-width: 640px; margin-bottom: 22px; }
+  .hero .btn-primary { background: #fff; color: var(--accent); }
+  .hero .btn-secondary { background: rgba(255,255,255,.14); color: #fff; }
+  .block { padding: 40px 16px; }
+  .block.alt { background: var(--accent-light); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kachel, .feature {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; font-size: 14px; line-height: 1.5; box-shadow: var(--shadow);
+  }
+  .kachel .zahl { font-size: 30px; font-weight: 800; margin-bottom: 6px; }
+  .schritte { list-style: none; display: grid; gap: 12px; }
+  .schritte li { display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border-radius: var(--radius); padding: 14px; font-size: 14px; line-height: 1.5; border: 1px solid var(--border); }
+  .schritte li span {
+    flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .tabelle { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; font-size: 14px; }
+  .tabelle th, .tabelle td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .tabelle th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+  .klein { font-size: 13px; color: var(--text-2); margin-top: 12px; }
+  .zeitleiste { padding-left: 20px; display: grid; gap: 8px; font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+  .tipps { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .tipps ul { padding-left: 18px; display: grid; gap: 6px; font-size: 14px; line-height: 1.5; }
+  #app { max-width: 760px; margin: 0 auto 40px; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  body.nur-app #app { max-width: none; margin: 0; border: none; border-radius: 0; box-shadow: none; }
+  @media (max-width: 640px) {
+    .grid3, .grid2 { grid-template-columns: 1fr; }
+    #app { margin: 0 0 24px; border-radius: 0; border-left: none; border-right: none; }
+  }
+
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<!-- ════════ PROJEKT-VORSTELLUNG ════════ -->
+<div id="intro">
+  <section class="hero">
+    <div class="hero-in">
+      <div class="kicker">KI-Projekt aus dem Friseursalon · Wien</div>
+      <h1>Lehrlinge anmelden – ohne Zettelwirtschaft</h1>
+      <p class="lead">Daten einmal erfassen, der Lehrling füllt am eigenen Handy aus, und am Ende entstehen alle Formulare,
+        eine Checkliste mit Fristen und ein PDF für den Steuerberater. Gebaut im Gespräch mit einer KI, ganz ohne selbst zu programmieren.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="#demo">Demo ausprobieren ↓</a>
+        <a class="btn btn-secondary" href="#entstehung">Wie es entstanden ist</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-in">
+      <h2>Die Vorteile der App</h2>
+      <div class="grid3">
+        <div class="kachel"><div class="zahl">1×</div><div><b>Einmal eingeben statt dreimal schreiben</b> – aus einer Eingabe entstehen die Blätter für Berufsschule, Lehrlingsstelle und Lohnverrechnung.</div></div>
+        <div class="kachel"><div class="zahl">✓</div><div><b>Keine Widersprüche, weniger Tippfehler</b> – alle Formulare haben dieselben Angaben, SV-Nummer und IBAN werden automatisch geprüft.</div></div>
+        <div class="kachel"><div class="zahl">⏰</div><div><b>Keine Frist vergessen</b> – die Checkliste rechnet alle Termine aus, z. B. „Lehrvertrag binnen 3 Wochen“, und zeigt Überfälliges rot.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt">
+    <div class="block-in">
+      <h2>Die Lösung in 4 Schritten</h2>
+      <ol class="schritte">
+        <li><span>1</span><div><b>Lehrling anlegen &amp; Link schicken</b><br>Betriebsdaten, Lehrberuf und Lehrzeit sind im Link schon eingetragen – per WhatsApp verschickt.</div></li>
+        <li><span>2</span><div><b>Lehrling füllt selbst aus</b><br>Am eigenen Handy, inkl. Fotos oder PDFs von Meldezettel, Zeugnis, e-card. SV-Nummer und IBAN werden automatisch geprüft.</div></li>
+        <li><span>3</span><div><b>Datei zurück &amp; einspielen</b><br>Der Lehrling schickt eine Datei zurück, ein Tipp – und alle Daten und Fotos sind im Tool.</div></li>
+        <li><span>4</span><div><b>Formulare &amp; Steuerberater</b><br>Blätter für Berufsschule und Lehrlingsstelle, Checkliste mit Fristen und ein PDF für den Steuerberater.</div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-in">
+      <h2>Was das Tool kann</h2>
+      <div class="grid2">
+        <div class="feature">✅ <b>Checkliste mit Fristen</b> – ÖGK-Anmeldung, Lehrvertrag, Berufsschule (2 Wochen), Lehrlingsstelle (3 Wochen), Probezeit, Behaltezeit; Überfälliges wird rot.</div>
+        <div class="feature">🔢 <b>Prüft Eingaben</b> – SV-Nummer (Prüfziffer) und IBAN (Prüfsumme); Geburtsdatum und Lehrzeitende werden automatisch berechnet.</div>
+        <div class="feature">📄 <b>Formulare auf Knopfdruck</b> – als PDF, zum Drucken oder als Text zum Kopieren.</div>
+        <div class="feature">📤 <b>PDF an den Steuerberater</b> – direkt über das Teilen-Menü am Handy, inklusive Dokumentfotos.</div>
+        <div class="feature">🧒 <b>Jugendschutz mitgedacht</b> – bei Minderjährigen Hinweise zu Unterschrift der Eltern und Arbeitszeiten.</div>
+        <div class="feature">📎 <b>Fotos &amp; PDFs</b> – Dokumente nach und nach hinzufügen, ansehen, drehen, ersetzen, umordnen, löschen.</div>
+        <div class="feature">☁️ <b>Sicher gespeichert</b> – im echten Betrieb in der eigenen Datenbank, nur für die Inhaberin sichtbar, auf jedem Gerät.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt">
+    <div class="block-in">
+      <h2>Datenschutz – jeder bekommt nur, was er braucht</h2>
+      <table class="tabelle">
+        <thead><tr><th>Empfänger</th><th>bekommt</th><th>bekommt nicht</th></tr></thead>
+        <tbody>
+          <tr><td>Steuerberater</td><td>Daten des Lehrlings inkl. Bank</td><td>Daten der Eltern</td></tr>
+          <tr><td>Berufsschule</td><td>alle Daten</td><td>Bankdaten</td></tr>
+          <tr><td>Lehrlingsstelle</td><td>alle Daten</td><td>Bankdaten</td></tr>
+        </tbody>
+      </table>
+      <p class="klein">Ist der Lehrling zu Lehrbeginn volljährig, werden gar keine Eltern-Daten erfasst. Im echten Betrieb liegen
+        die Daten geschützt in der eigenen Datenbank – nur die Inhaberin kann sie sehen. Diese Demo speichert nur in deinem Browser.</p>
+    </div>
+  </section>
+
+  <section class="block" id="entstehung">
+    <div class="block-in">
+      <h2>Wie es mit KI entstanden ist</h2>
+      <ol class="zeitleiste">
+        <li><b>Wunsch formuliert:</b> „Ich möchte ein Tool für die Anmeldung eines Mitarbeiters, beim Lehrling ist der Aufwand groß.“</li>
+        <li><b>Fotos der echten Formulare gezeigt</b> – daraus hat die KI erkannt, dass es um Wien geht, und alle Felder übernommen.</li>
+        <li><b>Erste Version</b> mit Checkliste und Druckblättern – im Browser getestet, bevor ich sie bekommen habe.</li>
+        <li><b>Wünsche nachgeschoben:</b> Link für den Lehrling, PDF für den Steuerberater, Daten je Empfänger trennen.</li>
+        <li><b>Fehler per Screenshot gemeldet</b> („die Jahreszahl geht nicht einzutragen“) – Ursache gefunden, behoben, live.</li>
+        <li><b>Aus Ärger wurde eine Verbesserung:</b> Daten waren plötzlich weg – seitdem liegen sie in der eigenen Datenbank statt nur im Browser.</li>
+        <li><b>Im Alltag nachgeschärft:</b> PDFs aus WhatsApp, Dokumente bearbeiten, Einträge löschen.</li>
+      </ol>
+      <div class="tipps">
+        <h3>Meine Tipps für eigene KI-Projekte</h3>
+        <ul>
+          <li><b>Echte Unterlagen zeigen</b> – ein Foto vom Formular sagt mehr als lange Beschreibungen.</li>
+          <li><b>In kleinen Schritten</b> – erst die Grundversion, dann Wunsch für Wunsch ergänzen.</li>
+          <li><b>Selbst ausprobieren</b> – Fehler fallen erst im echten Gebrauch auf; ein Screenshot reicht als Rückmeldung.</li>
+          <li><b>Datenschutz von Anfang an</b> sagen, wer welche Daten sehen darf.</li>
+          <li><b>Fachliches gegenprüfen</b> – Fristen und Rechtliches mit Wirtschaftskammer oder Steuerberatung abgleichen.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="demo">
+    <div class="block-in">
+      <h2>Demo zum Ausprobieren</h2>
+      <p>Tippe auf <b>„🧪 Beispiel-Lehrling laden“</b> und klick dich durch Daten, Checkliste und Formulare. Unter
+        „Lehrbetrieb-Daten“ kannst du deinen eigenen Betrieb eintragen und das Tool auch wirklich verwenden.
+        Mit „Link schicken“ kannst du auch ausprobieren, was der Lehrling am Handy sieht. Alles bleibt nur in deinem Browser.</p>
+    </div>
+  </section>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title" id="kopf-titel">Neueintritt</div>
+        <div class="header-sub" id="kopf-sub">Anmeldung Mitarbeiter:innen &amp; Lehrlinge</div>
+        <div class="header-sub" id="wolke-status" style="font-weight:600"></div>
+      </div>
+      <div class="logo-mark">✂︎</div>
+    </div>
+  </div>
+
+  <!-- ════════ LISTE ════════ -->
+  <div class="wrap view active" id="v-liste">
+    <div id="wolke-hinweis" class="hinweis" style="display:none;border-color:#f3c2bc;background:#fdecea;color:#7b241c">
+      <b>Achtung: Deine Eingaben werden gerade nicht gesichert.</b> Bitte zuerst in der Team-App als Inhaberin anmelden,
+      dann hier über Team → „📋 Neueintritt“ wieder öffnen.
+      <div style="margin-top:8px"><a class="btn btn-primary btn-sm" href="./team.html">Zur Team-App anmelden</a></div>
+    </div>
+    <div class="btn-row" style="margin-bottom:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="neu('lehrling')">＋ Lehrling</button>
+      <button class="btn btn-primary" style="flex:1" onclick="neu('ma')">＋ Mitarbeiter:in</button>
+    </div>
+    <button class="btn btn-secondary btn-full" style="margin-bottom:8px" onclick="beispielLaden()">🧪 Beispiel-Lehrling laden</button>
+    <label class="btn btn-secondary btn-full" for="antwort-input" style="cursor:pointer;margin-bottom:14px">📥 Ausgefüllte Daten vom Lehrling öffnen</label>
+    <input type="file" id="antwort-input" accept="application/json,.json" style="display:none" onchange="importDatei(this)">
+    <div id="liste"></div>
+    <div class="sec-title" style="margin-top:24px">Einstellungen</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="zeigeView('v-betrieb')">Lehrbetrieb-Daten</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportJson()">Sicherung herunterladen</button>
+      <label class="btn btn-secondary btn-sm" for="import-input" style="cursor:pointer">Sicherung einspielen</label>
+      <input type="file" id="import-input" accept="application/json,.json" style="display:none" onchange="importDatei(this)">
+    </div>
+    <p class="muted" style="margin-top:14px;line-height:1.5">
+      🧪 Demo-Version: Alles, was du hier eingibst, bleibt nur in deinem Browser. Bitte keine echten Daten eintragen.
+    </p>
+  </div>
+
+  <!-- ════════ LEHRBETRIEB ════════ -->
+  <div class="wrap view" id="v-betrieb">
+    <div class="card">
+      <div class="sec-title">Lehrbetrieb / Arbeitgeberin</div>
+      <div class="grid" id="betrieb-form"></div>
+      <p class="muted" style="margin-top:12px">Wird einmal eingetragen und automatisch in alle Blätter und in den Link für den Lehrling übernommen
+        (nur Name, Adresse, Telefon und Ausbildungsleiter:in – deine SV-Nr. und E-Mail gehen nicht mit).</p>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="zeigeView('v-liste')">Fertig</button>
+  </div>
+
+  <!-- ════════ DETAIL ════════ -->
+  <div class="wrap view" id="v-detail">
+    <div class="btn-row" style="margin-bottom:12px;justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" onclick="zurListe()">← Übersicht</button>
+      <button class="btn btn-danger btn-sm" onclick="loeschen()">Löschen</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-pane="p-daten" onclick="zeigePane(this)">1 · Daten</button>
+      <button class="tab" data-pane="p-check" onclick="zeigePane(this)">2 · Checkliste</button>
+      <button class="tab" data-pane="p-druck" onclick="zeigePane(this)">3 · Formulare</button>
+    </div>
+    <div class="pane active" id="p-daten"><div id="daten-form"></div></div>
+    <div class="pane" id="p-check"><div id="checkliste"></div></div>
+    <div class="pane" id="p-druck"><div id="formulare"></div></div>
+  </div>
+
+  <!-- ════════ AUSFÜLLEN DURCH LEHRLING / MITARBEITER:IN ════════ -->
+  <div class="wrap view" id="v-selbst"><div id="selbst"></div></div>
+</div>
+
+<div id="druck"></div>
+<div id="dok-ansicht" role="dialog" aria-modal="true" aria-label="Dokument"></div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Neueintritt — Anmeldung von Mitarbeiter:innen und Lehrlingen (Wien)
+// Alle Daten liegen nur lokal im Browser (localStorage + IndexedDB für Fotos),
+// nichts geht an einen Server. Der Lehrling bekommt einen Link mit den
+// Betriebsdaten im #-Teil der Adresse (wird nie an den Server geschickt) und
+// schickt seine Daten als Datei per WhatsApp/Mail zurück.
+// ═══════════════════════════════════════════════════════════════
+
+const SPEICHER = 'demo_neueintritt_v1';
+const SPEICHER_BETRIEB = 'demo_neueintritt_betrieb_v1';
+const SPEICHER_ENTWURF = 'demo_neueintritt_entwurf_';
+const ANTWORT_TYP = 'ghd-neueintritt-antwort';
+
+const BETRIEB_STANDARD = {
+  name: 'Salon Beispiel',
+  adresse: 'Musterstraße 1, 1010 Wien',
+  tel: '01 234 56 78',
+  fax: '',
+  ausbildungsleiter: 'Maria Muster',
+  email: '',
+  svnr: '',
+  fachkraefte: '',
+  stb_name: '',
+  stb_email: ''
+};
+
+const BETRIEB_FELDER = [
+  { k: 'name', l: 'Name des Betriebs', voll: true },
+  { k: 'adresse', l: 'Adresse', voll: true },
+  { k: 'tel', l: 'Telefon', t: 'tel' },
+  { k: 'fax', l: 'Fax' },
+  { k: 'ausbildungsleiter', l: 'Ausbildungsleiter:in' },
+  { k: 'email', l: 'E-Mail Ausbildungsleiter:in', t: 'email' },
+  { k: 'svnr', l: 'SV-Nr. Ausbildungsleiter:in', hilfe: 'svnr' },
+  { k: 'fachkraefte', l: 'Anzahl Fachkräfte', t: 'number' },
+  { k: 'stb_name', l: 'Steuerberater:in / Lohnverrechnung' },
+  { k: 'stb_email', l: 'E-Mail Steuerberater:in', t: 'email' }
+];
+
+const SCHULTYPEN = [
+  'NMS / Mittelschule', 'PTS Polytechnische Schule', 'AHS ohne Matura', 'AHS mit Matura',
+  'BMS 1-jährig', 'BMS 3-jährig', 'BMS negativ', 'BHS (HAK, HTL, HLW …)', 'BHS ohne Matura / negativ',
+  'HS Hauptschule', 'KMS Kooperative Mittelschule', 'ASO Allgemeine Sonderschule',
+  'BS Berufsschule', 'BS Berufsschule negativ', 'Sonstige Schule'
+];
+const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Burgenland', 'Oberösterreich', 'Salzburg',
+  'Tirol', 'Vorarlberg', 'Kärnten', 'Steiermark', 'Ausland'];
+const ZUGANG = [
+  'Österreich / EU / EWR / Schweiz',
+  'Aufenthaltstitel mit freiem Arbeitsmarktzugang (z. B. Asyl, RWR-Karte plus)',
+  'Beschäftigungsbewilligung nötig',
+  'noch unklar'
+];
+
+// Formular: nur:'lehrling' / nur:'ma' blendet Felder je nach Art ein.
+// intern: füllt nur die Inhaberin aus – wird dem Lehrling nicht zum Ausfüllen gezeigt.
+const SEKTIONEN = [
+  { titel: 'Person', felder: [
+    { k: 'vorname', l: 'Vorname' },
+    { k: 'nachname', l: 'Familienname' },
+    { k: 'geschlecht', l: 'Geschlecht', t: 'seg', opts: ['w', 'm', 'd'] },
+    { k: 'svnr', l: 'Sozialversicherungsnummer', hilfe: 'svnr', ph: '1234 010190' },
+    { k: 'geburtsdatum', l: 'Geburtsdatum', t: 'date' },
+    { k: 'geburtsort', l: 'Geburtsort' },
+    { k: 'geburtsstaat', l: 'Geburtsstaat' },
+    { k: 'bundesland_geburt', l: 'Bundesland (Geburt)', t: 'select', opts: ['', ...BUNDESLAENDER], nur: 'lehrling' },
+    { k: 'staatsbuergerschaft', l: 'Staatsbürgerschaft', ph: 'Österreich' },
+    { k: 'religion', l: 'Religion', nur: 'lehrling' },
+    { k: 'muttersprache', l: 'Muttersprache', nur: 'lehrling' },
+    { k: 'zugang', l: 'Arbeitsmarktzugang', t: 'select', opts: ['', ...ZUGANG], voll: true, intern: true }
+  ]},
+  { titel: 'Wohnadresse & Kontakt', felder: [
+    { k: 'strasse', l: 'Straße / Hausnr. / Tür', voll: true },
+    { k: 'plz', l: 'PLZ' },
+    { k: 'ort', l: 'Ort', ph: 'Wien' },
+    { k: 'tel', l: 'Telefon / Handy', t: 'tel' },
+    { k: 'email', l: 'E-Mail', t: 'email' }
+  ]},
+  { titel: 'Bank (für Lohn / Lehrlingsentschädigung)', felder: [
+    { k: 'bank', l: 'Bank' },
+    { k: 'iban', l: 'IBAN', hilfe: 'iban', ph: 'AT12 3456 …' }
+  ]},
+  { titel: 'Lehrverhältnis', nur: 'lehrling', intern: true, felder: [
+    { k: 'lehrberuf', l: 'Lehrberuf' },
+    { k: 'lehrberuf2', l: '2. Lehrberuf (optional)' },
+    { k: 'beginn', l: 'Lehrzeit von', t: 'date' },
+    { k: 'ende', l: 'Lehrzeit bis', t: 'date', hilfe: 'ende' },
+    { k: 'lehrvertragsnr', l: 'Lehrvertragsnummer (kommt von der WKW)' },
+    { k: 'befristung_behaltezeit', l: 'Befristung Behaltezeit', t: 'seg', opts: ['ja', 'nein'] },
+    { k: 'anrechnungen', l: 'Anrechnungen aufgrund Schul-/Vorlehrzeiten', t: 'textarea', voll: true },
+    { k: 'vereinbarungen', l: 'Besondere Vereinbarungen', t: 'textarea', voll: true }
+  ]},
+  { titel: 'Erziehungsberechtigte / gesetzliche Vertreter', nur: 'lehrling', wenn: d => !volljaehrig(d), felder: [
+    { k: 'erziehung', l: 'Erziehungsberechtigt ist/sind', t: 'seg', voll: true,
+      opts: ['Eltern', 'nur Mutter', 'nur Vater', 'eigenberechtigt', 'Heim', 'Andere'] },
+    { k: 'vertreter_name', l: 'Vor- und Familienname gesetzl. Vertreter:in', voll: true },
+    { k: 'vertreter_gleiche_adresse', l: 'Adresse', t: 'seg', opts: ['wie Lehrling', 'andere'], voll: true },
+    { k: 'vertreter_strasse', l: 'Straße', voll: true, wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'vertreter_plz', l: 'PLZ', wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'vertreter_ort', l: 'Ort', wenn: d => d.vertreter_gleiche_adresse === 'andere' },
+    { k: 'tel_mutter', l: 'Tel. Mutter', t: 'tel' },
+    { k: 'tel_vater', l: 'Tel. Vater', t: 'tel' },
+    { k: 'beruf_mutter', l: 'Beruf Mutter' },
+    { k: 'beruf_vater', l: 'Beruf Vater' },
+    { k: 'notfall', l: 'Notfallnummer (bei Eigenberechtigung)', t: 'tel', voll: true }
+  ]},
+  { titel: 'Notfallkontakt', nur: 'lehrling', wenn: d => volljaehrig(d), felder: [
+    { k: 'notfall', l: 'Notfallnummer (Name + Tel.)', t: 'tel', voll: true }
+  ]},
+  { titel: 'Vorbildung', nur: 'lehrling', felder: [
+    { k: 'letzte_schule', l: 'Letzte Schule (Name)', voll: true, ph: 'z. B. MS Kleine Sperlgasse' },
+    { k: 'schultyp', l: 'Schulart', t: 'select', opts: ['', ...SCHULTYPEN] },
+    { k: 'letzte_klasse', l: 'Letztbesuchte Klasse', ph: '4a' },
+    { k: 'schuljahr', l: 'Schuljahr', ph: '2025/26' },
+    { k: 'schulstufe', l: 'Schulstufe', ph: '9' },
+    { k: 'schul_bundesland', l: 'Bundesland der Schule', t: 'select', opts: ['', ...BUNDESLAENDER] },
+    { k: 'neunte_stufe', l: '9. Schulstufe / Abschluss', t: 'seg', opts: ['positiv', 'negativ'] },
+    { k: 'foerderbedarf', l: 'Vermerk sonderpäd. Förderbedarf', t: 'seg', opts: ['nein', 'ja'] },
+    { k: 'bisherige_lehrzeit', l: 'Bisherige Lehrzeit' },
+    { k: 'bisheriger_lehrberuf', l: 'im Lehrberuf' }
+  ]},
+  { titel: 'Dienstverhältnis', nur: 'ma', felder: [
+    { k: 'beginn', l: 'Eintrittsdatum', t: 'date', intern: true },
+    { k: 'position', l: 'Position', ph: 'Friseur:in', intern: true },
+    { k: 'stunden', l: 'Wochenstunden', t: 'number', intern: true },
+    { k: 'lap', l: 'Lehrabschlussprüfung (LAP)', t: 'seg', opts: ['ja', 'nein'] },
+    { k: 'notfall', l: 'Notfallkontakt (Name + Tel.)', voll: true }
+  ]},
+  { titel: 'Notizen', intern: true, felder: [
+    { k: 'notizen', l: 'Interne Notizen', t: 'textarea', voll: true }
+  ]}
+];
+
+// Felder, die nur die Inhaberin bestimmt (werden beim Einspielen einer Antwort nicht überschrieben).
+const INTERN = new Set(SEKTIONEN.flatMap(s => s.felder.filter(f => s.intern || f.intern).map(f => f.k)));
+const JPEG_DATAURL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
+
+// Dokumente als Foto. check = Checklisten-Punkt, der beim Hinzufügen abgehakt wird.
+const DOKTYPEN = [
+  { typ: 'meldezettel', l: 'Meldezettel', check: 'u_meldezettel' },
+  { typ: 'zeugnis', l: 'Letztes Zeugnis (9. Schulstufe)', check: 'u_zeugnis', nur: 'lehrling', stb: false },
+  { typ: 'lap', l: 'LAP-Zeugnis', check: 'u_lap', nur: 'ma' },
+  { typ: 'ausweis', l: 'Reisepass / Ausweis', check: { lehrling: 'u_staatsbuergerschaft', ma: 'u_ausweis' } },
+  { typ: 'geburtsurkunde', l: 'Geburtsurkunde', check: 'u_geburtsurkunde', nur: 'lehrling', stb: false },
+  { typ: 'ecard', l: 'e-card', check: 'u_ecard' },
+  { typ: 'aufenthalt', l: 'Aufenthaltstitel / Asylbescheid (nur wenn nicht EU)', check: 'u_aufenthalt' },
+  { typ: 'foto', l: 'Porträtfoto (für Homepage)', check: 'u_foto', stb: false }
+];
+function dokTypen(art) { return DOKTYPEN.filter(t => !t.nur || t.nur === art); }
+function dokCheck(t, art) { return typeof t.check === 'string' ? t.check : t.check[art]; }
+
+// ── Speicher ─────────────────────────────────────────────────
+let _alle = [];
+let _betrieb = { ...BETRIEB_STANDARD };
+let _aktiv = null;
+let _anh = [];          // Fotos der gerade offenen Person
+let _selbst = null;     // Ausfüll-Modus des Lehrlings: { id, art, b, daten, gesendet }
+
+function laden() {
+  try { _alle = JSON.parse(localStorage.getItem(SPEICHER)) || []; } catch (e) { _alle = []; }
+  try { _betrieb = { ...BETRIEB_STANDARD, ...(JSON.parse(localStorage.getItem(SPEICHER_BETRIEB)) || {}) }; }
+  catch (e) { _betrieb = { ...BETRIEB_STANDARD }; }
+}
+function speichern() {
+  lokalSpeichern();
+  wolkePlanen();
+}
+function lokalSpeichern() {
+  try {
+    localStorage.setItem(SPEICHER, JSON.stringify(_alle));
+    localStorage.setItem(SPEICHER_BETRIEB, JSON.stringify(_betrieb));
+  } catch (e) {
+    console.error(e);
+    showToast('Speichern nicht möglich – bitte Sicherung herunterladen');
+  }
+}
+function aktuell() { return _alle.find(p => p.id === _aktiv); }
+
+// Fotos liegen in IndexedDB (localStorage wäre dafür zu klein), Schlüssel = Personen-ID.
+let _idb;
+function idb() {
+  if (!_idb) _idb = new Promise((res, rej) => {
+    const r = indexedDB.open('demo_neueintritt', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('anhaenge');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return _idb;
+}
+async function anhaengeLaden(key) {
+  try {
+    const db = await idb();
+    return await new Promise((res, rej) => {
+      const q = db.transaction('anhaenge').objectStore('anhaenge').get(key);
+      q.onsuccess = () => res(q.result || []);
+      q.onerror = () => rej(q.error);
+    });
+  } catch (e) { console.error(e); return []; }
+}
+async function anhaengeSpeichern(key, liste) {
+  liste.forEach(a => { if (!a.id) a.id = neueUuid(); });
+  await anhaengeSpeichernLokal(key, liste);
+  if (!String(key).startsWith('entwurf:')) anhangGeaendert(key);
+}
+async function anhaengeSpeichernLokal(key, liste) {
+  try {
+    const db = await idb();
+    await new Promise((res, rej) => {
+      const tx = db.transaction('anhaenge', 'readwrite');
+      if (liste.length) tx.objectStore('anhaenge').put(liste, key); else tx.objectStore('anhaenge').delete(key);
+      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+    });
+  } catch (e) {
+    console.error(e);
+    showToast('Foto konnte nicht gespeichert werden');
+  }
+}
+
+// ── Hilfsfunktionen ──────────────────────────────────────────
+function esc(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function datumDe(iso) {
+  if (!iso) return '';
+  const [j, m, t] = iso.split('-');
+  return `${t}.${m}.${j}`;
+}
+function isoAus(d) {
+  const z = n => String(n).padStart(2, '0');
+  return `${String(d.getFullYear()).padStart(4, '0')}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+}
+// Datumsfelder melden beim Eintippen schon Zwischenstände wie „0002-11-02“ –
+// erst ein plausibles Jahr wird übernommen.
+const DATUMSFELDER = new Set(['beginn', 'ende', 'geburtsdatum']);
+function datumPlausibel(iso) {
+  const m = /^(\d{4})-\d{2}-\d{2}$/.exec(iso || '');
+  return !!m && Number(m[1]) >= 1900 && Number(m[1]) <= 2100;
+}
+function plusTage(iso, n) { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n); return isoAus(d); }
+function plusMonate(iso, n) {
+  const d = new Date(iso + 'T12:00'); const tag = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  const letzter = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(tag, letzter));
+  return isoAus(d);
+}
+function heuteIso() { return isoAus(new Date()); }
+function alterAm(gebIso, amIso) {
+  if (!gebIso) return null;
+  const g = new Date(gebIso + 'T12:00'), a = new Date((amIso || heuteIso()) + 'T12:00');
+  let j = a.getFullYear() - g.getFullYear();
+  if (a.getMonth() < g.getMonth() || (a.getMonth() === g.getMonth() && a.getDate() < g.getDate())) j--;
+  return j;
+}
+// Volljährig zu Lehrbeginn (ohne Beginn: heute). Dann gibt es keine Eltern-Daten.
+function volljaehrig(d) {
+  const a = alterAm(d.geburtsdatum, d.beginn || heuteIso());
+  return a !== null && a >= 18;
+}
+const ELTERN_FELDER = ['vertreter_name', 'vertreter_gleiche_adresse', 'vertreter_strasse', 'vertreter_plz', 'vertreter_ort',
+  'tel_mutter', 'tel_vater', 'beruf_mutter', 'beruf_vater'];
+function vollerName(p) { return [p.vorname, p.nachname].filter(Boolean).join(' ') || 'Ohne Namen'; }
+function dateiName(s) { return String(s).replace(/[^\p{L}\p{N} _-]+/gu, '').trim().replace(/\s+/g, '-') || 'Anmeldung'; }
+
+// Österreichische SV-Nr.: 10 Ziffern, 4. Ziffer ist Prüfziffer,
+// die letzten 6 meist das Geburtsdatum TTMMJJ.
+function svnrPruefen(roh) {
+  const s = String(roh || '').replace(/\s/g, '');
+  if (!s) return null;
+  if (!/^\d{10}$/.test(s)) return { ok: false, text: 'Die SV-Nr. hat 10 Ziffern.' };
+  const g = [3, 7, 9, 0, 5, 8, 4, 2, 1, 6];
+  let summe = 0;
+  for (let i = 0; i < 10; i++) summe += Number(s[i]) * g[i];
+  if (summe % 11 !== Number(s[3])) return { ok: false, text: 'Prüfziffer passt nicht – bitte nochmal von der e-card abschreiben.' };
+  return { ok: true, text: '✓ SV-Nr. gültig', geb: s.slice(4) };
+}
+function svnrFormat(roh) {
+  const s = String(roh || '').replace(/\s/g, '');
+  return /^\d{10}$/.test(s) ? s.slice(0, 4) + ' ' + s.slice(4) : roh;
+}
+function ibanPruefen(roh) {
+  const s = String(roh || '').replace(/\s/g, '').toUpperCase();
+  if (!s) return null;
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return { ok: false, text: 'Das sieht nicht wie eine IBAN aus.' };
+  if (s.startsWith('AT') && s.length !== 20) return { ok: false, text: 'Österreichische IBANs haben 20 Zeichen.' };
+  const umgestellt = (s.slice(4) + s.slice(0, 4)).replace(/[A-Z]/g, c => String(c.charCodeAt(0) - 55));
+  let rest = 0;
+  for (const z of umgestellt) rest = (rest * 10 + Number(z)) % 97;
+  return rest === 1 ? { ok: true, text: '✓ IBAN gültig' } : { ok: false, text: 'IBAN-Prüfsumme passt nicht – Tippfehler?' };
+}
+function ibanFormat(roh) {
+  return String(roh || '').replace(/\s/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim();
+}
+
+function b64urlAus(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlLesen(s) {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+
+function herunterladen(datei) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(datei);
+  a.download = datei.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+// Teilen über das Handy-Menü (WhatsApp, Mail …), sonst herunterladen.
+async function teilen(datei, titel, text) {
+  if (navigator.canShare && navigator.canShare({ files: [datei] })) {
+    try { await navigator.share({ files: [datei], title: titel, text }); return 'geteilt'; }
+    catch (e) { if (e.name === 'AbortError') return 'abgebrochen'; console.error(e); }
+  }
+  herunterladen(datei);
+  return 'heruntergeladen';
+}
+
+// ── Navigation ───────────────────────────────────────────────
+function zeigeView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  if (id === 'v-liste') { renderListe(); setKopf('Neueintritt', 'Anmeldung Mitarbeiter:innen & Lehrlinge'); }
+  if (id === 'v-betrieb') { renderBetrieb(); setKopf('Lehrbetrieb', 'Daten für alle Formulare'); }
+  window.scrollTo(0, 0);
+}
+function setKopf(t, s) {
+  document.getElementById('kopf-titel').textContent = t;
+  document.getElementById('kopf-sub').textContent = s;
+}
+function zeigePane(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === btn.dataset.pane));
+  if (btn.dataset.pane === 'p-check') renderCheckliste();
+  if (btn.dataset.pane === 'p-druck') renderFormulare();
+  window.scrollTo(0, 0);
+}
+function zurListe() {
+  const p = aktuell();
+  if (p && istLeer(p, _anh)) entfernen(p.id);
+  _aktiv = null; _anh = []; zeigeView('v-liste');
+}
+
+// ── Übersicht ────────────────────────────────────────────────
+function renderListe() {
+  const el = document.getElementById('liste');
+  if (!_alle.length) {
+    el.innerHTML = `<div class="leer">Noch niemand angelegt.<br>
+      Lege einen Lehrling oder eine Mitarbeiterin an und schick ihr den Link zum Ausfüllen –
+      oder füll die Daten selbst aus. Die App erstellt daraus Checkliste, Fristen und alle Anmeldeblätter.</div>`;
+    return;
+  }
+  const sortiert = [..._alle].sort((a, b) => (b.daten.beginn || '').localeCompare(a.daten.beginn || ''));
+  el.innerHTML = sortiert.map(p => {
+    const { erledigt, gesamt, ueberfaellig } = fortschritt(p);
+    const pct = gesamt ? Math.round(erledigt / gesamt * 100) : 0;
+    const art = p.art === 'lehrling'
+      ? '<span class="badge badge-lehrling">Lehrling</span>' : '<span class="badge">Mitarbeiter:in</span>';
+    const status = p.vomLehrling ? ' · Daten erhalten ✓' : p.linkGeschickt ? ' · Link geschickt, wartet auf Antwort' : '';
+    return `<div class="card card-click" onclick="oeffnen('${esc(p.id)}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <div class="card-title" style="flex:1;min-width:0">${esc(vollerName(p.daten))}</div>${art}
+        <button type="button" class="btn btn-danger btn-sm" style="padding:4px 8px" aria-label="Löschen"
+          onclick="event.stopPropagation();loeschen('${esc(p.id)}')">🗑</button>
+      </div>
+      <div class="muted" style="margin-top:4px">
+        ${p.daten.beginn ? 'Beginn ' + esc(datumDe(p.daten.beginn)) + ' · ' : ''}${erledigt} von ${gesamt} erledigt${esc(status)}
+        ${ueberfaellig ? ` · <span style="color:var(--red);font-weight:600">${ueberfaellig} überfällig</span>` : ''}
+      </div>
+      <div class="progress"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function neueId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function neu(art) {
+  const p = {
+    id: neueId(),
+    art,
+    erstellt: new Date().toISOString(),
+    daten: art === 'lehrling'
+      ? { lehrberuf: 'Friseur:in / Stylist:in', ort: 'Wien', befristung_behaltezeit: 'ja', vertreter_gleiche_adresse: 'wie Lehrling', zugang: '' }
+      : { ort: 'Wien', zugang: '' },
+    erledigt: {}
+  };
+  _alle.push(p);
+  speichern();
+  oeffnen(p.id);
+}
+// Erfundene Beispieldaten für die Demo (SV-Nr. und IBAN sind gültige Testwerte, keine echten Personen).
+function beispielLaden() {
+  const beginn = plusMonate(heuteIso(), 1);
+  const p = {
+    id: neueId(), art: 'lehrling', erstellt: new Date().toISOString(), vomLehrling: heuteIso(),
+    daten: {
+      vorname: 'Lena', nachname: 'Beispiel', geschlecht: 'w', svnr: '1237 010180', geburtsdatum: plusMonate(heuteIso(), -12 * 15 - 3),
+      geburtsort: 'Wien', geburtsstaat: 'Österreich', bundesland_geburt: 'Wien', staatsbuergerschaft: 'Österreich',
+      muttersprache: 'Deutsch', zugang: ZUGANG[0], strasse: 'Beispielgasse 12/3', plz: '1100', ort: 'Wien',
+      tel: '+43 660 1234567', email: 'lena@beispiel.at', bank: 'Beispielbank', iban: 'AT61 1904 3002 3457 3201',
+      lehrberuf: 'Friseur:in / Stylist:in', beginn, ende: plusTage(plusMonate(beginn, 36), -1), ende_auto: true,
+      befristung_behaltezeit: 'ja', erziehung: 'Eltern', vertreter_name: 'Eva und Max Beispiel', vertreter_gleiche_adresse: 'wie Lehrling',
+      tel_mutter: '+43 660 7654321', beruf_mutter: 'Verkäuferin', beruf_vater: 'Koch',
+      letzte_schule: 'MS Beispielschule', schultyp: SCHULTYPEN[0], letzte_klasse: '4b', schuljahr: '2025/26', schulstufe: '9',
+      schul_bundesland: 'Wien', neunte_stufe: 'positiv', foerderbedarf: 'nein'
+    },
+    erledigt: { u_meldezettel: heuteIso(), u_zeugnis: heuteIso(), u_ecard: heuteIso(), u_bank: heuteIso() }
+  };
+  _alle.push(p);
+  speichern();
+  oeffnen(p.id);
+}
+async function oeffnen(id) {
+  _aktiv = id;
+  _anh = await anhaengeLaden(id);
+  if (_wolke === 'ok' || _wolke === 'ausstehend') anhangAbgleich(id).catch(wolkeFehler);
+  _stbWahl = null;
+  zeigeView('v-detail');
+  zeigePane(document.querySelector('.tab[data-pane="p-daten"]'));
+  renderDaten();
+}
+function loeschen(id) {
+  const p = id ? _alle.find(x => x.id === id) : aktuell(); if (!p) return;
+  if (!confirm(`${vollerName(p.daten)} mit allen Daten und Fotos endgültig löschen – auf allen Geräten?`)) return;
+  entfernen(p.id);
+  if (_aktiv === p.id) zurListe(); else renderListe();
+  showToast('Gelöscht');
+}
+function entfernen(id) {
+  _alle = _alle.filter(x => x.id !== id);
+  speichern();
+  anhaengeSpeichern(id, []);
+}
+// Angelegt, aber nichts eingetragen (nur Vorgaben aus „＋ Lehrling“) – solche Einträge räumt die App selbst weg.
+const VORGABE_FELDER = new Set(['lehrberuf', 'ort', 'befristung_behaltezeit', 'vertreter_gleiche_adresse', 'zugang', 'ende_auto']);
+function istLeer(p, anhaenge) {
+  return Object.entries(p.daten || {}).every(([k, v]) => !v || VORGABE_FELDER.has(k))
+    && !Object.keys(p.erledigt || {}).length && !p.linkGeschickt && !p.vomLehrling && !anhaenge.length;
+}
+async function leereAufraeumen() {
+  let weg = 0;
+  for (const p of [..._alle]) {
+    if (p.id === _aktiv || !istLeer(p, [])) continue;
+    if ((await anhaengeLaden(p.id)).length) continue;
+    _alle = _alle.filter(x => x.id !== p.id); weg++;
+  }
+  if (weg) { speichern(); renderListe(); }
+}
+
+// ── Formular ─────────────────────────────────────────────────
+function feldHtml(f, d, ziel) {
+  const v = d[f.k] ?? '';
+  const id = `${ziel}-${f.k}`;
+  const on = `onchange="setze('${ziel}','${f.k}',this.value)"`;
+  let input;
+  if (f.t === 'select') {
+    input = `<select id="${id}" ${on}>${f.opts.map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '– bitte wählen –')}</option>`).join('')}</select>`;
+  } else if (f.t === 'textarea') {
+    input = `<textarea id="${id}" ${on}>${esc(v)}</textarea>`;
+  } else if (f.t === 'seg') {
+    input = `<div class="seg">${f.opts.map(o => `<button type="button" class="${o === v ? 'on' : ''}" onclick="setze('${ziel}','${f.k}','${esc(o)}',true)">${esc(o)}</button>`).join('')}</div>`;
+  } else {
+    const typ = f.t || 'text';
+    input = `<input id="${id}" type="${typ}" value="${esc(v)}" placeholder="${esc(f.ph || '')}" ${on}
+      ${typ === 'text' ? 'autocomplete="off"' : ''}>`;
+  }
+  return `<div class="f${f.voll ? ' voll' : ''}"><label for="${id}">${esc(f.l)}</label>${input}${hilfeHtml(f, d)}</div>`;
+}
+
+function hilfeHtml(f, d) {
+  if (f.hilfe === 'svnr') {
+    const r = svnrPruefen(d[f.k]);
+    return r ? `<div class="${r.ok ? 'ok' : 'warn'}">${esc(r.text)}</div>` : '';
+  }
+  if (f.hilfe === 'iban') {
+    const r = ibanPruefen(d[f.k]);
+    return r ? `<div class="${r.ok ? 'ok' : 'warn'}">${esc(r.text)}</div>` : '';
+  }
+  if (f.hilfe === 'ende' && d.beginn && !d.ende) {
+    return `<div class="muted">Wird automatisch auf 3 Jahre gesetzt.</div>`;
+  }
+  return '';
+}
+
+// Formular-Karten; mitIntern=false lässt alles weg, was nur die Inhaberin ausfüllt.
+function formularHtml(art, d, ziel, mitIntern) {
+  let html = '';
+  for (const s of SEKTIONEN) {
+    if ((s.nur && s.nur !== art) || (s.intern && !mitIntern) || (s.wenn && !s.wenn(d))) continue;
+    const felder = s.felder.filter(f => (!f.nur || f.nur === art) && (!f.wenn || f.wenn(d)) && (mitIntern || !f.intern));
+    if (!felder.length) continue;
+    html += `<div class="card"><div class="sec-title">${esc(s.titel)}</div><div class="grid">
+      ${felder.map(f => feldHtml(f, d, ziel)).join('')}</div></div>`;
+  }
+  return html;
+}
+
+function renderDaten() {
+  const p = aktuell(); if (!p) return;
+  const d = p.daten;
+  setKopf(vollerName(d), p.art === 'lehrling' ? 'Lehrling' : 'Mitarbeiter:in');
+
+  const wer = p.art === 'lehrling' ? 'den Lehrling' : 'die neue Person';
+  let html = `<div class="card"><div class="sec-title">Selbst ausfüllen lassen</div>`;
+  if (p.vomLehrling) {
+    html += `<div class="ok-box" style="margin-bottom:10px">✓ Daten erhalten und eingespielt am ${esc(datumDe(p.vomLehrling))}. Bitte kurz durchschauen.</div>`;
+  }
+  html += `<p class="muted" style="line-height:1.5;margin-bottom:10px">Schick ${wer} einen Link. Eure Betriebsdaten${p.art === 'lehrling' ? ', Lehrberuf und Lehrzeit' : ''}
+      sind darin schon eingetragen – ${p.art === 'lehrling' ? 'der Lehrling' : 'sie'} ergänzt nur die eigenen Daten und Fotos der Dokumente und schickt dir
+      eine Datei zurück, die du oben in der Übersicht mit „📥 Ausgefüllte Daten … öffnen“ einspielst.</p>
+    ${p.art === 'lehrling' && !d.beginn ? '<div class="hinweis">Tipp: Trag vorher unten Lehrbeginn ein, dann steht die Lehrzeit schon im Link.</div>' : ''}
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="linkTeilen()">📲 Link schicken</button>
+      <button class="btn btn-secondary btn-sm" onclick="linkWhatsapp()">WhatsApp</button>
+      <button class="btn btn-secondary btn-sm" onclick="linkKopieren()">Link kopieren</button>
+    </div>
+    ${p.linkGeschickt ? `<div class="muted" style="margin-top:8px">Zuletzt geschickt am ${esc(datumDe(p.linkGeschickt))}</div>` : ''}
+  </div>`;
+
+  const alter = alterAm(d.geburtsdatum, d.beginn);
+  if (p.art === 'lehrling' && alter !== null && alter < 18) {
+    html += `<div class="hinweis">Bei Beginn ${alter} Jahre alt — der Lehrvertrag braucht auch die Unterschrift
+      der gesetzlichen Vertreter, und das Kinder- und Jugendlichen-Beschäftigungsgesetz (KJBG) gilt.</div>`;
+  }
+  if (d.zugang === ZUGANG[2] || d.zugang === ZUGANG[3]) {
+    html += `<div class="hinweis">Arbeitsmarktzugang ${d.zugang === ZUGANG[3] ? 'noch unklar' : ': Bewilligung nötig'} — vor dem
+      ersten Arbeitstag beim AMS klären bzw. Beschäftigungsbewilligung beantragen.</div>`;
+  }
+  html += formularHtml(p.art, d, 'p', true);
+  html += `<div class="card"><div class="sec-title">Dokumente (Fotos)</div><div id="dok-p">${dokHtml(p.art, _anh, 'p')}</div></div>`;
+  html += `<button class="btn btn-primary btn-full" onclick="zeigePane(document.querySelector('.tab[data-pane=&quot;p-check&quot;]'))">Weiter zur Checkliste →</button>`;
+  document.getElementById('daten-form').innerHTML = html;
+}
+
+function renderBetrieb() {
+  document.getElementById('betrieb-form').innerHTML = BETRIEB_FELDER.map(f => feldHtml(f, _betrieb, 'b')).join('');
+}
+
+// Ein Feld setzen. Leitet ein paar Werte automatisch ab (Geburtsdatum aus SV-Nr., Lehrende).
+// ziel: 'b' = Betrieb, 'p' = Person (Inhaberin), 's' = Ausfüllen durch Lehrling
+function setze(ziel, k, wert, neuZeichnen) {
+  const fokusId = document.activeElement && document.activeElement.id;
+  if (ziel === 'b') {
+    _betrieb[k] = wert;
+    speichern();
+    renderBetrieb();
+    return;
+  }
+  const p = ziel === 's' ? _selbst : aktuell();
+  if (!p) return;
+  const d = p.daten;
+  // Unfertiges Datum: nichts speichern und nicht neu zeichnen, sonst springt die Eingabe beim Tippen zurück.
+  if (DATUMSFELDER.has(k) && wert && !datumPlausibel(wert)) return;
+  if (k === 'svnr') wert = svnrFormat(wert.trim());
+  if (k === 'iban') wert = ibanFormat(wert);
+  d[k] = wert;
+  if (k === 'ende') d.ende_auto = false;
+
+  if (k === 'svnr' && !d.geburtsdatum) {
+    const r = svnrPruefen(wert);
+    if (r && r.ok) {
+      const t = r.geb.slice(0, 2), m = r.geb.slice(2, 4), j = Number(r.geb.slice(4));
+      const jahr = (2000 + j) > new Date().getFullYear() - 13 ? 1900 + j : 2000 + j;
+      const iso = `${jahr}-${m}-${t}`;
+      if (!isNaN(new Date(iso + 'T12:00'))) d.geburtsdatum = iso;
+    }
+  }
+  // Lehrzeitende (3 Jahre) mitziehen, solange es nicht von Hand geändert wurde oder nicht zum Beginn passt.
+  if (k === 'beginn' && p.art === 'lehrling' && wert
+      && (!d.ende || d.ende_auto !== false || !datumPlausibel(d.ende) || d.ende <= wert)) {
+    d.ende = plusTage(plusMonate(wert, 36), -1);
+    d.ende_auto = true;
+  }
+  if ((k === 'geburtsdatum' || k === 'beginn' || k === 'svnr') && p.art === 'lehrling' && d.geburtsdatum) {
+    if (volljaehrig(d)) d.erziehung = 'eigenberechtigt';
+    else if (!d.erziehung || d.erziehung === 'eigenberechtigt') d.erziehung = 'Eltern';
+  }
+  if (ziel === 's') entwurfSpeichern(); else speichern();
+  // Nur neu zeichnen, wenn sich die Darstellung ändert (sonst springt der Fokus beim Tippen).
+  const abhaengig = ['svnr', 'iban', 'beginn', 'ende', 'geburtsdatum', 'zugang', 'vertreter_gleiche_adresse'];
+  if (neuZeichnen || abhaengig.includes(k)) {
+    if (ziel === 's') renderSelbst(); else renderDaten();
+    if (fokusId) { const el = document.getElementById(fokusId); if (el && el !== document.activeElement) el.focus(); }
+  }
+  if (ziel === 'p' && (k === 'vorname' || k === 'nachname')) setKopf(vollerName(d), p.art === 'lehrling' ? 'Lehrling' : 'Mitarbeiter:in');
+}
+
+// ── Dokumente (Fotos) ────────────────────────────────────────
+function dokHtml(art, anh, ziel) {
+  return dokTypen(art).map(t => {
+    const bilder = anh.map((a, i) => ({ a, i })).filter(x => x.a.typ === t.typ);
+    return `<div class="dok">
+      <div class="dok-kopf">
+        <div class="dok-name">${bilder.length ? '✓ ' : ''}${esc(t.l)}</div>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;flex-shrink:0">📷 ${bilder.length ? 'Seite dazu' : 'Foto'}
+          <input type="file" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="dokHinzu('${ziel}','${t.typ}',this)"></label>
+      </div>
+      <div class="dok-bilder">${bilder.map(({ a, i }) => `<div class="dok-bild"><img src="${esc(a.dataUrl)}" alt="${esc(t.l)}"
+          onclick="dokZeigen('${ziel}',${i})" title="Antippen zum Ansehen und Bearbeiten">
+        <button type="button" onclick="dokWeg('${ziel}',${i})" aria-label="Foto entfernen">×</button></div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// Foto verkleinern (max. 1600 px, JPEG), damit Datei und PDF klein bleiben.
+// PDFs (z. B. per WhatsApp geschickte Scans) werden Seite für Seite in Fotos umgewandelt –
+// so laufen sie durch dieselbe Speicherung, Anzeige und das Steuerberater-PDF wie Fotos.
+// pdf.js wird erst geladen, wenn wirklich ein PDF gewählt wird.
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PDF_MAX_SEITEN = 15;
+let _pdfjs;
+function pdfjsLaden() {
+  if (!_pdfjs) _pdfjs = new Promise((res, rej) => {
+    const sk = document.createElement('script');
+    sk.src = PDFJS + 'pdf.min.js';
+    sk.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; res(window.pdfjsLib); };
+    sk.onerror = () => { _pdfjs = null; rej(new Error('pdf.js nicht ladbar')); };
+    document.head.appendChild(sk);
+  });
+  return _pdfjs;
+}
+function istPdf(datei) { return datei.type === 'application/pdf' || /\.pdf$/i.test(datei.name || ''); }
+async function pdfZuBildern(datei) {
+  const lib = await pdfjsLaden();
+  const doc = await lib.getDocument({ data: new Uint8Array(await datei.arrayBuffer()), isEvalSupported: false }).promise;
+  const seiten = [];
+  try {
+    const anzahl = Math.min(doc.numPages, PDF_MAX_SEITEN);
+    for (let n = 1; n <= anzahl; n++) {
+      const seite = await doc.getPage(n);
+      const v1 = seite.getViewport({ scale: 1 });
+      const vp = seite.getViewport({ scale: 1600 / Math.max(v1.width, v1.height) });
+      const c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      await seite.render({ canvasContext: ctx, viewport: vp }).promise;
+      seiten.push({ dataUrl: c.toDataURL('image/jpeg', 0.8), w: c.width, h: c.height });
+    }
+    if (doc.numPages > anzahl) alert(`Das PDF hat ${doc.numPages} Seiten – übernommen wurden die ersten ${anzahl}.`);
+  } finally { doc.destroy(); }
+  return seiten;
+}
+// Datei → Liste von Fotos (Bild: 1, PDF: eine pro Seite)
+async function dateiZuBildern(datei) {
+  return istPdf(datei) ? pdfZuBildern(datei) : [await bildVerkleinern(datei)];
+}
+const DATEI_FEHLER = 'Diese Datei konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) oder ein PDF wählen.';
+
+async function bildVerkleinern(datei) {
+  const url = URL.createObjectURL(datei);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const f = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * f)), h = Math.max(1, Math.round(img.naturalHeight * f));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return { dataUrl: c.toDataURL('image/jpeg', 0.75), w, h };
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function dokHinzu(ziel, typ, input) {
+  const dateien = [...(input.files || [])];
+  input.value = '';
+  if (!dateien.length) return;
+  showToast(dateien.some(istPdf) ? 'PDF wird umgewandelt …' : 'Foto wird verarbeitet …');
+  const neu = [];
+  for (const datei of dateien) {
+    try { for (const b of await dateiZuBildern(datei)) neu.push({ typ, ...b, datum: heuteIso() }); }
+    catch (e) { console.error(e); alert(DATEI_FEHLER); }
+  }
+  if (!neu.length) return;
+  _anh.push(...neu);
+  await dokSichern(ziel);
+  showToast(neu.length > 1 ? `${neu.length} Seiten gespeichert` : 'Foto gespeichert');
+}
+
+async function dokWeg(ziel, i) {
+  if (!confirm('Dieses Foto entfernen?')) return;
+  _anh.splice(i, 1);
+  dokZu();
+  await dokSichern(ziel);
+}
+
+// Fotos speichern und Liste neu zeichnen (Lehrling: Entwurf am Handy, Inhaberin: inkl. Supabase).
+async function dokSichern(ziel) {
+  if (ziel === 's') {
+    await anhaengeSpeichern('entwurf:' + _selbst.id, _anh);
+    document.getElementById('dok-s').innerHTML = dokHtml(_selbst.art, _anh, 's');
+  } else {
+    const p = aktuell(); if (!p) return;
+    _stbWahl = null;
+    await anhaengeSpeichern(p.id, _anh);
+    for (const a of _anh) {
+      const t = DOKTYPEN.find(x => x.typ === a.typ);
+      if (t && !p.erledigt[dokCheck(t, p.art)]) { p.erledigt[dokCheck(t, p.art)] = heuteIso(); speichern(); }
+    }
+    document.getElementById('dok-p').innerHTML = dokHtml(p.art, _anh, 'p');
+  }
+}
+
+// Großansicht: ansehen, drehen, ersetzen, anderem Dokument zuordnen, löschen.
+// Jede Änderung bekommt eine neue ID – so gleicht die Wolke das alte Foto als gelöscht ab.
+function dokZeigen(ziel, i) {
+  const a = _anh[i]; if (!a) return;
+  const art = ziel === 's' ? _selbst.art : aktuell().art;
+  const el = document.getElementById('dok-ansicht');
+  el.innerHTML = `<div class="bild"><img src="${esc(a.dataUrl)}" alt="Dokument"></div>
+    <div class="leiste">
+      <select aria-label="Dokument" onchange="dokTypAendern('${ziel}',${i},this.value)">
+        ${dokTypen(art).map(t => `<option value="${esc(t.typ)}"${t.typ === a.typ ? ' selected' : ''}>${esc(t.l)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="leiste">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="dokDrehen('${ziel}',${i})">↻ Drehen</button>
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer">📷 Ersetzen
+        <input type="file" accept="image/*,application/pdf,.pdf" style="display:none" onchange="dokErsetzen('${ziel}',${i},this)"></label>
+      <button type="button" class="btn btn-secondary btn-sm" style="color:var(--red)" onclick="dokWeg('${ziel}',${i})">🗑 Löschen</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="dokZu()">Fertig</button>
+    </div>`;
+  el.classList.add('offen');
+}
+function dokZu() { document.getElementById('dok-ansicht').classList.remove('offen'); }
+
+async function dokTypAendern(ziel, i, typ) {
+  const a = _anh[i]; if (!a || a.typ === typ) return;
+  _anh[i] = { ...a, typ, id: undefined };
+  await dokSichern(ziel);
+  showToast('Zugeordnet');
+}
+async function dokDrehen(ziel, i) {
+  const a = _anh[i]; if (!a) return;
+  const img = await new Promise((res, rej) => { const x = new Image(); x.onload = () => res(x); x.onerror = rej; x.src = a.dataUrl; });
+  const c = document.createElement('canvas');
+  c.width = img.naturalHeight; c.height = img.naturalWidth;
+  const ctx = c.getContext('2d');
+  ctx.translate(c.width, 0); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(img, 0, 0);
+  _anh[i] = { ...a, dataUrl: c.toDataURL('image/jpeg', 0.85), w: c.width, h: c.height, id: undefined };
+  await dokSichern(ziel);
+  dokZeigen(ziel, i);
+}
+async function dokErsetzen(ziel, i, input) {
+  const datei = input.files && input.files[0];
+  input.value = '';
+  if (!datei || !_anh[i]) return;
+  try {
+    const bilder = await dateiZuBildern(datei);
+    if (!bilder.length) throw new Error('leeres PDF');
+    const typ = _anh[i].typ;
+    _anh.splice(i, 1, ...bilder.map(b => ({ typ, ...b, datum: heuteIso() })));   // weitere PDF-Seiten direkt dahinter
+  } catch (e) { console.error(e); alert(DATEI_FEHLER); return; }
+  await dokSichern(ziel);
+  dokZeigen(ziel, i);
+  showToast('Foto ersetzt');
+}
+
+// ── Link für den Lehrling ────────────────────────────────────
+// Enthält nur, was der Lehrling sehen soll: Betrieb (ohne SV-Nr./E-Mail der Inhaberin),
+// Lehrberuf, Lehrzeit, ggf. schon bekannter Name.
+function linkBauen() {
+  const p = aktuell(); if (!p) return null;
+  if (location.protocol === 'file:') {
+    alert('Den Link kann man nur verschicken, wenn diese Seite online geöffnet ist.');
+    return null;
+  }
+  const d = p.daten;
+  const vor = {};
+  for (const k of ['vorname', 'nachname', 'lehrberuf', 'lehrberuf2', 'beginn', 'ende', 'position', 'ort', 'vertreter_gleiche_adresse']) {
+    if (d[k] && (!DATUMSFELDER.has(k) || datumPlausibel(d[k]))) vor[k] = d[k];
+  }
+  const nutzlast = {
+    v: 1, id: p.id, art: p.art,
+    b: { name: _betrieb.name, adresse: _betrieb.adresse, tel: _betrieb.tel, leiter: _betrieb.ausbildungsleiter },
+    d: vor
+  };
+  const basis = location.href.split('#')[0].split('?')[0];
+  return basis + '#ausfuellen=' + b64urlAus(JSON.stringify(nutzlast));
+}
+function linkText() {
+  const p = aktuell();
+  const vn = p && p.daten.vorname ? ' ' + p.daten.vorname : '';
+  return `Hallo${vn}! Bitte füll für deine Anmeldung bei ${_betrieb.name} deine Daten aus, mach Fotos von deinen Dokumenten und schick mir am Ende die Datei zurück. Danke! Hier ist der Link:`;
+}
+function linkMerken() {
+  const p = aktuell(); if (!p) return;
+  p.linkGeschickt = heuteIso();
+  speichern();
+  renderDaten();
+}
+async function linkTeilen() {
+  const url = linkBauen(); if (!url) return;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Anmeldung ' + _betrieb.name, text: linkText(), url }); linkMerken(); return; }
+    catch (e) { if (e.name === 'AbortError') return; console.error(e); }
+  }
+  linkKopieren();
+}
+function linkWhatsapp() {
+  const url = linkBauen(); if (!url) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(linkText() + '\n' + url), '_blank', 'noopener');
+  linkMerken();
+}
+function linkKopieren() {
+  const url = linkBauen(); if (!url) return;
+  textKopieren(linkText() + '\n' + url, 'Link kopiert – jetzt in WhatsApp oder Mail einfügen');
+  linkMerken();
+}
+
+// ── Ausfüllen durch den Lehrling ─────────────────────────────
+function entwurfSpeichern() {
+  try { localStorage.setItem(SPEICHER_ENTWURF + _selbst.id, JSON.stringify({ daten: _selbst.daten, gesendet: _selbst.gesendet || null })); }
+  catch (e) { console.error(e); }
+}
+
+async function startSelbst(nutzlast) {
+  let entwurf = null;
+  try { entwurf = JSON.parse(localStorage.getItem(SPEICHER_ENTWURF + nutzlast.id)); } catch (e) { entwurf = null; }
+  const start = { ...nutzlast.d };
+  if (nutzlast.art === 'lehrling' && !start.vertreter_gleiche_adresse) start.vertreter_gleiche_adresse = 'wie Lehrling';
+  _selbst = {
+    id: nutzlast.id, art: nutzlast.art, b: nutzlast.b || {},
+    // Vorgaben aus dem Link gewinnen immer (falls die Inhaberin z. B. die Lehrzeit korrigiert hat).
+    daten: { ...(entwurf ? entwurf.daten : {}), ...start },
+    gesendet: entwurf ? entwurf.gesendet : null
+  };
+  _anh = await anhaengeLaden('entwurf:' + _selbst.id);
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-selbst'));
+  renderSelbst();
+}
+
+function renderSelbst() {
+  const s = _selbst, d = s.daten, b = s.b;
+  const lehrling = s.art === 'lehrling';
+  setKopf('Deine Anmeldung', b.name || '');
+  const leiter = b.leiter || 'uns';
+  let html = '';
+  if (s.gesendet) {
+    html += `<div class="ok-box">✓ Am ${esc(datumDe(s.gesendet))} abgeschickt. Wenn du etwas änderst, schick die Datei bitte nochmal.</div>`;
+  }
+  html += `<div class="card">
+    <div class="card-title" style="margin-bottom:6px">Willkommen${d.vorname ? ', ' + esc(d.vorname) : ''}! 👋</div>
+    <p class="muted" style="line-height:1.5">Bitte füll deine Daten aus und mach Fotos von deinen Dokumenten.
+      Am Ende tippst du auf „Fertig – an ${esc(leiter)} schicken“ und schickst die Datei per WhatsApp oder Mail.
+      Alles bleibt bis dahin nur auf deinem Handy gespeichert – du kannst also auch zwischendurch aufhören.</p>
+  </div>
+  <div class="card"><div class="sec-title">Schon eingetragen von ${esc(leiter)}</div>
+    <div class="info-zeile"><span>${lehrling ? 'Lehrbetrieb' : 'Arbeitgeberin'}</span><span>${esc(b.name)}</span></div>
+    <div class="info-zeile"><span>Adresse</span><span>${esc(b.adresse)}</span></div>
+    <div class="info-zeile"><span>Telefon</span><span>${esc(b.tel)}</span></div>
+    ${lehrling && d.lehrberuf ? `<div class="info-zeile"><span>Lehrberuf</span><span>${esc(d.lehrberuf)}</span></div>` : ''}
+    ${d.beginn ? `<div class="info-zeile"><span>${lehrling ? 'Lehrzeit' : 'Beginn'}</span><span>${esc(datumDe(d.beginn))}${lehrling && d.ende ? ' – ' + esc(datumDe(d.ende)) : ''}</span></div>` : ''}
+    ${!lehrling && d.position ? `<div class="info-zeile"><span>Position</span><span>${esc(d.position)}</span></div>` : ''}
+  </div>`;
+  html += formularHtml(s.art, d, 's', false);
+  html += `<div class="card"><div class="sec-title">Dokumente – bitte abfotografieren</div>
+    <p class="muted" style="margin-bottom:6px">Bei mehreren Seiten einfach mehrere Fotos hinzufügen.</p>
+    <div id="dok-s">${dokHtml(s.art, _anh, 's')}</div></div>`;
+  html += `<button class="btn btn-primary btn-full" onclick="selbstAbschicken()">Fertig – an ${esc(leiter)} schicken</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="selbstLoeschen()">Meine Daten von diesem Handy löschen</button>`;
+  document.getElementById('selbst').innerHTML = html;
+}
+
+function selbstFehlt() {
+  const d = _selbst.daten;
+  const fehlt = [];
+  const pflicht = [['vorname', 'Vorname'], ['nachname', 'Familienname'], ['geburtsdatum', 'Geburtsdatum'],
+    ['svnr', 'Sozialversicherungsnummer'], ['strasse', 'Straße'], ['plz', 'PLZ'], ['ort', 'Ort'], ['tel', 'Telefon']];
+  if (_selbst.art === 'lehrling' && !volljaehrig(d)) pflicht.push(['vertreter_name', 'Name der Eltern / gesetzl. Vertreter']);
+  for (const [k, l] of pflicht) if (!d[k]) fehlt.push(l);
+  if (d.svnr && !svnrPruefen(d.svnr).ok) fehlt.push('gültige Sozialversicherungsnummer');
+  if (d.iban && !ibanPruefen(d.iban).ok) fehlt.push('gültige IBAN');
+  return fehlt;
+}
+
+async function selbstAbschicken() {
+  const fehlt = selbstFehlt();
+  if (fehlt.length) { alert('Bitte noch ausfüllen bzw. prüfen:\n\n• ' + fehlt.join('\n• ')); return; }
+  const d = _selbst.daten;
+  const ohne = [];
+  if (!d.iban) ohne.push('IBAN');
+  if (!_anh.some(a => a.typ === 'meldezettel')) ohne.push('Foto vom Meldezettel');
+  if (ohne.length && !confirm(`Noch ohne ${ohne.join(' und ')}. Trotzdem schon abschicken?`)) return;
+
+  const daten = { ...d };
+  if (volljaehrig(d)) ELTERN_FELDER.forEach(k => delete daten[k]);
+  const inhalt = { typ: ANTWORT_TYP, v: 1, id: _selbst.id, art: _selbst.art, gesendet: new Date().toISOString(), daten, anhaenge: _anh };
+  const name = `Anmeldung-${dateiName(vollerName(d))}.json`;
+  const datei = new File([JSON.stringify(inhalt)], name, { type: 'application/json' });
+  const leiter = _selbst.b.leiter || '';
+  const ergebnis = await teilen(datei, 'Anmeldung ' + vollerName(d), `Hallo ${leiter}, hier sind meine Daten für die Anmeldung. ${vollerName(d)}`);
+  if (ergebnis === 'abgebrochen') return;
+  _selbst.gesendet = heuteIso();
+  entwurfSpeichern();
+  renderSelbst();
+  if (ergebnis === 'heruntergeladen') {
+    alert(`Die Datei „${name}“ wurde gespeichert (Downloads).\n\nBitte schick sie jetzt per WhatsApp oder E-Mail an ${leiter || 'den Betrieb'}.`);
+  } else {
+    showToast('Danke! Deine Daten sind unterwegs.');
+  }
+}
+
+async function selbstLoeschen() {
+  if (!confirm('Alle eingegebenen Daten und Fotos von diesem Handy löschen?')) return;
+  try { localStorage.removeItem(SPEICHER_ENTWURF + _selbst.id); } catch (e) { console.error(e); }
+  await anhaengeSpeichern('entwurf:' + _selbst.id, []);
+  _anh = [];
+  _selbst.daten = {};
+  _selbst.gesendet = null;
+  document.getElementById('selbst').innerHTML = `<div class="leer">Deine Daten wurden von diesem Handy gelöscht.</div>`;
+}
+
+// ── Checkliste mit Fristen ───────────────────────────────────
+// Jede Aufgabe: id, text, sub (Erklärung), frist (ISO-Datum oder null), gruppe.
+function aufgaben(p) {
+  const d = p.daten;
+  const b = d.beginn || null;
+  const lehrling = p.art === 'lehrling';
+  const alter = alterAm(d.geburtsdatum, b);
+  const minderjaehrig = alter !== null && alter < 18;
+  const bewilligung = d.zugang === ZUGANG[2] || d.zugang === ZUGANG[3];
+  const liste = [];
+  const a = (gruppe, id, text, sub, frist) => liste.push({ gruppe, id, text, sub, frist: frist || null });
+
+  // Unterlagen
+  const U = 'Unterlagen einsammeln';
+  if (lehrling) {
+    a(U, 'u_geburtsurkunde', 'Geburtsurkunde (Kopie)', 'Wird von der Berufsschule verlangt.');
+    a(U, 'u_meldezettel', 'Meldezettel (Kopie)');
+    a(U, 'u_staatsbuergerschaft', 'Staatsbürgerschaftsnachweis bzw. Reisepass (Kopie)');
+    a(U, 'u_zeugnis', 'Letztes Zeugnis (9. Schulstufe)');
+    a(U, 'u_ecard', 'e-card / SV-Nr. abgeschrieben');
+    if (d.erziehung === 'Heim' || d.erziehung === 'Andere') a(U, 'u_vormund', 'Vormundschaftsdekret / Obsorgenachweis');
+  } else {
+    a(U, 'u_meldezettel', 'Meldezettel (Kopie)');
+    a(U, 'u_lap', 'Lehrabschlussprüfung / LAP-Zeugnis (Kopie)');
+    a(U, 'u_ausweis', 'Lichtbildausweis (Kopie)');
+    a(U, 'u_ecard', 'e-card / SV-Nr. abgeschrieben');
+  }
+  if (bewilligung) a(U, 'u_aufenthalt', 'Aufenthaltstitel / Asylbescheid (Kopie)', 'Zeigt, ob freier Arbeitsmarktzugang besteht.');
+  a(U, 'u_bank', 'Bankverbindung / IBAN', d.iban && ibanPruefen(d.iban)?.ok ? 'Ist eingetragen ✓' : 'Fehlt noch in den Daten.');
+  a(U, 'u_foto', 'Foto digital (für Homepage, Facebook …)');
+  a(U, 'u_foto_ok', 'Schriftliche Einwilligung zur Foto-Veröffentlichung',
+    minderjaehrig ? 'Minderjährig: auch die Eltern unterschreiben lassen.' : 'DSGVO: Veröffentlichung nur mit Einwilligung.');
+
+  // Vor dem ersten Tag
+  const V = 'Vor dem ersten Arbeitstag';
+  if (bewilligung) a(V, 'v_ams', 'Beschäftigungsbewilligung beim AMS beantragen / Zugang klären',
+    'Ohne Bewilligung darf die Person nicht arbeiten.', b ? plusTage(b, -1) : null);
+  if (lehrling) {
+    a(V, 'v_lehrvertrag', 'Lehrvertrag unterschreiben',
+      minderjaehrig ? 'Lehrling, Lehrbetrieb und gesetzliche Vertreter unterschreiben.' : 'Lehrling und Lehrbetrieb unterschreiben.',
+      b ? plusTage(b, -1) : null);
+  } else {
+    a(V, 'v_dienstvertrag', 'Dienstvertrag / Dienstzettel ausstellen und unterschreiben', null, b ? plusTage(b, -1) : null);
+  }
+  a(V, 'v_lohn', 'Anmeldungsdaten an Steuerberater:in / Lohnverrechnung schicken',
+    'Unter 3 · Formulare → „An Steuerberater:in senden“ (ein PDF mit allen Blättern und Dokumenten).', b ? plusTage(b, -3) : null);
+  a(V, 'v_oegk', 'ÖGK-Anmeldung bestätigt (ELDA, macht meist die Lohnverrechnung)',
+    'Muss vor Arbeitsantritt erfolgen.', b ? plusTage(b, -1) : null);
+
+  // Nach Beginn
+  const N = 'Nach Beginn';
+  if (lehrling) {
+    a(N, 'n_berufsschule', 'Bei der Berufsschule für Haar- und Körperpflege anmelden',
+      'Goldschlagstraße 137, 1140 Wien · Anmeldeblatt unter 3 · Formulare.', b ? plusTage(b, 14) : null);
+    a(N, 'n_wkw', 'Lehrvertrag bei der Lehrlingsstelle der WKW anmelden',
+      'Innerhalb von 3 Wochen ab Lehrbeginn · Daten-Blatt unter 3 · Formulare.', b ? plusTage(b, 21) : null);
+    a(N, 'n_lvnr', 'Lehrvertragsnummer von der WKW in die Daten eintragen', d.lehrvertragsnr ? 'Ist eingetragen ✓' : null);
+    if (minderjaehrig) {
+      a(N, 'n_kjbg', 'Jugendliche: Verzeichnis führen & Arbeitszeiten nach KJBG planen',
+        'Höchstens 8 h/Tag und 40 h/Woche, keine Nachtarbeit.', b);
+    }
+  }
+  a(N, 'n_unterweisung', 'Sicherheits-Unterweisung (Chemikalien, Geräte) dokumentieren', null, b ? plusTage(b, 7) : null);
+  a(N, 'n_teamapp', 'Konto in der Team-App anlegen', 'Team-App → Team → Mitarbeiter:in hinzufügen.', b);
+  a(N, 'n_dienstplan', 'In Dienstplan, Abwesenheiten und Handbuch aufnehmen', null, b);
+
+  // Später
+  const S = 'Später';
+  if (lehrling && b) {
+    a(S, 's_probezeit', 'Ende der Probezeit (3 Monate)', 'Bis dahin kann das Lehrverhältnis von beiden Seiten jederzeit gelöst werden.', plusTage(plusMonate(b, 3), -1));
+    a(S, 's_foerderung', 'Lehrbetriebsförderung (Basisförderung) nach dem 1. Lehrjahr bei der WKW beantragen', null, plusMonate(b, 12));
+    if (d.ende) a(S, 's_lap', 'Lehrabschlussprüfung anmelden', 'Rechtzeitig vor Lehrzeitende bei der Lehrlingsstelle.', plusMonate(d.ende, -4));
+    if (d.ende && d.befristung_behaltezeit !== 'nein') a(S, 's_behaltezeit', 'Ende der Behaltezeit (3 Monate nach Lehrzeitende)', null, plusMonate(d.ende, 3));
+  } else if (b) {
+    a(S, 's_probezeit', 'Ende der Probezeit (1 Monat, falls vereinbart)', null, plusTage(plusMonate(b, 1), -1));
+  }
+  return liste;
+}
+
+function fortschritt(p) {
+  const liste = aufgaben(p);
+  const heute = heuteIso();
+  let erledigt = 0, ueberfaellig = 0;
+  for (const t of liste) {
+    if (p.erledigt[t.id]) erledigt++;
+    else if (t.frist && t.frist < heute && !t.id.startsWith('s_')) ueberfaellig++;
+  }
+  return { erledigt, gesamt: liste.length, ueberfaellig };
+}
+
+function fristHtml(frist, erledigt) {
+  if (!frist || erledigt) return frist ? `<span class="frist frist-ok">${esc(datumDe(frist))}</span>` : '';
+  const heute = heuteIso();
+  const tage = Math.round((new Date(frist + 'T12:00') - new Date(heute + 'T12:00')) / 86400000);
+  const kl = tage < 0 ? 'frist-ueber' : tage <= 7 ? 'frist-bald' : 'frist-ok';
+  const txt = tage < 0 ? `überfällig seit ${datumDe(frist)}` : tage === 0 ? 'heute' : `bis ${datumDe(frist)}`;
+  return `<span class="frist ${kl}">${esc(txt)}</span>`;
+}
+
+function renderCheckliste() {
+  const p = aktuell(); if (!p) return;
+  const liste = aufgaben(p);
+  let html = '';
+  if (!p.daten.beginn) html += `<div class="hinweis">Trag unter „1 · Daten“ das Beginn-Datum ein, dann rechnet die App alle Fristen aus.</div>`;
+  const gruppen = [...new Set(liste.map(t => t.gruppe))];
+  for (const g of gruppen) {
+    html += `<div class="card"><div class="sec-title">${esc(g)}</div>`;
+    for (const t of liste.filter(x => x.gruppe === g)) {
+      const ok = !!p.erledigt[t.id];
+      html += `<label class="todo${ok ? ' erledigt' : ''}">
+        <input type="checkbox" ${ok ? 'checked' : ''} onchange="abhaken('${t.id}', this.checked)">
+        <div><div class="todo-text">${esc(t.text)} ${fristHtml(t.frist, ok)}</div>
+        ${t.sub ? `<div class="todo-sub">${esc(t.sub)}</div>` : ''}
+        ${ok && typeof p.erledigt[t.id] === 'string' ? `<div class="todo-sub">erledigt am ${esc(datumDe(p.erledigt[t.id]))}</div>` : ''}</div>
+      </label>`;
+    }
+    html += `</div>`;
+  }
+  document.getElementById('checkliste').innerHTML = html;
+}
+
+function abhaken(id, an) {
+  const p = aktuell(); if (!p) return;
+  if (an) p.erledigt[id] = heuteIso(); else delete p.erledigt[id];
+  speichern();
+  renderCheckliste();
+}
+
+// ── Formulare / Druck / PDF ──────────────────────────────────
+const FORMULARE = {
+  lehrling: [
+    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Nur Daten des Lehrlings, mit Bank – ohne Eltern' },
+    { id: 'wkw', titel: 'Lehrvertrag – Daten für die Lehrlingsstelle', sub: 'Wirtschaftskammer Wien, Seite 2 · ohne Bankdaten' },
+    { id: 'berufsschule', titel: 'Anmeldung Berufsschule', sub: 'Berufsschule für Haar- und Körperpflege, 1140 Wien · ohne Bankdaten' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
+  ],
+  ma: [
+    { id: 'stamm', titel: 'Anmeldungsdaten (Steuerberater / Lohnverrechnung)', sub: 'Name, Adresse, SV-Nr., Bank, Dienstverhältnis' },
+    { id: 'checkliste', titel: 'Checkliste zum Abhaken', sub: 'Alle Aufgaben mit Fristen' }
+  ]
+};
+let _stbWahl = null;   // { fotos: Set(index) } für die offene Person – Blatt ist immer nur „stamm“
+
+function renderFormulare() {
+  const p = aktuell(); if (!p) return;
+  if (!_stbWahl || _stbWahl.id !== p.id) {
+    _stbWahl = {
+      id: p.id,
+      fotos: new Set(_anh.map((a, i) => ({ a, i })).filter(x => (DOKTYPEN.find(t => t.typ === x.a.typ) || {}).stb !== false).map(x => x.i))
+    };
+  }
+  const fehlt = pflichtFehlt(p);
+  let html = '';
+  if (fehlt.length) {
+    html += `<div class="hinweis">Noch leer: ${esc(fehlt.join(', '))}. Du kannst trotzdem senden oder drucken – die Felder bleiben dann frei.</div>`;
+  }
+
+  // An Steuerberater:in
+  const stb = _betrieb.stb_name || 'Steuerberater:in';
+  html += `<div class="card">
+    <div class="card-title">📤 An ${esc(stb)} senden</div>
+    <div class="muted" style="margin:2px 0 10px">Ein PDF mit den Anmeldungsdaten – nur Daten ${p.art === 'lehrling' ? 'des Lehrlings' : 'der Person'}
+      inkl. Bank, ohne Eltern – und den ausgewählten Dokument-Fotos.
+      ${_betrieb.stb_email ? 'Geht an ' + esc(_betrieb.stb_email) + '.' : '<a href="#" onclick="zeigeView(\'v-betrieb\');return false">E-Mail der Steuerberatung eintragen</a>'}</div>
+    <div class="sec-title">Dokumente</div>
+    ${_anh.length ? _anh.map((a, i) => {
+      const t = DOKTYPEN.find(x => x.typ === a.typ);
+      return `<label class="wahl"><input type="checkbox" ${_stbWahl.fotos.has(i) ? 'checked' : ''}
+        onchange="stbWahl('fotos',${i},this.checked)">${esc(t ? t.l : a.typ)}</label>`;
+    }).join('') : '<div class="muted">Noch keine Fotos – unter „1 · Daten“ ganz unten hinzufügen.</div>'}
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="anSteuerberater()">An ${esc(stb)} senden</button>
+      <button class="btn btn-secondary" onclick="stbPdfSpeichern()">Nur PDF speichern</button>
+    </div>
+  </div>`;
+
+  html += `<div class="sec-title" style="margin-top:20px">Einzelne Blätter</div>`;
+  for (const f of FORMULARE[p.art]) {
+    html += `<div class="card">
+      <div class="card-title">${esc(f.titel)}</div>
+      <div class="muted" style="margin:2px 0 10px">${esc(f.sub)}</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}')">PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="drucken(['${f.id}'])">Drucken</button>
+        <button class="btn btn-secondary btn-sm" onclick="kopieren('${f.id}')">Als Text kopieren</button>
+      </div>
+    </div>`;
+  }
+  html += `<p class="muted" style="margin-top:12px;line-height:1.5">Die Original-Formulare der WKW und der Berufsschule bleiben
+    verbindlich – die Blätter hier enthalten dieselben Angaben in derselben Reihenfolge, zum Beilegen oder Abschreiben.</p>`;
+  document.getElementById('formulare').innerHTML = html;
+}
+
+function stbWahl(art, wert, an) {
+  if (an) _stbWahl[art].add(wert); else _stbWahl[art].delete(wert);
+}
+
+function pflichtFehlt(p) {
+  const d = p.daten;
+  const pflicht = [['vorname', 'Vorname'], ['nachname', 'Familienname'], ['svnr', 'SV-Nr.'], ['geburtsdatum', 'Geburtsdatum'],
+    ['strasse', 'Adresse'], ['beginn', 'Beginn'], ['iban', 'IBAN']];
+  if (p.art === 'lehrling') pflicht.push(['letzte_schule', 'letzte Schule']);
+  if (p.art === 'lehrling' && !volljaehrig(d)) pflicht.push(['vertreter_name', 'gesetzl. Vertreter']);
+  return pflicht.filter(([k]) => !d[k]).map(([, l]) => l);
+}
+
+function adresseVertreter(d) {
+  if (d.vertreter_gleiche_adresse === 'andere') return [d.vertreter_strasse, [d.vertreter_plz, d.vertreter_ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+function adresse(d) { return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', '); }
+
+// Liefert die Inhalte eines Blatts als Abschnitte [[Titel, [[Label, Wert], …]], …]
+function blattInhalt(id, p) {
+  const d = p.daten, B = _betrieb;
+  const ja = (bed) => bed ? '☒' : '☐';
+  if (id === 'berufsschule') {
+    return { titel: 'Anmeldung Berufsschule für Haar- und Körperpflege',
+      kopf: 'Goldschlagstraße 137, 1140 Wien · Tel. +43 1 599 16 95 805 · bs14gold137k@m56ssr.wien.at', teile: [
+      ['Lehrberuf', [['Lehrberuf', d.lehrberuf], ['2. Lehrberuf', d.lehrberuf2]]],
+      ['Schüler:in', [
+        ['Familienname', d.nachname], ['Vorname', d.vorname], ['Geschlecht', d.geschlecht],
+        ['Versicherungsnummer', d.svnr], ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', d.geburtsort],
+        ['Bundesland', d.bundesland_geburt], ['Geburtsstaat', d.geburtsstaat],
+        ['Staatsbürgerschaft', d.staatsbuergerschaft], ['Religion', d.religion], ['Muttersprache', d.muttersprache],
+        ['Wohnadresse', adresse(d)], ['Tel. oder Handy', d.tel]]],
+      ['Erziehungsberechtigt', volljaehrig(d)
+        ? [['Erziehungsberechtigt ist/sind', 'eigenberechtigt'], ['Notfallnummer bei Eigenberechtigung', d.notfall]]
+        : [['Erziehungsberechtigt ist/sind', d.erziehung], ['Vor- und Familienname', d.vertreter_name],
+          ['Adresse', adresseVertreter(d)], ['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater],
+          ['Beruf Mutter', d.beruf_mutter], ['Beruf Vater', d.beruf_vater]]],
+      ['Lehrbetrieb', [
+        ['Name', B.name], ['Adresse', B.adresse], ['Tel.', B.tel], ['Fax', B.fax],
+        ['Lehrzeit von – bis', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
+        ['Lehrvertragsnummer', d.lehrvertragsnr]]],
+      ['Vorbildung', [
+        ['Schuljahr', d.schuljahr], ['Schulstufe', d.schulstufe], ['Schulart', d.schultyp],
+        ['Letzte Schule', d.letzte_schule], ['Bundesland der Schule', d.schul_bundesland],
+        ['Neunte Schulstufe', d.neunte_stufe], ['Vermerk sonderpäd. Förderbedarf', d.foerderbedarf],
+        ['Bisherige Lehrzeit', d.bisherige_lehrzeit], ['im Lehrberuf', d.bisheriger_lehrberuf]]],
+      ['Beigelegte Dokumente', [
+        ['Geburtsurkunde', ja(p.erledigt.u_geburtsurkunde)], ['Meldezettel', ja(p.erledigt.u_meldezettel)],
+        ['Staatsbürgerschaftsnachweis', ja(p.erledigt.u_staatsbuergerschaft)], ['Zeugnisse', ja(p.erledigt.u_zeugnis)],
+        ['Lehrvertrag', ja(p.erledigt.v_lehrvertrag)],
+        ['Arbeitsbewilligung (wenn nicht EU-Bürger:in)', d.zugang === ZUGANG[0] ? 'nicht nötig' : ja(p.erledigt.v_ams || p.erledigt.u_aufenthalt)]]]
+    ]};
+  }
+  if (id === 'wkw') {
+    return { titel: 'Lehrvertrag – Angaben für die Lehrlingsstelle',
+      kopf: 'Lehrlingsstelle der Wirtschaftskammer Wien · Straße der Wiener Wirtschaft 1, 1020 Wien · T 01 514 50-2013 · lehrlingsstelle@wkw.at', teile: [
+      ['Lehrbetrieb', [
+        ['Lehrbetrieb', B.name], ['Adresse', B.adresse], ['Ausbildungsleiter:in', B.ausbildungsleiter],
+        ['E-Mail', B.email], ['SV-Nr. Ausbildungsleiter:in', B.svnr], ['Anzahl Fachkräfte', B.fachkraefte],
+        ['Befristung Behaltezeit', d.befristung_behaltezeit]]],
+      ['Lehrling', [
+        ['Geschlecht', d.geschlecht], ['Vorname', d.vorname], ['Nachname', d.nachname], ['SV-Nr.', d.svnr],
+        ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', [d.geburtsort, d.geburtsstaat].filter(Boolean).join(', ')],
+        ['Adresse', adresse(d)], ['E-Mail', d.email], ['Tel.-Nr.', d.tel], ['Staatsbürgerschaft', d.staatsbuergerschaft],
+        ['Letzte Schule', d.letzte_schule], ['Letztbesuchte Klasse', d.letzte_klasse], ['Abgeschlossen', d.neunte_stufe]]],
+      ...(volljaehrig(d) ? [] : [['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)]]]]),
+      ['Lehrverhältnis', [
+        ['Lehrberuf', d.lehrberuf], ['Lehrzeit', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
+        ['Anrechnungen Schul-/Vorlehrzeiten', d.anrechnungen], ['Besondere Vereinbarungen', d.vereinbarungen]]]
+    ]};
+  }
+  if (id === 'stamm') {
+    const teile = [
+      ['Person', [['Name', vollerName(d)], ['Adresse', adresse(d)], ['Geburtstag', datumDe(d.geburtsdatum)],
+        ['Sozialversicherungsnummer', d.svnr], ['Staatsbürgerschaft', d.staatsbuergerschaft],
+        ['Arbeitsmarktzugang', d.zugang], ['Telefon', d.tel], ['E-Mail', d.email]]],
+      ['Bank', [['Bank', d.bank], ['IBAN', d.iban]]],
+      [p.art === 'lehrling' ? 'Lehrverhältnis' : 'Dienstverhältnis', p.art === 'lehrling'
+        ? [['Lehrberuf', d.lehrberuf], ['Beginn', datumDe(d.beginn)], ['Ende', datumDe(d.ende)], ['Lehrvertragsnummer', d.lehrvertragsnr]]
+        : [['Eintritt', datumDe(d.beginn)], ['Position', d.position], ['Wochenstunden', d.stunden], ['LAP', d.lap]]],
+      ['Unterlagen', [
+        ['Kopie Meldezettel', ja(p.erledigt.u_meldezettel)],
+        p.art === 'lehrling' ? ['Zeugnis 9. Schulstufe', ja(p.erledigt.u_zeugnis)] : ['Kopie LAP-Prüfung', ja(p.erledigt.u_lap)],
+        ['Foto digital (Homepage, Facebook …)', ja(p.erledigt.u_foto)], ['Foto-Einwilligung', ja(p.erledigt.u_foto_ok)]]]
+    ];
+    if (d.notfall) teile.push(['Notfall', [['Notfallkontakt', d.notfall]]]);
+    return { titel: 'Anmeldungsdaten', kopf: B.name + ' · ' + B.adresse, teile, unterschrift: true };
+  }
+  if (id === 'checkliste') {
+    const liste = aufgaben(p);
+    const gruppen = [...new Set(liste.map(t => t.gruppe))];
+    return { titel: 'Checkliste Neueintritt – ' + vollerName(d), kopf: B.name, teile: gruppen.map(g => [g,
+      liste.filter(t => t.gruppe === g).map(t => [ja(p.erledigt[t.id]) + ' ' + t.text, t.frist ? 'bis ' + datumDe(t.frist) : ''])]) };
+  }
+}
+
+function drucken(ids) {
+  const p = aktuell(); if (!p) return;
+  document.getElementById('druck').innerHTML = ids.map(id => {
+    const b = blattInhalt(id, p);
+    return `<div class="blatt"><h1>${esc(b.titel)}</h1><div class="kopf">${esc(b.kopf)}</div>
+      ${b.teile.map(([t, zeilen]) => `<h2>${esc(t)}</h2><table>${zeilen.map(([l, v]) =>
+        `<tr><td class="l">${esc(l)}</td><td>${esc(v || '')}</td></tr>`).join('')}</table>`).join('')}
+      ${b.unterschrift ? `<div class="unterschrift"><div>Datum</div><div>Unterschrift Mitarbeiter:in${p.art === 'lehrling' ? ' / Lehrling' : ''}</div></div>` : ''}
+      <div class="fuss">Erstellt am ${esc(datumDe(heuteIso()))} mit der Neueintritt-App · ${esc(_betrieb.name)}</div></div>`;
+  }).join('');
+  window.print();
+}
+
+// ── Kleiner PDF-Baukasten (ohne externe Bibliothek) ──────────
+// Text in Helvetica (WinAnsi), Fotos als JPEG direkt eingebettet.
+const CP1252 = { 0x20AC: 0x80, 0x201A: 0x82, 0x201E: 0x84, 0x2026: 0x85, 0x2018: 0x91, 0x2019: 0x92,
+  0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97 };
+function pdfText(s) {
+  s = String(s ?? '').replace(/☒/g, '[x]').replace(/☐/g, '[  ]').replace(/✓/g, 'ok');
+  let out = '';
+  for (const ch of s) {
+    let c = ch.codePointAt(0);
+    if (CP1252[c]) c = CP1252[c];
+    else if (c > 255 || c < 32 || (c >= 127 && c < 160)) c = 63;
+    const z = String.fromCharCode(c);
+    out += (z === '(' || z === ')' || z === '\\') ? '\\' + z : z;
+  }
+  return out;
+}
+function umbrechen(s, breite, groesse) {
+  const max = Math.max(8, Math.floor(breite / (groesse * 0.53)));
+  const zeilen = [];
+  for (const absatz of String(s ?? '').split('\n')) {
+    let z = '';
+    for (const wort of absatz.split(/\s+/)) {
+      if (!wort) continue;
+      if ((z + ' ' + wort).trim().length > max && z) { zeilen.push(z); z = ''; }
+      let w = wort;
+      while (w.length > max) { zeilen.push(w.slice(0, max)); w = w.slice(max); }
+      z = (z ? z + ' ' : '') + w;
+    }
+    zeilen.push(z);
+  }
+  return zeilen.length ? zeilen : [''];
+}
+function latin1(s) { const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 255; return b; }
+
+class PdfDoc {
+  constructor() { this.seiten = []; this.bilder = []; this.neueSeite(); }
+  neueSeite() { this.ops = []; this.seiten.push(this.ops); this.y = 792; }
+  platz(h) { if (this.y - h < 50) this.neueSeite(); }
+  text(x, y, s, groesse, fett, grau) {
+    this.ops.push(`${grau || 0} g BT /${fett ? 'F2' : 'F1'} ${groesse} Tf ${x} ${y.toFixed(1)} Td (${pdfText(s)}) Tj ET`);
+  }
+  rechteck(x, y, w, h, grau) { this.ops.push(`${grau} g ${x} ${y.toFixed(1)} ${w} ${h} re f`); }
+  linie(x1, y, x2, grau) { this.ops.push(`${grau} G 0.5 w ${x1} ${y.toFixed(1)} m ${x2} ${y.toFixed(1)} l S`); }
+  bild(a, x, y, w, h) {
+    const bin = atob(a.dataUrl.split(',')[1]);
+    const i = this.bilder.push({ bytes: latin1(bin), w: a.w, h: a.h }) - 1;
+    this.ops.push(`q ${w.toFixed(1)} 0 0 ${h.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)} cm /Im${i} Do Q`);
+  }
+  bytes() {
+    const teile = [], offs = [];
+    let laenge = 0;
+    const add = x => { const b = typeof x === 'string' ? latin1(x) : x; teile.push(b); laenge += b.length; };
+    const obj = (id, ...inhalt) => { offs[id] = laenge; add(`${id} 0 obj\n`); inhalt.forEach(add); add('\nendobj\n'); };
+    const ersteSeite = 5 + this.bilder.length;
+    const seitenIds = this.seiten.map((_, i) => ersteSeite + i * 2);
+    add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, `<< /Type /Pages /Kids [${seitenIds.map(id => id + ' 0 R').join(' ')}] /Count ${seitenIds.length} >>`);
+    obj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    obj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    this.bilder.forEach((b, i) => obj(5 + i,
+      `<< /Type /XObject /Subtype /Image /Width ${b.w} /Height ${b.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${b.bytes.length} >>\nstream\n`,
+      b.bytes, '\nendstream'));
+    const xobj = this.bilder.map((_, i) => `/Im${i} ${5 + i} 0 R`).join(' ');
+    this.seiten.forEach((ops, i) => {
+      const id = seitenIds[i], inhalt = ops.join('\n');
+      obj(id, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << ${xobj} >> >> /Contents ${id + 1} 0 R >>`);
+      obj(id + 1, `<< /Length ${inhalt.length} >>\nstream\n`, inhalt, '\nendstream');
+    });
+    const anzahl = ersteSeite + this.seiten.length * 2 - 1;
+    const xref = laenge;
+    add(`xref\n0 ${anzahl + 1}\n0000000000 65535 f \n`);
+    for (let id = 1; id <= anzahl; id++) add(String(offs[id]).padStart(10, '0') + ' 00000 n \n');
+    add(`trailer\n<< /Size ${anzahl + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    const out = new Uint8Array(laenge);
+    let pos = 0;
+    for (const t of teile) { out.set(t, pos); pos += t.length; }
+    return out;
+  }
+}
+
+function blattInsPdf(doc, b, p) {
+  if (doc.ops.length) doc.neueSeite();
+  doc.text(50, doc.y, b.titel, 16, true); doc.y -= 16;
+  for (const z of umbrechen(b.kopf, 495, 8.5)) { doc.text(50, doc.y, z, 8.5, false, 0.35); doc.y -= 11; }
+  doc.y -= 8;
+  for (const [titel, zeilen] of b.teile) {
+    doc.platz(45);
+    doc.rechteck(50, doc.y - 5, 495, 17, 0.92);
+    doc.text(55, doc.y, titel.toUpperCase(), 9.5, true);
+    doc.y -= 22;
+    for (const [l, v] of zeilen) {
+      const lz = umbrechen(l, 170, 8.5), vz = umbrechen(v || '', 305, 10);
+      const h = Math.max(lz.length * 11, vz.length * 13);
+      doc.platz(h + 8);
+      lz.forEach((s, i) => doc.text(55, doc.y - i * 11, s, 8.5, false, 0.35));
+      vz.forEach((s, i) => doc.text(235, doc.y - i * 13, s, 10));
+      doc.linie(50, doc.y - h + 7, 545, 0.75);
+      doc.y -= h + 6;
+    }
+    doc.y -= 6;
+  }
+  if (b.unterschrift) {
+    doc.platz(60);
+    doc.y -= 36;
+    doc.linie(50, doc.y, 230, 0); doc.linie(290, doc.y, 545, 0);
+    doc.text(50, doc.y - 11, 'Datum', 8.5, false, 0.35);
+    doc.text(290, doc.y - 11, 'Unterschrift ' + (p.art === 'lehrling' ? 'Lehrling' : 'Mitarbeiter:in'), 8.5, false, 0.35);
+    doc.y -= 20;
+  }
+  doc.platz(20);
+  doc.text(50, doc.y - 6, `Erstellt am ${datumDe(heuteIso())} mit der Neueintritt-App · ${_betrieb.name}`, 7.5, false, 0.45);
+}
+
+function fotoInsPdf(doc, a, titel) {
+  if (doc.ops.length) doc.neueSeite();
+  doc.text(50, doc.y, titel, 12, true);
+  const f = Math.min(495 / a.w, 700 / a.h);
+  const w = a.w * f, h = a.h * f;
+  doc.bild(a, 50 + (495 - w) / 2, 772 - h, w, h);
+}
+
+function pdfErstellen(p, blaetter, fotos) {
+  const doc = new PdfDoc();
+  for (const id of blaetter) blattInsPdf(doc, blattInhalt(id, p), p);
+  const name = vollerName(p.daten);
+  for (const a of fotos) {
+    const t = DOKTYPEN.find(x => x.typ === a.typ);
+    fotoInsPdf(doc, a, `${t ? t.l : a.typ} – ${name}`);
+  }
+  return doc.bytes();
+}
+
+function stbPdf() {
+  const p = aktuell(); if (!p) return null;
+  const fotos = _anh.filter((_, i) => _stbWahl.fotos.has(i));
+  const bytes = pdfErstellen(p, ['stamm'], fotos);
+  return new File([bytes], `Anmeldung-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
+}
+
+function stbMailText(p) {
+  const d = p.daten;
+  const beginn = d.beginn ? ` mit Beginn ${datumDe(d.beginn)}` : '';
+  const art = p.art === 'lehrling' ? 'unseren neuen Lehrling' : 'unsere neue Mitarbeiterin / unseren neuen Mitarbeiter';
+  return `Liebe:r ${_betrieb.stb_name || 'Steuerberater:in'},\n\nanbei die Anmeldungsunterlagen für ${art} ${vollerName(d)}${beginn}. ` +
+    `Bitte um Anmeldung bei der ÖGK und Aufnahme in die Lohnverrechnung.\n\nLiebe Grüße\n${_betrieb.ausbildungsleiter || ''}\n${_betrieb.name}`;
+}
+
+async function anSteuerberater() {
+  const p = aktuell(); if (!p) return;
+  const datei = stbPdf(); if (!datei) return;
+  const betreff = `Anmeldung ${vollerName(p.daten)}`;
+  const text = stbMailText(p);
+  const ergebnis = await teilen(datei, betreff, text);
+  if (ergebnis === 'abgebrochen') return;
+  if (ergebnis === 'heruntergeladen') {
+    // Am Computer: PDF ist gespeichert, Mail wird vorbereitet – Anhang muss man selbst dazugeben.
+    location.href = `mailto:${encodeURIComponent(_betrieb.stb_email || '')}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
+    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte das PDF noch als Anhang hinzufügen.`);
+  }
+  if (!p.erledigt.v_lohn) { p.erledigt.v_lohn = heuteIso(); speichern(); }
+  showToast('An Steuerberater:in übergeben – in der Checkliste abgehakt');
+}
+function stbPdfSpeichern() { const datei = stbPdf(); if (datei) herunterladen(datei); }
+
+async function einzelPdf(id) {
+  const p = aktuell(); if (!p) return;
+  const f = FORMULARE[p.art].find(x => x.id === id);
+  const datei = new File([pdfErstellen(p, [id], [])], `${dateiName(f.titel.split('(')[0])}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
+  await teilen(datei, f.titel, '');
+}
+
+function kopieren(id) {
+  const p = aktuell(); if (!p) return;
+  const b = blattInhalt(id, p);
+  const text = [b.titel, b.kopf, '', ...b.teile.flatMap(([t, zeilen]) =>
+    [t.toUpperCase(), ...zeilen.map(([l, v]) => `${l}: ${v || ''}`), ''])].join('\n');
+  textKopieren(text, 'Kopiert – jetzt in Mail oder Formular einfügen');
+}
+function textKopieren(text, meldung) {
+  const fertig = () => showToast(meldung);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(fertig, () => kopierenAlt(text, fertig));
+  } else kopierenAlt(text, fertig);
+}
+function kopierenAlt(text, fertig) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); fertig(); } catch (e) { showToast('Kopieren nicht möglich'); }
+  ta.remove();
+}
+
+// ── Sicherung & Antwort einspielen ───────────────────────────
+async function exportJson() {
+  const anhaenge = {};
+  for (const p of _alle) { const l = await anhaengeLaden(p.id); if (l.length) anhaenge[p.id] = l; }
+  const datei = new File([JSON.stringify({ version: 1, betrieb: _betrieb, personen: _alle, anhaenge }, null, 2)],
+    `neueintritt-sicherung-${heuteIso()}.json`, { type: 'application/json' });
+  herunterladen(datei);
+}
+
+function importDatei(input) {
+  const datei = input.files && input.files[0];
+  input.value = '';
+  if (!datei) return;
+  const r = new FileReader();
+  r.onload = async () => {
+    let j;
+    try { j = JSON.parse(r.result); } catch (e) { j = null; }
+    try {
+      if (j && j.typ === ANTWORT_TYP) await antwortEinspielen(j);
+      else if (j && Array.isArray(j.personen)) await sicherungEinspielen(j);
+      else alert('Diese Datei konnte nicht gelesen werden. Bitte die Datei vom Lehrling oder eine Sicherung aus dieser App wählen.');
+    } catch (e) {
+      console.error(e);
+      alert('Beim Einspielen ist etwas schiefgegangen. Bitte nochmal versuchen.');
+    }
+  };
+  r.readAsText(datei);
+}
+
+async function antwortEinspielen(j) {
+  if (typeof j.id !== 'string' || !j.daten || typeof j.daten !== 'object' || (j.art !== 'lehrling' && j.art !== 'ma')) {
+    throw new Error('Antwort ohne gültige Daten');
+  }
+  let p = _alle.find(x => x.id === j.id);
+  const neuAngelegt = !p;
+  if (!p) {
+    p = { id: j.id, art: j.art, erstellt: new Date().toISOString(), daten: { zugang: '' }, erledigt: {} };
+    _alle.push(p);
+  }
+  // Nur Felder übernehmen, die der Lehrling ausfüllen darf – Lehrzeit, Notizen usw. bleiben wie eingetragen.
+  for (const [k, v] of Object.entries(j.daten)) {
+    if (typeof v !== 'string') continue;
+    if (INTERN.has(k) && !neuAngelegt) continue;
+    if (k === 'zugang' || k === 'notizen') continue;
+    p.daten[k] = v;
+  }
+  if (p.daten.iban && ibanPruefen(p.daten.iban)?.ok) p.erledigt.u_bank = p.erledigt.u_bank || heuteIso();
+  if (p.daten.svnr && svnrPruefen(p.daten.svnr)?.ok) p.erledigt.u_ecard = p.erledigt.u_ecard || heuteIso();
+
+  const neue = await fotosPruefen(j.anhaenge);
+  if (neue.length) {
+    const vorhanden = await anhaengeLaden(p.id);
+    const schon = new Set(vorhanden.map(a => a.dataUrl));
+    const dazu = neue.filter(a => !schon.has(a.dataUrl));
+    await anhaengeSpeichern(p.id, [...vorhanden, ...dazu]);
+    for (const a of dazu) {
+      const t = DOKTYPEN.find(x => x.typ === a.typ);
+      const c = dokCheck(t, p.art);
+      if (!p.erledigt[c]) p.erledigt[c] = heuteIso();
+    }
+  }
+  p.vomLehrling = heuteIso();
+  speichern();
+  showToast(`Daten von ${vollerName(p.daten)} eingespielt`);
+  await oeffnen(p.id);
+}
+
+// Fotos aus einer Datei nur übernehmen, wenn sie echte JPEGs sind; Größe neu messen (fürs PDF).
+async function fotosPruefen(liste) {
+  const ok = [];
+  for (const a of Array.isArray(liste) ? liste : []) {
+    if (!a || typeof a.dataUrl !== 'string' || !JPEG_DATAURL.test(a.dataUrl) || !DOKTYPEN.some(t => t.typ === a.typ)) continue;
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = a.dataUrl; });
+      ok.push({ typ: a.typ, dataUrl: a.dataUrl, w: img.naturalWidth, h: img.naturalHeight,
+        datum: /^\d{4}-\d{2}-\d{2}$/.test(a.datum) ? a.datum : heuteIso() });
+    } catch (e) { console.error(e); }
+  }
+  return ok;
+}
+
+async function sicherungEinspielen(j) {
+  const vorhanden = new Set(_alle.map(p => p.id));
+  let neuAnzahl = 0;
+  for (const p of j.personen) {
+    if (!p || typeof p.id !== 'string' || !p.daten || (p.art !== 'lehrling' && p.art !== 'ma')) continue;
+    p.erledigt = p.erledigt || {};
+    if (vorhanden.has(p.id)) _alle = _alle.map(x => x.id === p.id ? p : x);
+    else { _alle.push(p); neuAnzahl++; }
+    const l = j.anhaenge && Array.isArray(j.anhaenge[p.id]) ? j.anhaenge[p.id] : null;
+    if (l) await anhaengeSpeichern(p.id, await fotosPruefen(l));
+  }
+  if (j.betrieb && typeof j.betrieb === 'object') _betrieb = { ...BETRIEB_STANDARD, ...j.betrieb };
+  speichern();
+  renderListe();
+  showToast(`Sicherung eingespielt (${neuAnzahl} neu)`);
+}
+
+// ── Wolke: Supabase ist der feste Speicher, der Browser nur Zwischenspeicher ──
+// Nur die Inhaberin hat Zugriff (RLS, Migration 20261028120000). Abgleich in drei Wegen:
+// _stand[id] = zuletzt mit der Wolke bestätigter Stand. Lokal ≠ _stand → noch hochzuladen.
+// In der Wolke, aber nicht lokal und kein _stand → kam von einem anderen Gerät.
+// Lokal gelöscht (in _stand, nicht in _alle) → in der Wolke löschen.
+const SUPA_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyeGxhbHRndGdrZG9ta2xncmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNDYwMzYsImV4cCI6MjA5OTgyMjAzNn0.Bw8ch-EJb_cLYTwxHdpjUJWgoCjje3Jc32pB0yiBS8g';
+const SPEICHER_STAND = SPEICHER + '_stand';
+let _sb = null;
+let _wolke = 'aus';      // aus | laedt | ok | ausstehend | offline | abgemeldet | keinZugriff
+let _stand = { personen: {}, betrieb: null, anh: {} };
+let _wolkeTimer = null, _wolkeLaeuft = false, _wolkeNochmal = false;
+
+function standLaden() {
+  try { _stand = { personen: {}, betrieb: null, anh: {}, ...(JSON.parse(localStorage.getItem(SPEICHER_STAND)) || {}) }; }
+  catch (e) { _stand = { personen: {}, betrieb: null, anh: {} }; }
+}
+function standSpeichern() {
+  try { localStorage.setItem(SPEICHER_STAND, JSON.stringify(_stand)); } catch (e) { console.error(e); }
+}
+function personZeile(p) {
+  return { id: p.id, art: p.art, daten: p.daten || {}, erledigt: p.erledigt || {},
+    meta: { erstellt: p.erstellt || null, vomLehrling: p.vomLehrling || null, linkGeschickt: p.linkGeschickt || null } };
+}
+function personJson(p) { return JSON.stringify(personZeile(p)); }
+function personAusZeile(z) {
+  const m = z.meta || {};
+  const p = { id: z.id, art: z.art, daten: z.daten || {}, erledigt: z.erledigt || {}, erstellt: m.erstellt || z.erstellt };
+  if (m.vomLehrling) p.vomLehrling = m.vomLehrling;
+  if (m.linkGeschickt) p.linkGeschickt = m.linkGeschickt;
+  return p;
+}
+function betriebJson() { return JSON.stringify(_betrieb); }
+
+function wolkeStatus(s) {
+  _wolke = s;
+  const el = document.getElementById('wolke-status');
+  if (!el) return;
+  const T = {
+    laedt: ['☁️ Wird geladen …', 'var(--text-2)'],
+    ok: ['☁️ Gesichert', 'var(--green)'],
+    ausstehend: ['⏳ Wird gesichert …', 'var(--orange)'],
+    offline: ['⚠️ Offline – wird gesichert, sobald Internet da ist', 'var(--orange)'],
+    abgemeldet: ['⚠️ Nicht angemeldet – nichts wird gesichert', 'var(--red)'],
+    keinZugriff: ['⚠️ Nur für die Inhaberin – nichts wird gesichert', 'var(--red)'],
+    fehlt: ['⚠️ Datenbank noch nicht eingerichtet – nur auf diesem Gerät gespeichert', 'var(--red)']
+  };
+  const [text, farbe] = T[s] || ['', ''];
+  el.textContent = text; el.style.color = farbe;
+  const hin = document.getElementById('wolke-hinweis');
+  if (hin) hin.style.display = (s === 'abgemeldet' || s === 'keinZugriff') ? 'block' : 'none';
+}
+
+async function wolkeToken() {
+  if (!_sb) return null;
+  try { const { data: { session } } = await _sb.auth.getSession(); return session?.access_token || null; }
+  catch (e) { console.error(e); return null; }
+}
+async function rest(pfad, methode = 'GET', body = null, prefer = '') {
+  const token = await wolkeToken();
+  if (!token) { const e = new Error('abgemeldet'); e.abgemeldet = true; throw e; }
+  const r = await fetch(`${SUPA_URL}/rest/v1/${pfad}`, {
+    method: methode,
+    headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (r.status === 401 || r.status === 403) { const e = new Error('kein Zugriff ' + r.status + ' ' + await r.text()); e.keinZugriff = true; throw e; }
+  if (r.status === 404) { const e = new Error('fehlt ' + await r.text()); e.fehlt = true; throw e; }
+  if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+function wolkeFehler(e) {
+  console.error(e);
+  if (e.abgemeldet) wolkeStatus('abgemeldet');
+  else if (e.keinZugriff) wolkeStatus('keinZugriff');
+  else if (e.fehlt) wolkeStatus('fehlt');
+  else wolkeStatus(navigator.onLine === false ? 'offline' : 'ausstehend');
+}
+
+async function wolkeStart() {
+  standLaden();
+  if (typeof supabase === 'undefined') { wolkeStatus('offline'); return; }
+  _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+  if (!(await wolkeToken())) { wolkeStatus('abgemeldet'); return; }
+  try {
+    const ist = await rest('rpc/teamapp_ist_inhaberin', 'POST', {});
+    if (ist !== true) { wolkeStatus('keinZugriff'); return; }
+  } catch (e) { wolkeFehler(e); return; }
+  wolkeStatus('laedt');
+  await wolkeAbgleich(true);
+  addEventListener('online', () => wolkePlanen(0));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wolkeAbgleich(true); });
+}
+
+function wolkePlanen(ms = 800) {
+  if (!_sb || ['abgemeldet', 'keinZugriff', 'aus', 'fehlt'].includes(_wolke)) return;
+  wolkeStatus('ausstehend');
+  clearTimeout(_wolkeTimer);
+  _wolkeTimer = setTimeout(() => wolkeAbgleich(false), ms);
+}
+
+// holen=true: zuerst den Wolken-Stand holen und zusammenführen, dann Ausstehendes hochladen.
+async function wolkeAbgleich(holen) {
+  if (_wolkeLaeuft) { _wolkeNochmal = true; return; }
+  _wolkeLaeuft = true;
+  try {
+    if (holen) await wolkeHolen();
+    await wolkeHochladen();
+    wolkeStatus('ok');
+  } catch (e) { wolkeFehler(e); }
+  finally {
+    _wolkeLaeuft = false;
+    if (_wolkeNochmal) { _wolkeNochmal = false; wolkePlanen(0); }
+  }
+}
+
+async function wolkeHolen() {
+  const [zeilen, betrieb] = await Promise.all([
+    rest('neueintritt_personen?select=id,art,daten,erledigt,meta,erstellt'),
+    rest('neueintritt_betrieb?select=daten&id=eq.1')
+  ]);
+  const wolkeIds = new Set();
+  let geaendert = false;
+  for (const z of zeilen) {
+    wolkeIds.add(z.id);
+    const cj = JSON.stringify(personZeile(personAusZeile(z)));
+    const i = _alle.findIndex(p => p.id === z.id);
+    if (i < 0) {
+      if (_stand.personen[z.id]) continue;              // hier gelöscht → wird beim Hochladen in der Wolke gelöscht
+      _alle.push(personAusZeile(z)); geaendert = true;  // neu von einem anderen Gerät
+    } else if (personJson(_alle[i]) === _stand.personen[z.id] && personJson(_alle[i]) !== cj) {
+      _alle[i] = personAusZeile(z); geaendert = true;   // hier unverändert, woanders geändert
+    } else if (!_stand.personen[z.id] && personJson(_alle[i]) !== cj) {
+      continue;                                         // beides geändert, hier noch nie abgeglichen → lokal gewinnt
+    }
+    if (personJson(_alle[i] || personAusZeile(z)) === cj) _stand.personen[z.id] = cj;
+  }
+  // Lokal vorhanden, aber nicht (mehr) in der Wolke
+  for (const p of [..._alle]) {
+    if (wolkeIds.has(p.id) || !_stand.personen[p.id]) continue;   // noch nie oben → wird hochgeladen
+    if (personJson(p) === _stand.personen[p.id]) {                // woanders gelöscht, hier unverändert
+      _alle = _alle.filter(x => x.id !== p.id); delete _stand.personen[p.id]; delete _stand.anh[p.id];
+      await anhaengeSpeichernLokal(p.id, []);
+      if (_aktiv === p.id) zurListe();
+      geaendert = true;
+    } else delete _stand.personen[p.id];                          // hier geändert → wieder hochladen
+  }
+  if (betrieb && betrieb[0]) {
+    const bj = JSON.stringify({ ...BETRIEB_STANDARD, ...(betrieb[0].daten || {}) });
+    if (betriebJson() === _stand.betrieb || _stand.betrieb === null && betriebJson() === JSON.stringify(BETRIEB_STANDARD)) {
+      if (betriebJson() !== bj) { _betrieb = JSON.parse(bj); geaendert = true; }
+      _stand.betrieb = bj;
+    }
+  }
+  standSpeichern();
+  if (geaendert) {
+    lokalSpeichern();
+    if (document.getElementById('v-liste').classList.contains('active')) renderListe();
+    if (document.getElementById('v-betrieb').classList.contains('active')) renderBetrieb();
+    if (_aktiv && document.getElementById('v-detail').classList.contains('active')) {
+      const pane = document.querySelector('.tab.active');
+      if (pane) zeigePane(pane);
+      if (pane && pane.dataset.pane === 'p-daten') renderDaten();
+    }
+  }
+}
+
+async function wolkeHochladen() {
+  // Personen anlegen/ändern
+  const offen = _alle.filter(p => personJson(p) !== _stand.personen[p.id]);
+  for (const p of offen) {
+    const json = personJson(p);
+    await rest('neueintritt_personen', 'POST', personZeile(p), 'resolution=merge-duplicates,return=minimal');
+    _stand.personen[p.id] = json;
+    standSpeichern();
+  }
+  // Hier gelöschte Personen in der Wolke löschen (Fotos gehen per Fremdschlüssel mit)
+  const ids = new Set(_alle.map(p => p.id));
+  for (const id of Object.keys(_stand.personen)) {
+    if (ids.has(id)) continue;
+    await rest('neueintritt_personen?id=eq.' + encodeURIComponent(id), 'DELETE', null, 'return=minimal');
+    delete _stand.personen[id]; delete _stand.anh[id];
+    standSpeichern();
+  }
+  // Lehrbetrieb
+  if (betriebJson() !== _stand.betrieb) {
+    const json = betriebJson();
+    await rest('neueintritt_betrieb', 'POST', { id: 1, daten: _betrieb }, 'resolution=merge-duplicates,return=minimal');
+    _stand.betrieb = json;
+    standSpeichern();
+  }
+  // Fotos aller Personen abgleichen, bei denen sich lokal etwas geändert hat
+  for (const p of _alle) {
+    if (_stand.anh[p.id] === undefined || (_stand.anhOffen || {})[p.id]) await anhangAbgleich(p.id);
+  }
+}
+
+// Fotos einer Person: Wolke ∪ lokal, mit Löschungen in beide Richtungen.
+async function anhangAbgleich(personId) {
+  const lokal = await anhaengeLaden(personId);
+  lokal.forEach(a => { if (!a.id) a.id = neueUuid(); });
+  const wolke = await rest('neueintritt_anhaenge?select=id&person_id=eq.' + encodeURIComponent(personId));
+  const wolkeIds = new Set(wolke.map(z => z.id));
+  const bekannt = new Set(_stand.anh[personId] || []);
+  const lokalIds = new Set(lokal.map(a => a.id));
+  let liste = lokal.filter(a => wolkeIds.has(a.id) || !bekannt.has(a.id));     // woanders gelöschte entfernen
+  for (const a of liste) {
+    if (wolkeIds.has(a.id)) continue;
+    await rest('neueintritt_anhaenge', 'POST', { id: a.id, person_id: personId, typ: a.typ, w: a.w, h: a.h,
+      datum: a.datum || null, data_url: a.dataUrl }, 'resolution=merge-duplicates,return=minimal');
+  }
+  const weg = [...wolkeIds].filter(id => !lokalIds.has(id) && bekannt.has(id));  // hier gelöschte
+  if (weg.length) await rest('neueintritt_anhaenge?id=in.(' + weg.join(',') + ')', 'DELETE', null, 'return=minimal');
+  const neu = [...wolkeIds].filter(id => !lokalIds.has(id) && !bekannt.has(id)); // woanders hinzugefügte
+  if (neu.length) {
+    const zeilen = await rest('neueintritt_anhaenge?select=id,typ,w,h,datum,data_url&id=in.(' + neu.join(',') + ')');
+    liste = liste.concat(zeilen.map(z => ({ id: z.id, typ: z.typ, w: z.w, h: z.h, datum: z.datum, dataUrl: z.data_url })));
+  }
+  await anhaengeSpeichernLokal(personId, liste);
+  _stand.anh[personId] = liste.map(a => a.id);
+  if (_stand.anhOffen) delete _stand.anhOffen[personId];
+  standSpeichern();
+  if (_aktiv === personId && JSON.stringify(_anh.map(a => a.id)) !== JSON.stringify(liste.map(a => a.id))) {
+    _anh = liste; _stbWahl = null;
+    const el = document.getElementById('dok-p');
+    if (el) el.innerHTML = dokHtml(aktuell().art, _anh, 'p');
+    if (document.querySelector('.tab.active')?.dataset.pane === 'p-druck') renderFormulare();
+  }
+}
+function anhangGeaendert(personId) {
+  _stand.anhOffen = _stand.anhOffen || {};
+  _stand.anhOffen[personId] = true;
+  standSpeichern();
+  wolkePlanen();
+}
+function neueUuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Start ────────────────────────────────────────────────────
+(function start() {
+  const m = location.hash.match(/^#ausfuellen=([A-Za-z0-9_-]+)$/);
+  if (m) {
+    let nutzlast = null;
+    try { nutzlast = JSON.parse(b64urlLesen(m[1])); } catch (e) { console.error(e); }
+    if (nutzlast && typeof nutzlast.id === 'string' && (nutzlast.art === 'lehrling' || nutzlast.art === 'ma')) {
+      nutzlast.d = nutzlast.d && typeof nutzlast.d === 'object' ? nutzlast.d : {};
+      document.body.classList.add('nur-app');
+      document.getElementById('intro').style.display = 'none';
+      startSelbst(nutzlast);
+      return;
+    }
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-selbst'));
+    document.getElementById('selbst').innerHTML = `<div class="leer">Dieser Link ist unvollständig.<br>Bitte frag nach einem neuen Link.</div>`;
+    setKopf('Anmeldung', '');
+    return;
+  }
+  laden();
+  renderListe();
+  leereAufraeumen();
+})();
+// In der Demo nach Navigation zum Tool-Anfang scrollen statt ganz nach oben.
+const _scrollTo = window.scrollTo.bind(window);
+window.scrollTo = (x, y) => {
+  if (x === 0 && y === 0 && !document.body.classList.contains('nur-app')) {
+    const app = document.getElementById('app');
+    if (app.getBoundingClientRect().top < 0) _scrollTo(0, app.offsetTop - 8);
+  } else _scrollTo(x, y);
+};
+</script>
+</body>
+</html>
