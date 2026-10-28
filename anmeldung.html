@@ -614,7 +614,11 @@ function zeigePane(btn) {
   if (btn.dataset.pane === 'p-druck') renderFormulare();
   window.scrollTo(0, 0);
 }
-function zurListe() { _aktiv = null; _anh = []; zeigeView('v-liste'); }
+function zurListe() {
+  const p = aktuell();
+  if (p && istLeer(p, _anh)) entfernen(p.id);
+  _aktiv = null; _anh = []; zeigeView('v-liste');
+}
 
 // ── Übersicht ────────────────────────────────────────────────
 function renderListe() {
@@ -634,7 +638,9 @@ function renderListe() {
     const status = p.vomLehrling ? ' · Daten erhalten ✓' : p.linkGeschickt ? ' · Link geschickt, wartet auf Antwort' : '';
     return `<div class="card card-click" onclick="oeffnen('${esc(p.id)}')">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-        <div class="card-title">${esc(vollerName(p.daten))}</div>${art}
+        <div class="card-title" style="flex:1;min-width:0">${esc(vollerName(p.daten))}</div>${art}
+        <button type="button" class="btn btn-danger btn-sm" style="padding:4px 8px" aria-label="Löschen"
+          onclick="event.stopPropagation();loeschen('${esc(p.id)}')">🗑</button>
       </div>
       <div class="muted" style="margin-top:4px">
         ${p.daten.beginn ? 'Beginn ' + esc(datumDe(p.daten.beginn)) + ' · ' : ''}${erledigt} von ${gesamt} erledigt${esc(status)}
@@ -669,13 +675,32 @@ async function oeffnen(id) {
   zeigePane(document.querySelector('.tab[data-pane="p-daten"]'));
   renderDaten();
 }
-function loeschen() {
-  const p = aktuell(); if (!p) return;
-  if (!confirm(`${vollerName(p.daten)} mit allen Daten und Fotos von diesem Gerät löschen?`)) return;
-  _alle = _alle.filter(x => x.id !== p.id);
+function loeschen(id) {
+  const p = id ? _alle.find(x => x.id === id) : aktuell(); if (!p) return;
+  if (!confirm(`${vollerName(p.daten)} mit allen Daten und Fotos endgültig löschen – auf allen Geräten?`)) return;
+  entfernen(p.id);
+  if (_aktiv === p.id) zurListe(); else renderListe();
+  showToast('Gelöscht');
+}
+function entfernen(id) {
+  _alle = _alle.filter(x => x.id !== id);
   speichern();
-  anhaengeSpeichern(p.id, []);
-  zurListe();
+  anhaengeSpeichern(id, []);
+}
+// Angelegt, aber nichts eingetragen (nur Vorgaben aus „＋ Lehrling“) – solche Einträge räumt die App selbst weg.
+const VORGABE_FELDER = new Set(['lehrberuf', 'ort', 'befristung_behaltezeit', 'vertreter_gleiche_adresse', 'zugang', 'ende_auto']);
+function istLeer(p, anhaenge) {
+  return Object.entries(p.daten || {}).every(([k, v]) => !v || VORGABE_FELDER.has(k))
+    && !Object.keys(p.erledigt || {}).length && !p.linkGeschickt && !p.vomLehrling && !anhaenge.length;
+}
+async function leereAufraeumen() {
+  let weg = 0;
+  for (const p of [..._alle]) {
+    if (p.id === _aktiv || !istLeer(p, [])) continue;
+    if ((await anhaengeLaden(p.id)).length) continue;
+    _alle = _alle.filter(x => x.id !== p.id); weg++;
+  }
+  if (weg) { speichern(); renderListe(); }
 }
 
 // ── Formular ─────────────────────────────────────────────────
@@ -1903,7 +1928,8 @@ function showToast(msg) {
   }
   laden();
   renderListe();
-  wolkeStart();
+  leereAufraeumen();
+  wolkeStart().then(leereAufraeumen);
 })();
 </script>
 </body>
