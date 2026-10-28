@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Neueintritt">
 <meta name="theme-color" content="#1a1a1a">
-<title>Mirjam Walenta – A great hair day · Neueintritt</title>
+<title>Mirjam Walenta – A great hair day · Personal</title>
 <style>
   :root {
     --bg: #f7f6f3;
@@ -214,8 +214,8 @@
   <div class="header">
     <div class="header-row">
       <div>
-        <div class="header-title" id="kopf-titel">Neueintritt</div>
-        <div class="header-sub" id="kopf-sub">Anmeldung Mitarbeiter:innen &amp; Lehrlinge</div>
+        <div class="header-title" id="kopf-titel">Personal</div>
+        <div class="header-sub" id="kopf-sub">Ein- und Austritt · Mitarbeiter:innen &amp; Lehrlinge</div>
         <div class="header-sub" id="wolke-status" style="font-weight:600"></div>
       </div>
       <div class="logo-mark">MW</div>
@@ -272,10 +272,12 @@
       <button class="tab active" data-pane="p-daten" onclick="zeigePane(this)">1 · Daten</button>
       <button class="tab" data-pane="p-check" onclick="zeigePane(this)">2 · Checkliste</button>
       <button class="tab" data-pane="p-druck" onclick="zeigePane(this)">3 · Formulare</button>
+      <button class="tab" data-pane="p-austritt" onclick="zeigePane(this)">4 · Austritt</button>
     </div>
     <div class="pane active" id="p-daten"><div id="daten-form"></div></div>
     <div class="pane" id="p-check"><div id="checkliste"></div></div>
     <div class="pane" id="p-druck"><div id="formulare"></div></div>
+    <div class="pane" id="p-austritt"><div id="austritt"></div></div>
   </div>
 
   <!-- ════════ AUSFÜLLEN DURCH LEHRLING / MITARBEITER:IN ════════ -->
@@ -614,7 +616,7 @@ async function teilen(datei, titel, text) {
 // ── Navigation ───────────────────────────────────────────────
 function zeigeView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
-  if (id === 'v-liste') { renderListe(); setKopf('Neueintritt', 'Anmeldung Mitarbeiter:innen & Lehrlinge'); }
+  if (id === 'v-liste') { renderListe(); setKopf('Personal', 'Ein- und Austritt · Mitarbeiter:innen & Lehrlinge'); }
   if (id === 'v-betrieb') { renderBetrieb(); setKopf('Lehrbetrieb', 'Daten für alle Formulare'); }
   window.scrollTo(0, 0);
 }
@@ -627,6 +629,7 @@ function zeigePane(btn) {
   document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === btn.dataset.pane));
   if (btn.dataset.pane === 'p-check') renderCheckliste();
   if (btn.dataset.pane === 'p-druck') renderFormulare();
+  if (btn.dataset.pane === 'p-austritt') renderAustritt();
   window.scrollTo(0, 0);
 }
 function zurListe() {
@@ -646,11 +649,13 @@ function renderListe() {
   }
   const sortiert = [..._alle].sort((a, b) => (b.daten.beginn || '').localeCompare(a.daten.beginn || ''));
   el.innerHTML = sortiert.map(p => {
-    const { erledigt, gesamt, ueberfaellig } = fortschritt(p);
+    const { erledigt, gesamt, ueberfaellig } = (p.austritt && p.austritt.art) ? austrittFortschritt(p) : fortschritt(p);
     const pct = gesamt ? Math.round(erledigt / gesamt * 100) : 0;
     const art = p.art === 'lehrling'
       ? '<span class="badge badge-lehrling">Lehrling</span>' : '<span class="badge">Mitarbeiter:in</span>';
-    const status = p.vomLehrling ? ' · Daten erhalten ✓' : p.linkGeschickt ? ' · Link geschickt, wartet auf Antwort' : '';
+    const a = p.austritt || {};
+    const status = a.art ? (a.ende && a.ende < heuteIso() ? ` · ausgetreten am ${datumDe(a.ende)}` : ` · Austritt${a.ende ? ' zum ' + datumDe(a.ende) : ''}`)
+      : p.vomLehrling ? ' · Daten erhalten ✓' : p.linkGeschickt ? ' · Link geschickt, wartet auf Antwort' : '';
     return `<div class="card card-click" onclick="oeffnen('${esc(p.id)}')">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <div class="card-title" style="flex:1;min-width:0">${esc(vollerName(p.daten))}</div>${art}
@@ -706,7 +711,8 @@ function entfernen(id) {
 const VORGABE_FELDER = new Set(['lehrberuf', 'ort', 'befristung_behaltezeit', 'vertreter_gleiche_adresse', 'zugang', 'ende_auto']);
 function istLeer(p, anhaenge) {
   return Object.entries(p.daten || {}).every(([k, v]) => !v || VORGABE_FELDER.has(k))
-    && !Object.keys(p.erledigt || {}).length && !p.linkGeschickt && !p.vomLehrling && !anhaenge.length;
+    && !Object.keys(p.erledigt || {}).length && !p.linkGeschickt && !p.vomLehrling && !anhaenge.length
+    && !(p.austritt && p.austritt.art);
 }
 async function leereAufraeumen() {
   let weg = 0;
@@ -817,6 +823,7 @@ function setze(ziel, k, wert, neuZeichnen) {
     renderBetrieb();
     return;
   }
+  if (ziel === 'a') { austrittSetzen(k, wert); return; }
   const p = ziel === 's' ? _selbst : aktuell();
   if (!p) return;
   const d = p.daten;
@@ -1795,7 +1802,8 @@ function standSpeichern() {
 }
 function personZeile(p) {
   return { id: p.id, art: p.art, daten: p.daten || {}, erledigt: p.erledigt || {},
-    meta: { erstellt: p.erstellt || null, vomLehrling: p.vomLehrling || null, linkGeschickt: p.linkGeschickt || null } };
+    meta: { erstellt: p.erstellt || null, vomLehrling: p.vomLehrling || null, linkGeschickt: p.linkGeschickt || null,
+      ...(p.austritt && Object.keys(p.austritt).length ? { austritt: p.austritt } : {}) } };
 }
 function personJson(p) { return JSON.stringify(personZeile(p)); }
 function personAusZeile(z) {
@@ -1803,6 +1811,7 @@ function personAusZeile(z) {
   const p = { id: z.id, art: z.art, daten: z.daten || {}, erledigt: z.erledigt || {}, erstellt: m.erstellt || z.erstellt };
   if (m.vomLehrling) p.vomLehrling = m.vomLehrling;
   if (m.linkGeschickt) p.linkGeschickt = m.linkGeschickt;
+  if (m.austritt) p.austritt = m.austritt;
   return p;
 }
 function betriebJson() { return JSON.stringify(_betrieb); }
@@ -2015,6 +2024,517 @@ function neueUuid() {
   b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
   const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+// ── Austritt: Beendigung, Fristen, Vorlagen, Zeugnis ─────────
+// Rechtsgrundlagen (Österreich): ABGB/AngG (Kündigung, Dienstzeugnis § 1163 ABGB / § 39 AngG),
+// BAG (Lehrling: § 15 Auflösung, § 15a Ausbildungsübertritt, § 16 Lehrzeugnis, § 18 Behaltezeit).
+// Fristen sind Vorschläge nach Gesetz – Dienstvertrag/Kollektivvertrag können abweichen,
+// deshalb überall der Hinweis, im Zweifel mit WKW bzw. Steuerberatung abzuklären.
+// Die Daten liegen in p.austritt und werden über meta mit Supabase abgeglichen.
+
+const AUSTRITT_ARTEN = {
+  ma_kuendigung_ag: { fuer: 'ma', l: 'Kündigung durch den Betrieb' },
+  ma_kuendigung_an: { fuer: 'ma', l: 'Kündigung durch die Mitarbeiter:in' },
+  ma_einvernehmlich: { fuer: 'ma', l: 'Einvernehmliche Auflösung' },
+  ma_probezeit: { fuer: 'ma', l: 'Lösung in der Probezeit' },
+  ma_entlassung: { fuer: 'ma', l: 'Entlassung (fristlos)' },
+  ma_austritt: { fuer: 'ma', l: 'Vorzeitiger Austritt durch die Mitarbeiter:in' },
+  l_probezeit_lb: { fuer: 'lehrling', l: 'Auflösung in der Probezeit durch den Lehrbetrieb' },
+  l_probezeit_l: { fuer: 'lehrling', l: 'Auflösung in der Probezeit durch den Lehrling' },
+  l_einvernehmlich: { fuer: 'lehrling', l: 'Einvernehmliche Auflösung' },
+  l_ausserordentlich_lb: { fuer: 'lehrling', l: 'Außerordentliche Auflösung durch den Lehrbetrieb' },
+  l_ausserordentlich_l: { fuer: 'lehrling', l: 'Vorzeitige Auflösung durch den Lehrling' },
+  l_lehrzeitende: { fuer: 'lehrling', l: 'Ende der Lehrzeit (mit Behaltezeit)' },
+  l_behaltezeit_kuendigung: { fuer: 'lehrling', l: 'Kündigung zum Ende der Behaltezeit' },
+  l_uebertritt: { fuer: 'lehrling', l: 'Ausbildungsübertritt (§ 15a BAG)' }
+};
+const TAETIGKEITEN = ['Haare waschen und pflegen', 'Schneiden', 'Färben und Strähnen', 'Föhnen und Styling',
+  'Dauerwelle und Glätten', 'Hochsteckfrisuren', 'Kundenberatung', 'Verkauf von Pflegeprodukten', 'Kassa und Terminvergabe',
+  'Hygiene und Ordnung im Salon'];
+const AUSTRITT_FELDER = [
+  { k: 'erklaerung', l: 'Datum der Erklärung / Übergabe', t: 'date' },
+  { k: 'ende', l: 'Ende des Dienst-/Lehrverhältnisses', t: 'date' },
+  { k: 'letzter_tag', l: 'Letzter Arbeitstag (falls früher, z. B. Urlaub)', t: 'date' },
+  { k: 'zustellung', l: 'Zustellung', t: 'seg', opts: ['persönlich übergeben', 'eingeschrieben'], voll: true },
+  { k: 'termin', l: 'Kündigungstermin laut Vertrag', t: 'seg', opts: ['Quartalsende', '15. oder Monatsletzter', 'Monatsletzter'], voll: true,
+    nur: ['ma_kuendigung_ag'] },
+  { k: 'grund', l: 'Grund (nur wenn nötig – wird in das Schreiben übernommen)', t: 'textarea', voll: true,
+    nur: ['ma_entlassung', 'ma_austritt', 'l_ausserordentlich_lb', 'l_ausserordentlich_l'] },
+  { k: 'urlaub', l: 'Offene Urlaubstage', t: 'number' },
+  { k: 'rueckgabe', l: 'Zurückzugeben (Schlüssel, Werkzeug, Kleidung …)', ph: 'z. B. Salonschlüssel, Schere Nr. 3' }
+];
+
+function austritt(p) { if (!p.austritt) p.austritt = {}; return p.austritt; }
+function austrittArten(p) { return Object.entries(AUSTRITT_ARTEN).filter(([, a]) => a.fuer === p.art); }
+function dienstjahre(beginn, am) {
+  if (!beginn || !am) return null;
+  return alterAm(beginn, am);
+}
+function inProbezeit(p, am) {
+  const b = p.daten.beginn; if (!b) return null;
+  const ende = plusTage(plusMonate(b, p.art === 'lehrling' ? 3 : 1), -1);
+  return (am || heuteIso()) <= ende ? ende : false;
+}
+function monatsletzter(iso) { const d = new Date(iso + 'T12:00'); return isoAus(new Date(d.getFullYear(), d.getMonth() + 1, 0, 12)); }
+function naechsterTermin(iso, termin) {
+  const d = new Date(iso + 'T12:00');
+  const kandidaten = [];
+  for (let m = 0; m < 15; m++) {
+    const j = d.getFullYear(), mo = d.getMonth() + m;
+    const letzter = isoAus(new Date(j, mo + 1, 0, 12));
+    const funfzehnter = isoAus(new Date(j, mo, 15, 12));
+    if (termin === 'Quartalsende') { if ([2, 5, 8, 11].includes(new Date(j, mo, 1).getMonth())) kandidaten.push(letzter); }
+    else if (termin === '15. oder Monatsletzter') kandidaten.push(funfzehnter, letzter);
+    else kandidaten.push(letzter);
+  }
+  return kandidaten.sort().find(k => k >= iso);
+}
+
+// Frühestmögliches Ende als Vorschlag: { ende, text } oder null
+function austrittFrist(p) {
+  const a = austritt(p), d = p.daten, z = a.erklaerung || heuteIso();
+  switch (a.art) {
+    case 'ma_kuendigung_ag': {
+      const j = dienstjahre(d.beginn, z);
+      const [monate, wochen, txt] = j === null ? [0, 6, '6 Wochen (Beginn unbekannt)']
+        : j >= 25 ? [5, 0, '5 Monate (ab 25 Dienstjahren)'] : j >= 15 ? [4, 0, '4 Monate (ab 15 Dienstjahren)']
+        : j >= 5 ? [3, 0, '3 Monate (ab 5 Dienstjahren)'] : j >= 2 ? [2, 0, '2 Monate (ab 2 Dienstjahren)'] : [0, 6, '6 Wochen (unter 2 Dienstjahren)'];
+      const fruehestens = wochen ? plusTage(z, wochen * 7) : plusMonate(z, monate);
+      const termin = a.termin || 'Quartalsende';
+      return { ende: naechsterTermin(fruehestens, termin),
+        text: `Gesetzliche Frist: ${txt}, Termin: ${termin}. Ohne andere Vereinbarung im Dienstvertrag gilt das Quartalsende.` };
+    }
+    case 'ma_kuendigung_an':
+      return { ende: monatsletzter(plusMonate(z, 1)), text: 'Gesetzliche Frist: 1 Monat zum Monatsletzten (im Dienstvertrag kann bis zu einem halben Jahr vereinbart sein).' };
+    case 'ma_probezeit': case 'l_probezeit_lb': case 'l_probezeit_l':
+    case 'ma_entlassung': case 'ma_austritt': case 'l_ausserordentlich_lb': case 'l_ausserordentlich_l':
+      return { ende: z, text: 'Wirkt sofort mit Zugang der schriftlichen Erklärung – keine Frist.' };
+    case 'l_lehrzeitende':
+      return d.ende ? { ende: d.ende, text: 'Das Lehrverhältnis endet mit Ablauf der Lehrzeit (bei früherer bestandener LAP mit Ende der Woche der Prüfung). Danach 3 Monate Behaltezeit.' } : null;
+    case 'l_behaltezeit_kuendigung': {
+      if (!d.ende) return null;
+      const ende = plusTage(plusMonate(plusTage(d.ende, 1), 3), -1);   // 3 volle Monate ab dem Tag nach Lehrzeitende
+      return { ende, text: `Behaltezeit endet am ${datumDe(ende)}. Kündigung mit 6 Wochen Frist – spätestens zustellen am ${datumDe(plusTage(ende, -42))}.` };
+    }
+    default: return null;
+  }
+}
+
+// Kurze Regeln und Warnungen je Art
+function austrittHinweise(p) {
+  const a = austritt(p), d = p.daten;
+  const minder = !volljaehrig(d);
+  const pz = inProbezeit(p, a.erklaerung);
+  const h = [];
+  const art = a.art || '';
+  if (art.includes('probezeit') && pz === false) h.push(['warn', `Die Probezeit ist schon vorbei (Beginn ${datumDe(d.beginn)}). Eine Lösung in der Probezeit ist nicht mehr möglich.`]);
+  if (pz && !art.includes('probezeit') && art !== 'l_uebertritt') h.push(['info', `Noch in der Probezeit (bis ${datumDe(pz)}) – eine Lösung in der Probezeit ist jederzeit ohne Frist und ohne Grund möglich.`]);
+  switch (art) {
+    case 'ma_kuendigung_ag':
+      h.push(['info', 'Schriftlich übergeben und den Empfang bestätigen lassen. Während der Kündigungsfrist steht der Mitarbeiter:in Freizeit zur Jobsuche zu (rund ein Fünftel der Wochenarbeitszeit).']);
+      h.push(['info', 'Besonderer Kündigungsschutz (Schwangerschaft, Karenz, Präsenzdienst, begünstigte Behinderung …) prüfen – dann nicht ohne Beratung kündigen.']);
+      break;
+    case 'ma_kuendigung_an':
+      h.push(['info', 'Die Mitarbeiter:in unterschreibt die Kündigung, der Betrieb bestätigt den Erhalt. Das Ende ergibt sich aus der Frist – nicht früher, außer ihr vereinbart es einvernehmlich.']);
+      break;
+    case 'ma_einvernehmlich':
+      h.push(['info', 'Jederzeit möglich, ohne Frist. Beide unterschreiben. Bei Schwangeren, in Karenz oder bei Präsenz-/Zivildienst braucht es zusätzlich eine Bestätigung von Arbeiterkammer oder Arbeits- und Sozialgericht.']);
+      break;
+    case 'ma_probezeit':
+      h.push(['info', 'Probezeit höchstens 1 Monat und nur, wenn sie im Dienstvertrag vereinbart ist. Lösung jederzeit, ohne Frist und ohne Grund.']);
+      break;
+    case 'ma_entlassung':
+      h.push(['warn', 'Nur bei einem wichtigen Grund (z. B. Diebstahl, beharrliche Arbeitsverweigerung) und SOFORT nach Bekanntwerden. Ist die Entlassung unberechtigt, drohen hohe Nachzahlungen – vorher unbedingt WKW oder Anwalt fragen.']);
+      break;
+    case 'ma_austritt':
+      h.push(['info', 'Die Mitarbeiter:in beendet sofort aus wichtigem Grund. Erklärung schriftlich geben lassen und den Erhalt bestätigen.']);
+      break;
+    case 'l_probezeit_lb': case 'l_probezeit_l':
+      h.push(['info', 'In den ersten 3 Monaten kann das Lehrverhältnis von beiden Seiten jederzeit schriftlich aufgelöst werden (§ 15 Abs. 1 BAG).']);
+      if (art === 'l_probezeit_l' && minder) h.push(['warn', 'Minderjährig: Die Auflösung durch den Lehrling braucht die Zustimmung der gesetzlichen Vertreter (mit unterschreiben).']);
+      break;
+    case 'l_einvernehmlich':
+      h.push(['warn', 'Gültig nur schriftlich UND mit einer Bescheinigung der Arbeiterkammer oder des Arbeits- und Sozialgerichts, dass der Lehrling über seine Rechte belehrt wurde. Termin bei der AK vereinbaren.']);
+      if (minder) h.push(['warn', 'Minderjährig: Die gesetzlichen Vertreter müssen zustimmen und mit unterschreiben.']);
+      break;
+    case 'l_ausserordentlich_lb':
+      h.push(['warn', 'Nur aus den Gründen in § 15 Abs. 3 BAG (z. B. Diebstahl, wiederholte grobe Pflichtverletzung trotz Verwarnung, unentschuldigtes Fernbleiben von der Berufsschule trotz Mahnung). Vorher unbedingt mit der Lehrlingsstelle der WKW abklären.']);
+      break;
+    case 'l_ausserordentlich_l':
+      h.push(['info', 'Der Lehrling kann aus den Gründen in § 15 Abs. 4 BAG vorzeitig auflösen, z. B. wenn er den Beruf aus gesundheitlichen Gründen nicht ausüben kann.']);
+      if (minder) h.push(['warn', 'Minderjährig: Die gesetzlichen Vertreter müssen zustimmen und mit unterschreiben.']);
+      break;
+    case 'l_lehrzeitende':
+      h.push(['info', 'Nach der Lehrzeit muss der Lehrling 3 Monate im erlernten Beruf weiterbeschäftigt werden (Behaltezeit, § 18 BAG). Das Lehrzeugnis muss ausgestellt werden (§ 16 BAG).']);
+      break;
+    case 'l_behaltezeit_kuendigung':
+      h.push(['info', 'Soll das Dienstverhältnis mit Ende der Behaltezeit enden, muss mit 6 Wochen Frist zum Ende der Behaltezeit gekündigt werden. Ohne Kündigung läuft es als normales Dienstverhältnis weiter.']);
+      break;
+    case 'l_uebertritt':
+      h.push(['warn', 'Nur zum Ende des 1. oder 2. Lehrjahres, mit 1 Monat Frist, und erst nach einem verpflichtenden Mediationsverfahren. Dafür gibt es hier keine Vorlage – bitte mit der Lehrlingsstelle der WKW abklären.']);
+      break;
+  }
+  if (art) h.push(['info', 'Fristen und Texte sind Vorschläge nach Gesetz. Dienstvertrag und Kollektivvertrag können abweichen – im Zweifel WKW oder Steuerberatung fragen.']);
+  return h;
+}
+
+// Checkliste Austritt (IDs mit a_ in p.erledigt)
+function austrittAufgaben(p) {
+  const a = austritt(p), ende = a.ende || null, lehrling = p.art === 'lehrling', art = a.art || '';
+  const L = [];
+  const t = (id, text, sub, frist) => L.push({ id, text, sub, frist: frist || null });
+  if (art === 'l_uebertritt') { t('a_wkw_uebertritt', 'Lehrlingsstelle der WKW wegen Mediation kontaktieren'); return L; }
+  if (art === 'l_einvernehmlich') t('a_ak', 'Bescheinigung von Arbeiterkammer bzw. Arbeits- und Sozialgericht einholen', 'Ohne diese Bescheinigung ist die Auflösung ungültig.');
+  if (lehrling && !volljaehrig(p.daten) && /probezeit_l$|einvernehmlich|ausserordentlich_l$/.test(art)) t('a_vertreter', 'Unterschrift der gesetzlichen Vertreter einholen');
+  if (art !== 'l_lehrzeitende') t('a_erklaerung', 'Schreiben unterschreiben und übergeben', 'Empfang bestätigen lassen bzw. eingeschrieben schicken.', a.erklaerung);
+  t('a_stb', 'Steuerberater:in / Lohnverrechnung informieren', 'Für Endabrechnung (Resturlaub, anteiliges Urlaubs- und Weihnachtsgeld) – Blatt „Austrittsmeldung“.', a.erklaerung ? plusTage(a.erklaerung, 2) : null);
+  t('a_oegk', 'ÖGK-Abmeldung bestätigt (macht meist die Lohnverrechnung)', 'Binnen 7 Tagen nach dem Ende.', ende ? plusTage(ende, 7) : null);
+  t('a_ams', 'Arbeitsbescheinigung fürs AMS (Lohnverrechnung)', 'Braucht die Person, wenn sie Arbeitslosengeld beantragt.', ende);
+  if (lehrling && art !== 'l_behaltezeit_kuendigung') {
+    t('a_wkw', 'Lehrlingsstelle der WKW informieren', art === 'l_lehrzeitende' ? 'Ende des Lehrverhältnisses.' : 'Vorzeitige Auflösung binnen 4 Wochen anzeigen.', ende ? plusTage(ende, 28) : null);
+    if (art !== 'l_lehrzeitende') t('a_schule', 'Berufsschule informieren', null, ende ? plusTage(ende, 7) : null);
+  }
+  t('a_zeugnis', lehrling && art !== 'l_behaltezeit_kuendigung' ? 'Lehrzeugnis ausstellen (Pflicht)' : 'Dienstzeugnis ausstellen', lehrling ? '§ 16 BAG' : 'Auf Verlangen der Mitarbeiter:in – kostenlos, nichts Nachteiliges.', ende);
+  t('a_rueckgabe', 'Schlüssel, Werkzeug und Arbeitskleidung zurück', a.rueckgabe || null, a.letzter_tag || ende);
+  t('a_teamapp', 'Konto in der Team-App deaktivieren', 'Team-App → Team → Person → Deaktivieren.', ende);
+  t('a_plan', 'Aus Dienstplan, Abwesenheiten und Gruppen entfernen', null, ende);
+  return L;
+}
+
+function austrittFortschritt(p) {
+  const liste = austrittAufgaben(p), heute = heuteIso();
+  const erledigt = liste.filter(t => p.erledigt[t.id]).length;
+  const ueberfaellig = liste.filter(t => !p.erledigt[t.id] && t.frist && t.frist < heute).length;
+  return { erledigt, gesamt: liste.length, ueberfaellig };
+}
+
+// Welche Vorlagen gibt es für die gewählte Art?
+function austrittVorlagen(p) {
+  const art = austritt(p).art || '', lehrling = p.art === 'lehrling';
+  const v = [];
+  const brief = { ma_kuendigung_ag: 'Kündigung', ma_kuendigung_an: 'Kündigung (zum Unterschreiben durch die Mitarbeiter:in)',
+    ma_einvernehmlich: 'Vereinbarung über die einvernehmliche Auflösung', ma_probezeit: 'Lösung in der Probezeit', ma_entlassung: 'Entlassung',
+    ma_austritt: 'Bestätigung des vorzeitigen Austritts', l_probezeit_lb: 'Auflösung in der Probezeit',
+    l_probezeit_l: 'Auflösung in der Probezeit (Erklärung des Lehrlings)', l_einvernehmlich: 'Vereinbarung über die einvernehmliche Auflösung',
+    l_ausserordentlich_lb: 'Außerordentliche Auflösung des Lehrverhältnisses', l_ausserordentlich_l: 'Vorzeitige Auflösung (Erklärung des Lehrlings)',
+    l_behaltezeit_kuendigung: 'Kündigung zum Ende der Behaltezeit' }[art];
+  if (brief) v.push({ id: 'brief', titel: brief });
+  if (art && art !== 'l_uebertritt') {
+    v.push({ id: 'stb', titel: 'Austrittsmeldung an Steuerberater:in', blatt: true });
+    v.push({ id: 'zeugnis', titel: lehrling && art !== 'l_behaltezeit_kuendigung' ? 'Lehrzeugnis' : 'Dienstzeugnis' });
+    v.push({ id: 'rueckgabe', titel: 'Bestätigung über die Rückgabe' });
+  }
+  return v;
+}
+
+// ── Texte der Vorlagen ──
+function anrede(d) {
+  const n = [d.vorname, d.nachname].filter(Boolean).join(' ') || '…';
+  // wer = Nominativ, wen = Akkusativ, Sie = Subjekt am Satzanfang, sie = Subjekt im Satz, ihr = Dativ,
+  // ihren/ihrer = Possessiv (Dativ Plural / Genitiv fem.)
+  if (d.geschlecht === 'w') return { gruss: `Sehr geehrte Frau ${d.nachname || n},`, wer: `Frau ${n}`, wen: `Frau ${n}`, Sie: 'Sie', sie: 'sie', ihr: 'ihr', ihren: 'ihren', ihrer: 'ihrer' };
+  if (d.geschlecht === 'm') return { gruss: `Sehr geehrter Herr ${d.nachname || n},`, wer: `Herr ${n}`, wen: `Herrn ${n}`, Sie: 'Er', sie: 'er', ihr: 'ihm', ihren: 'seinen', ihrer: 'seiner' };
+  return { gruss: `Guten Tag ${n},`, wer: n, wen: n, Sie: n, sie: n, ihr: n, ihren: 'den', ihrer: 'der' };
+}
+function ortDatum(iso) {
+  const ort = (_betrieb.adresse || '').split(',').pop().replace(/\d+/g, '').trim() || 'Wien';
+  return `${ort}, am ${datumDe(iso || heuteIso())}`;
+}
+function urlaubSatz(a) {
+  return a.urlaub ? `Ihre offenen ${a.urlaub} Urlaubstage werden ${a.letzter_tag && a.letzter_tag < a.ende ? 'bis zum Ende konsumiert bzw. ' : ''}mit der Endabrechnung abgerechnet.` : '';
+}
+function rueckgabeSatz(a) {
+  return `Bitte geben Sie bis zu Ihrem letzten Arbeitstag alle Arbeitsmittel zurück${a.rueckgabe ? ` (${a.rueckgabe})` : ', insbesondere Schlüssel, Werkzeug und Arbeitskleidung'}.`;
+}
+
+// Liefert { betreff, text, unterschriften: [..] }
+function vorlageText(p, id) {
+  const a = austritt(p), d = p.daten, A = anrede(d), B = _betrieb;
+  const LUECKE = '______________';   // leeres Datum → zum Ausfüllen von Hand
+  const ende = datumDe(a.ende) || LUECKE, letzter = a.letzter_tag ? datumDe(a.letzter_tag) : ende;
+  const lehrling = p.art === 'lehrling';
+  const minder = lehrling && !volljaehrig(d);
+  const vertreter = minder ? [`Gesetzliche Vertreter (${d.vertreter_name || '…'})`] : [];
+  const dank = 'Wir danken Ihnen für Ihre Mitarbeit und wünschen Ihnen für Ihre Zukunft alles Gute.';
+  const ub = 'Endabrechnung und Abmeldung bei der Österreichischen Gesundheitskasse erledigt unsere Lohnverrechnung.';
+  const erhalten = `Erhalten am ________________`;
+  if (id === 'rueckgabe') return { betreff: 'Bestätigung über die Rückgabe von Arbeitsmitteln',
+    text: `${A.wer} hat am ________________ folgende Gegenstände zurückgegeben:\n\n${a.rueckgabe || '…………………………………………………………'}\n\nDamit sind alle überlassenen Arbeitsmittel zurückgegeben.`,
+    unterschriften: [B.name, lehrling ? 'Lehrling' : 'Mitarbeiter:in'] };
+  if (id === 'zeugnis') return zeugnisText(p);
+  switch (a.art) {
+    case 'ma_kuendigung_ag': return { betreff: 'Kündigung des Dienstverhältnisses',
+      text: `${A.gruss}\n\nhiermit kündigen wir das mit Ihnen bestehende Dienstverhältnis unter Einhaltung der Kündigungsfrist zum ${ende}.\n\nIhr letzter Arbeitstag ist der ${letzter}. ${urlaubSatz(a)}\n\n${rueckgabeSatz(a)}\n\n${ub}\n\n${dank}\n\nMit freundlichen Grüßen`,
+      unterschriften: [B.name], quittung: `Kündigung erhalten am ________________`, quittungWer: 'Mitarbeiter:in' };
+    case 'ma_kuendigung_an': return { betreff: 'Kündigung meines Dienstverhältnisses', absenderPerson: true,
+      text: `Sehr geehrte Damen und Herren,\n\nhiermit kündige ich mein Dienstverhältnis bei ${B.name} unter Einhaltung der Kündigungsfrist zum ${ende}.\n\nMein letzter Arbeitstag ist der ${letzter}.\n\nMit freundlichen Grüßen`,
+      unterschriften: [vollerName(d)], quittung: `Kündigung erhalten am ________________`, quittungWer: B.name };
+    case 'ma_einvernehmlich': case 'l_einvernehmlich': return { betreff: `Vereinbarung über die einvernehmliche Auflösung des ${lehrling ? 'Lehrverhältnisses' : 'Dienstverhältnisses'}`, ohneEmpfaenger: true,
+      text: `zwischen ${B.name}, ${B.adresse} (${lehrling ? 'Lehrbetrieb' : 'Arbeitgeberin'})\nund ${A.wer}, geboren am ${datumDe(d.geburtsdatum) || '…'}, ${adresse(d)} (${lehrling ? 'Lehrling' : 'Mitarbeiter:in'}).\n\n1. Das ${lehrling ? `Lehrverhältnis im Lehrberuf ${d.lehrberuf || '…'}` : 'Dienstverhältnis'} wird im beiderseitigen Einvernehmen mit Ablauf des ${ende} aufgelöst.\n\n2. Der letzte Arbeitstag ist der ${letzter}.${a.urlaub ? ` Offene Urlaubstage (${a.urlaub}) werden mit der Endabrechnung abgerechnet.` : ''}\n\n3. Alle Arbeitsmittel werden bis zum letzten Arbeitstag zurückgegeben.\n\n4. Die Endabrechnung erfolgt durch die Lohnverrechnung.${lehrling ? '\n\n5. Die Bescheinigung der Arbeiterkammer bzw. des Arbeits- und Sozialgerichts über die Belehrung des Lehrlings (§ 15 Abs. 5 BAG) liegt bei.' : ''}`,
+      unterschriften: [B.name, lehrling ? 'Lehrling' : 'Mitarbeiter:in', ...vertreter] };
+    case 'ma_probezeit': return { betreff: 'Lösung des Dienstverhältnisses während der Probezeit',
+      text: `${A.gruss}\n\nhiermit lösen wir das mit Ihnen bestehende Dienstverhältnis während der vereinbarten Probezeit mit Ablauf des ${ende} auf.\n\n${rueckgabeSatz(a)}\n\n${ub}\n\n${dank}\n\nMit freundlichen Grüßen`,
+      unterschriften: [B.name], quittung: `Erhalten am ________________`, quittungWer: 'Mitarbeiter:in' };
+    case 'ma_entlassung': return { betreff: 'Entlassung',
+      text: `${A.gruss}\n\nhiermit sprechen wir mit sofortiger Wirkung die Entlassung aus.\n\nGrund: ${a.grund || '…'}\n\n${rueckgabeSatz(a)}\n\n${ub}`,
+      unterschriften: [B.name], quittung: erhalten, quittungWer: 'Mitarbeiter:in' };
+    case 'ma_austritt': return { betreff: 'Bestätigung über den vorzeitigen Austritt',
+      text: `${A.gruss}\n\nwir bestätigen, dass Sie am ${datumDe(a.erklaerung) || '…'} Ihren vorzeitigen Austritt aus dem Dienstverhältnis mit sofortiger Wirkung erklärt haben.${a.grund ? `\n\nAngegebener Grund: ${a.grund}` : ''}\n\nDas Dienstverhältnis endet damit am ${ende}.\n\n${rueckgabeSatz(a)}\n\n${ub}\n\nMit freundlichen Grüßen`,
+      unterschriften: [B.name] };
+    case 'l_probezeit_lb': return { betreff: 'Auflösung des Lehrverhältnisses während der Probezeit',
+      text: `${A.gruss}\n\nhiermit lösen wir das Lehrverhältnis im Lehrberuf ${d.lehrberuf || '…'} gemäß § 15 Abs. 1 Berufsausbildungsgesetz während der Probezeit mit Ablauf des ${ende} auf.\n\n${rueckgabeSatz(a)}\n\nDie Lehrlingsstelle der Wirtschaftskammer Wien und die Berufsschule werden von uns informiert. ${ub}\n\n${dank}\n\nMit freundlichen Grüßen`,
+      unterschriften: [B.name], quittung: `Erhalten am ________________`, quittungWer: minder ? 'Lehrling / gesetzliche Vertreter' : 'Lehrling' };
+    case 'l_probezeit_l': return { betreff: 'Auflösung des Lehrverhältnisses während der Probezeit', absenderPerson: true,
+      text: `Sehr geehrte Damen und Herren,\n\nhiermit löse ich mein Lehrverhältnis im Lehrberuf ${d.lehrberuf || '…'} gemäß § 15 Abs. 1 Berufsausbildungsgesetz während der Probezeit mit Ablauf des ${ende} auf.${minder ? '\n\nMeine gesetzlichen Vertreter stimmen der Auflösung zu.' : ''}\n\nMit freundlichen Grüßen`,
+      unterschriften: [vollerName(d), ...vertreter], quittung: `Erhalten am ________________`, quittungWer: B.name };
+    case 'l_ausserordentlich_lb': return { betreff: 'Außerordentliche Auflösung des Lehrverhältnisses',
+      text: `${A.gruss}\n\nhiermit lösen wir das Lehrverhältnis im Lehrberuf ${d.lehrberuf || '…'} gemäß § 15 Abs. 3 Berufsausbildungsgesetz mit sofortiger Wirkung auf.\n\nGrund: ${a.grund || '…'}\n\n${rueckgabeSatz(a)}\n\nDie Lehrlingsstelle der Wirtschaftskammer Wien und die Berufsschule werden von uns informiert. ${ub}`,
+      unterschriften: [B.name], quittung: erhalten, quittungWer: minder ? 'Lehrling / gesetzliche Vertreter' : 'Lehrling' };
+    case 'l_ausserordentlich_l': return { betreff: 'Vorzeitige Auflösung des Lehrverhältnisses', absenderPerson: true,
+      text: `Sehr geehrte Damen und Herren,\n\nhiermit löse ich mein Lehrverhältnis im Lehrberuf ${d.lehrberuf || '…'} gemäß § 15 Abs. 4 Berufsausbildungsgesetz vorzeitig mit ${ende} auf.\n\nGrund: ${a.grund || '…'}${minder ? '\n\nMeine gesetzlichen Vertreter stimmen der Auflösung zu.' : ''}\n\nMit freundlichen Grüßen`,
+      unterschriften: [vollerName(d), ...vertreter], quittung: erhalten, quittungWer: B.name };
+    case 'l_behaltezeit_kuendigung': return { betreff: 'Kündigung zum Ende der Behaltezeit',
+      text: `${A.gruss}\n\nIhre Lehrzeit im Lehrberuf ${d.lehrberuf || '…'} ist am ${datumDe(d.ende) || '…'} zu Ende gegangen; die gesetzliche Behaltezeit gemäß § 18 Berufsausbildungsgesetz endet am ${ende}.\n\nHiermit kündigen wir das Dienstverhältnis unter Einhaltung der sechswöchigen Kündigungsfrist zum ${ende}.\n\n${urlaubSatz(a)}\n\n${rueckgabeSatz(a)}\n\n${ub}\n\nWir danken Ihnen für Ihre Mitarbeit, gratulieren nochmals zum Abschluss Ihrer Ausbildung und wünschen Ihnen für Ihre berufliche Zukunft alles Gute.\n\nMit freundlichen Grüßen`,
+      unterschriften: [B.name], quittung: `Kündigung erhalten am ________________`, quittungWer: 'Mitarbeiter:in' };
+  }
+  return { betreff: '', text: 'Für diese Art gibt es kein Schreiben.', unterschriften: [] };
+}
+
+function zeugnisText(p) {
+  const a = austritt(p), z = a.zeugnis || {}, d = p.daten, A = anrede(d), B = _betrieb;
+  const lehrzeugnis = p.art === 'lehrling' && a.art !== 'l_behaltezeit_kuendigung';
+  const geb = d.geburtsdatum ? `, geboren am ${datumDe(d.geburtsdatum)},` : '';
+  const von = datumDe(d.beginn) || '______________', bis = datumDe(a.ende) || '______________';
+  const taet = (z.taetigkeiten || []).length ? (z.taetigkeiten || []) : [];
+  const liste = taet.length ? '\n' + taet.map(t => '• ' + t).join('\n') : '';
+  let text;
+  if (lehrzeugnis) {
+    text = `${A.wer}${geb} war vom ${von} bis ${bis} in unserem Betrieb als Lehrling im Lehrberuf ${d.lehrberuf || '…'} beschäftigt.` +
+      (taet.length ? `\n\n${A.Sie} wurde insbesondere in folgenden Fertigkeiten und Kenntnissen ausgebildet:${liste}` : '');
+  } else {
+    text = `${A.wer}${geb} war vom ${von} bis ${bis} in unserem Friseursalon als ${z.position || d.position || 'Friseur:in'} beschäftigt.` +
+      (taet.length ? `\n\nZu ${A.ihren} Aufgaben gehörten insbesondere:${liste}` : '');
+  }
+  if (z.bewertung === 'sehr gut') {
+    text += `\n\n${A.Sie} erledigte die übertragenen Aufgaben stets zu unserer vollsten Zufriedenheit. ${A.Sie} verfügt über ein sehr gutes Fachwissen und arbeitet äußerst sorgfältig, selbstständig und kreativ. Bei unseren Kundinnen und Kunden war ${A.sie} wegen ${A.ihrer} freundlichen und kompetenten Art sehr geschätzt. Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets vorbildlich.`;
+  } else if (z.bewertung === 'gut') {
+    text += `\n\n${A.Sie} erledigte die übertragenen Aufgaben stets zu unserer vollen Zufriedenheit. ${A.Sie} verfügt über ein gutes Fachwissen und arbeitet sorgfältig und zuverlässig. Bei unseren Kundinnen und Kunden war ${A.sie} beliebt. Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets einwandfrei.`;
+  }
+  const eigenerWunsch = ['ma_kuendigung_an', 'l_probezeit_l'].includes(a.art);
+  text += `\n\nDas ${lehrzeugnis ? 'Lehrverhältnis' : 'Dienstverhältnis'} endet am ${bis}${eigenerWunsch ? ' auf eigenen Wunsch' : ''}. Wir danken ${A.wen} für die Zusammenarbeit und wünschen ${A.ihr} für die Zukunft alles Gute${z.bewertung ? ' und weiterhin viel Erfolg' : ''}.`;
+  return { betreff: lehrzeugnis ? 'LEHRZEUGNIS' : 'DIENSTZEUGNIS', zeugnis: true, ohneEmpfaenger: true, text, unterschriften: [B.name] };
+}
+
+// ── Brief als PDF ──
+function briefInsPdf(doc, p, v, titel) {
+  if (doc.ops.length) doc.neueSeite();
+  const B = _betrieb, d = p.daten;
+  const absender = v.absenderPerson ? [vollerName(d), d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')] : [B.name, B.adresse, B.tel ? 'Tel. ' + B.tel : ''];
+  const empfaenger = v.absenderPerson ? [B.name, ...String(B.adresse || '').split(',').map(s => s.trim())] : [vollerName(d), d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')];
+  absender.filter(Boolean).forEach((z, i) => doc.text(50, doc.y - i * 11, z, 9, i === 0, 0.25));
+  doc.y -= 60;
+  if (!v.ohneEmpfaenger && !v.zeugnis) { empfaenger.filter(Boolean).forEach((z, i) => doc.text(50, doc.y - i * 14, z, 11)); doc.y -= 70; }
+  doc.text(380, doc.y, ortDatum(austritt(p).erklaerung), 10);
+  doc.y -= 34;
+  if (v.zeugnis) { doc.text(50, doc.y, v.betreff, 18, true); doc.y -= 30; }
+  else { for (const z of umbrechen(v.betreff, 495, 12)) { doc.text(50, doc.y, z, 12, true); doc.y -= 16; } doc.y -= 10; }
+  for (const z of umbrechen(v.text, 495, 10.5)) { doc.platz(16); doc.text(50, doc.y, z, 10.5); doc.y -= 15; }
+  const u = v.unterschriften || [];
+  if (u.length) {
+    doc.platz(70); doc.y -= 46;
+    u.forEach((name, i) => {
+      const x = 50 + (i % 2) * 260;
+      if (i && i % 2 === 0) { doc.platz(70); doc.y -= 60; }
+      doc.linie(x, doc.y, x + 220, 0);
+      doc.text(x, doc.y - 11, name, 8.5, false, 0.35);
+    });
+    doc.y -= 24;
+  }
+  if (v.quittung) {
+    doc.platz(80); doc.y -= 30;
+    doc.linie(50, doc.y + 16, 545, 0.8);
+    doc.text(50, doc.y, v.quittung, 10); doc.y -= 40;
+    doc.linie(50, doc.y, 270, 0); doc.text(50, doc.y - 11, 'Unterschrift ' + v.quittungWer, 8.5, false, 0.35);
+  }
+}
+
+function austrittBlatt(p) {
+  const a = austritt(p), d = p.daten, B = _betrieb;
+  return { titel: 'Austrittsmeldung', kopf: B.name + ' · ' + B.adresse, unterschrift: false, teile: [
+    ['Person', [['Name', vollerName(d)], ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Sozialversicherungsnummer', d.svnr],
+      ['Adresse', adresse(d)], ['IBAN', d.iban]]],
+    ['Beendigung', [['Art', (AUSTRITT_ARTEN[a.art] || {}).l], ['Erklärt / übergeben am', datumDe(a.erklaerung)],
+      ['Ende des Dienst-/Lehrverhältnisses', datumDe(a.ende)], ['Letzter Arbeitstag', datumDe(a.letzter_tag || a.ende)],
+      ['Beginn', datumDe(d.beginn)], ['Offene Urlaubstage', a.urlaub || '']]],
+    ['Bitte erledigen', [['Endabrechnung', 'inkl. Urlaubsersatzleistung und anteiliger Sonderzahlungen'], ['ÖGK', 'Abmeldung binnen 7 Tagen nach dem Ende'],
+      ['AMS', 'Arbeitsbescheinigung ausstellen'], ['Lohnzettel / Abrechnung', 'an die Person übermitteln']]]
+  ] };
+}
+
+// ── Oberfläche ──
+function renderAustritt() {
+  const p = aktuell(); if (!p) return;
+  const a = austritt(p);
+  let html = `<div class="card"><div class="sec-title">Art der Beendigung</div>
+    <div class="f voll"><select id="a-art" onchange="austrittArtWaehlen(this.value)">
+      <option value="">– bitte wählen –</option>
+      ${austrittArten(p).map(([k, v]) => `<option value="${k}"${a.art === k ? ' selected' : ''}>${esc(v.l)}</option>`).join('')}
+    </select></div></div>`;
+  if (a.art) {
+    for (const [typ, text] of austrittHinweise(p)) html += `<div class="hinweis" style="${typ === 'warn' ? 'border-color:#f3c2bc;background:#fdecea;color:#7b241c' : ''}">${esc(text)}</div>`;
+    const felder = AUSTRITT_FELDER.filter(f => !f.nur || f.nur.includes(a.art));
+    const fr = austrittFrist(p);
+    html += `<div class="card"><div class="sec-title">Daten</div><div class="grid">${felder.map(f => feldHtml(f, a, 'a')).join('')}</div>
+      ${fr ? `<div class="hinweis" style="margin:12px 0 0">${esc(fr.text)}${fr.ende ? `<br><b>Vorschlag Ende: ${esc(datumDe(fr.ende))}</b>
+        ${a.ende !== fr.ende ? ` <button class="btn btn-secondary btn-sm" style="margin-left:6px" onclick="austrittSetzen('ende','${fr.ende}')">übernehmen</button>` : ' ✓'}` : ''}</div>` : ''}
+    </div>`;
+    const vorlagen = austrittVorlagen(p);
+    if (vorlagen.length) {
+      html += `<div class="card"><div class="sec-title">Vorlagen</div>`;
+      if (vorlagen.some(v => v.id === 'zeugnis')) html += zeugnisOptionenHtml(p);
+      for (const v of vorlagen) {
+        html += `<div class="dok"><div class="dok-kopf"><div class="dok-name">${esc(v.titel)}${a.texte && a.texte[v.id] ? ' <span class="badge">bearbeitet</span>' : ''}</div></div>
+          <div class="btn-row" style="margin-top:8px">
+            ${v.blatt ? `<button class="btn btn-primary btn-sm" onclick="austrittStb()">An Steuerberater:in senden</button>`
+              : `<button class="btn btn-secondary btn-sm" onclick="vorlageBearbeiten('${v.id}')">✏️ Ansehen & bearbeiten</button>`}
+            <button class="btn btn-secondary btn-sm" onclick="vorlagePdf('${v.id}')">PDF</button>
+          </div></div>`;
+      }
+      html += `</div>`;
+    }
+    const liste = austrittAufgaben(p);
+    html += `<div class="card"><div class="sec-title">Checkliste Austritt</div>`;
+    for (const t of liste) {
+      const ok = !!p.erledigt[t.id];
+      html += `<label class="todo${ok ? ' erledigt' : ''}"><input type="checkbox" ${ok ? 'checked' : ''} onchange="austrittAbhaken('${t.id}', this.checked)">
+        <div><div class="todo-text">${esc(t.text)} ${fristHtml(t.frist, ok)}</div>${t.sub ? `<div class="todo-sub">${esc(t.sub)}</div>` : ''}</div></label>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<p class="muted" style="line-height:1.5">Wähle, wie das ${p.art === 'lehrling' ? 'Lehrverhältnis' : 'Dienstverhältnis'} endet. Die App zeigt dann
+      Fristen, Hinweise, alle nötigen Schreiben, das ${p.art === 'lehrling' ? 'Lehrzeugnis' : 'Dienstzeugnis'} und eine Checkliste.</p>`;
+  }
+  document.getElementById('austritt').innerHTML = html;
+}
+
+function zeugnisOptionenHtml(p) {
+  const z = austritt(p).zeugnis || {};
+  const taet = new Set(z.taetigkeiten || []);
+  return `<div class="dok"><div class="dok-name" style="margin-bottom:6px">Zeugnis: Inhalt</div>
+    <div class="f voll"><label>Bewertung (ein Zeugnis darf nichts Nachteiliges enthalten)</label><div class="seg">
+      ${[['', 'ohne Bewertung (einfaches Zeugnis)'], ['gut', 'gut'], ['sehr gut', 'sehr gut']].map(([w, l]) =>
+        `<button type="button" class="${(z.bewertung || '') === w ? 'on' : ''}" onclick="zeugnisSetzen('bewertung','${w}')">${l}</button>`).join('')}
+    </div></div>
+    ${p.art === 'ma' ? `<div class="f voll" style="margin-top:8px"><label for="z-position">Position</label>
+      <input id="z-position" type="text" value="${esc(z.position || p.daten.position || '')}" placeholder="Friseur:in" onchange="zeugnisSetzen('position',this.value)"></div>` : ''}
+    <div class="f voll" style="margin-top:8px"><label>Tätigkeiten / Ausbildungsinhalte</label>
+      ${TAETIGKEITEN.map((t, i) => `<label class="wahl"><input type="checkbox" ${taet.has(t) ? 'checked' : ''} onchange="zeugnisTaetigkeit(${i}, this.checked)">${esc(t)}</label>`).join('')}
+    </div></div>`;
+}
+
+function austrittArtWaehlen(art) {
+  const p = aktuell(); if (!p) return;
+  const a = austritt(p);
+  a.art = art;
+  if (art && !a.erklaerung) a.erklaerung = heuteIso();
+  if (art === 'ma_kuendigung_ag' && !a.termin) a.termin = 'Quartalsende';
+  const fr = art ? austrittFrist(p) : null;
+  if (fr && fr.ende) a.ende = fr.ende;
+  speichern();
+  renderAustritt();
+}
+function austrittSetzen(k, wert) {
+  const p = aktuell(); if (!p) return;
+  if (['erklaerung', 'ende', 'letzter_tag'].includes(k) && wert && !datumPlausibel(wert)) return;
+  austritt(p)[k] = wert;
+  speichern();
+  const y = window.scrollY;
+  renderAustritt();
+  window.scrollTo(0, y);
+}
+function zeugnisSetzen(k, wert) {
+  const p = aktuell(); if (!p) return;
+  const a = austritt(p); a.zeugnis = { ...(a.zeugnis || {}), [k]: wert };
+  if (a.texte) delete a.texte.zeugnis;   // Text neu erzeugen
+  speichern();
+  const y = window.scrollY; renderAustritt(); window.scrollTo(0, y);
+}
+function zeugnisTaetigkeit(i, an) {
+  const p = aktuell(); if (!p) return;
+  const set = new Set((austritt(p).zeugnis || {}).taetigkeiten || []);
+  if (an) set.add(TAETIGKEITEN[i]); else set.delete(TAETIGKEITEN[i]);
+  zeugnisSetzen('taetigkeiten', TAETIGKEITEN.filter(t => set.has(t)));
+}
+function austrittAbhaken(id, an) {
+  const p = aktuell(); if (!p) return;
+  if (an) p.erledigt[id] = heuteIso(); else delete p.erledigt[id];
+  speichern();
+  const y = window.scrollY; renderAustritt(); window.scrollTo(0, y);
+}
+
+// Vorlage mit eventuell bearbeitetem Text
+function vorlageMitText(p, id) {
+  const v = vorlageText(p, id);
+  const eigen = (austritt(p).texte || {})[id];
+  return eigen ? { ...v, ...eigen } : v;
+}
+function vorlageBearbeiten(id) {
+  const p = aktuell(); if (!p) return;
+  const v = vorlageMitText(p, id);
+  const el = document.getElementById('dok-ansicht');
+  el.innerHTML = `<div style="flex:1;min-height:0;overflow:auto;background:var(--surface);border-radius:12px;padding:14px">
+      <div class="f voll"><label for="v-betreff">Überschrift</label><input id="v-betreff" type="text" value="${esc(v.betreff)}"></div>
+      <div class="f voll" style="margin-top:10px"><label for="v-text">Text</label><textarea id="v-text" style="min-height:50vh">${esc(v.text)}</textarea></div>
+      <p class="muted" style="margin-top:8px">Absender, Empfänger, Ort/Datum und Unterschriftszeilen setzt die App automatisch.</p>
+    </div>
+    <div class="leiste">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="vorlageZuruecksetzen('${id}')">↺ Ursprungstext</button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="vorlageSpeichern('${id}');vorlagePdf('${id}')">PDF</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="vorlageSpeichern('${id}');dokZu()">Speichern</button>
+    </div>`;
+  el.classList.add('offen');
+}
+function vorlageSpeichern(id) {
+  const p = aktuell(); if (!p) return;
+  const a = austritt(p), orig = vorlageText(p, id);
+  const betreff = document.getElementById('v-betreff').value, text = document.getElementById('v-text').value;
+  a.texte = a.texte || {};
+  if (betreff === orig.betreff && text === orig.text) delete a.texte[id]; else a.texte[id] = { betreff, text };
+  speichern();
+  renderAustritt();
+}
+function vorlageZuruecksetzen(id) {
+  const p = aktuell(); if (!p) return;
+  if (!confirm('Eigene Änderungen verwerfen und den Ursprungstext wieder herstellen?')) return;
+  const a = austritt(p); if (a.texte) delete a.texte[id];
+  speichern(); dokZu(); renderAustritt(); vorlageBearbeiten(id);
+}
+async function vorlagePdf(id) {
+  const p = aktuell(); if (!p) return;
+  const doc = new PdfDoc();
+  const titel = (austrittVorlagen(p).find(v => v.id === id) || {}).titel || 'Austritt';
+  if (id === 'stb') blattInsPdf(doc, austrittBlatt(p), p);
+  else briefInsPdf(doc, p, vorlageMitText(p, id), titel);
+  const datei = new File([doc.bytes()], `${dateiName(titel)}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
+  await teilen(datei, titel + ' – ' + vollerName(p.daten), '');
+}
+async function austrittStb() {
+  const p = aktuell(); if (!p) return;
+  const doc = new PdfDoc();
+  blattInsPdf(doc, austrittBlatt(p), p);
+  if (austrittVorlagen(p).some(v => v.id === 'brief')) briefInsPdf(doc, p, vorlageMitText(p, 'brief'), 'Schreiben');
+  const datei = new File([doc.bytes()], `Austritt-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
+  const a = austritt(p);
+  const text = `Liebe:r ${_betrieb.stb_name || 'Steuerberater:in'},\n\n${vollerName(p.daten)} scheidet mit ${datumDe(a.ende) || '…'} aus (${(AUSTRITT_ARTEN[a.art] || {}).l || ''}). ` +
+    `Bitte um Endabrechnung, ÖGK-Abmeldung und Arbeitsbescheinigung. Unterlagen im Anhang.\n\nLiebe Grüße\n${_betrieb.ausbildungsleiter || ''}\n${_betrieb.name}`;
+  const ergebnis = await teilen(datei, 'Austritt ' + vollerName(p.daten), text);
+  if (ergebnis === 'abgebrochen') return;
+  if (ergebnis === 'heruntergeladen') {
+    location.href = `mailto:${encodeURIComponent(_betrieb.stb_email || '')}?subject=${encodeURIComponent('Austritt ' + vollerName(p.daten))}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
+    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte das PDF noch als Anhang hinzufügen.`);
+  }
+  if (!p.erledigt.a_stb) { p.erledigt.a_stb = heuteIso(); speichern(); renderAustritt(); }
 }
 
 let _toastTimer;
