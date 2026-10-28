@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://mirjamwalenta-a11y.github.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://mirjamwalenta-a11y.github.io https://cdnjs.cloudflare.com; worker-src blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://wrxlaltgtgkdomklgrlj.supabase.co; font-src 'self' data:; base-uri 'self'; form-action 'self'">
 <script src="https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/ghd-sitzung.js"></script>  <!-- automatisch abmelden nach 15 min ohne Bedienung -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -864,7 +864,7 @@ function dokHtml(art, anh, ziel) {
       <div class="dok-kopf">
         <div class="dok-name">${bilder.length ? '✓ ' : ''}${esc(t.l)}</div>
         <label class="btn btn-secondary btn-sm" style="cursor:pointer;flex-shrink:0">📷 ${bilder.length ? 'Seite dazu' : 'Foto'}
-          <input type="file" accept="image/*" multiple style="display:none" onchange="dokHinzu('${ziel}','${t.typ}',this)"></label>
+          <input type="file" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="dokHinzu('${ziel}','${t.typ}',this)"></label>
       </div>
       <div class="dok-bilder">${bilder.map(({ a, i }) => `<div class="dok-bild"><img src="${esc(a.dataUrl)}" alt="${esc(t.l)}"
           onclick="dokZeigen('${ziel}',${i})" title="Antippen zum Ansehen und Bearbeiten">
@@ -874,6 +874,50 @@ function dokHtml(art, anh, ziel) {
 }
 
 // Foto verkleinern (max. 1600 px, JPEG), damit Datei und PDF klein bleiben.
+// PDFs (z. B. per WhatsApp geschickte Scans) werden Seite für Seite in Fotos umgewandelt –
+// so laufen sie durch dieselbe Speicherung, Anzeige und das Steuerberater-PDF wie Fotos.
+// pdf.js wird erst geladen, wenn wirklich ein PDF gewählt wird.
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PDF_MAX_SEITEN = 15;
+let _pdfjs;
+function pdfjsLaden() {
+  if (!_pdfjs) _pdfjs = new Promise((res, rej) => {
+    const sk = document.createElement('script');
+    sk.src = PDFJS + 'pdf.min.js';
+    sk.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; res(window.pdfjsLib); };
+    sk.onerror = () => { _pdfjs = null; rej(new Error('pdf.js nicht ladbar')); };
+    document.head.appendChild(sk);
+  });
+  return _pdfjs;
+}
+function istPdf(datei) { return datei.type === 'application/pdf' || /\.pdf$/i.test(datei.name || ''); }
+async function pdfZuBildern(datei) {
+  const lib = await pdfjsLaden();
+  const doc = await lib.getDocument({ data: new Uint8Array(await datei.arrayBuffer()), isEvalSupported: false }).promise;
+  const seiten = [];
+  try {
+    const anzahl = Math.min(doc.numPages, PDF_MAX_SEITEN);
+    for (let n = 1; n <= anzahl; n++) {
+      const seite = await doc.getPage(n);
+      const v1 = seite.getViewport({ scale: 1 });
+      const vp = seite.getViewport({ scale: 1600 / Math.max(v1.width, v1.height) });
+      const c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      await seite.render({ canvasContext: ctx, viewport: vp }).promise;
+      seiten.push({ dataUrl: c.toDataURL('image/jpeg', 0.8), w: c.width, h: c.height });
+    }
+    if (doc.numPages > anzahl) alert(`Das PDF hat ${doc.numPages} Seiten – übernommen wurden die ersten ${anzahl}.`);
+  } finally { doc.destroy(); }
+  return seiten;
+}
+// Datei → Liste von Fotos (Bild: 1, PDF: eine pro Seite)
+async function dateiZuBildern(datei) {
+  return istPdf(datei) ? pdfZuBildern(datei) : [await bildVerkleinern(datei)];
+}
+const DATEI_FEHLER = 'Diese Datei konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) oder ein PDF wählen.';
+
 async function bildVerkleinern(datei) {
   const url = URL.createObjectURL(datei);
   try {
@@ -893,16 +937,16 @@ async function dokHinzu(ziel, typ, input) {
   const dateien = [...(input.files || [])];
   input.value = '';
   if (!dateien.length) return;
-  showToast('Foto wird verarbeitet …');
+  showToast(dateien.some(istPdf) ? 'PDF wird umgewandelt …' : 'Foto wird verarbeitet …');
   const neu = [];
   for (const datei of dateien) {
-    try { neu.push({ typ, ...(await bildVerkleinern(datei)), datum: heuteIso() }); }
-    catch (e) { console.error(e); alert('Dieses Bild konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) wählen.'); }
+    try { for (const b of await dateiZuBildern(datei)) neu.push({ typ, ...b, datum: heuteIso() }); }
+    catch (e) { console.error(e); alert(DATEI_FEHLER); }
   }
   if (!neu.length) return;
   _anh.push(...neu);
   await dokSichern(ziel);
-  showToast('Foto gespeichert');
+  showToast(neu.length > 1 ? `${neu.length} Seiten gespeichert` : 'Foto gespeichert');
 }
 
 async function dokWeg(ziel, i) {
@@ -944,7 +988,7 @@ function dokZeigen(ziel, i) {
     <div class="leiste">
       <button type="button" class="btn btn-secondary btn-sm" onclick="dokDrehen('${ziel}',${i})">↻ Drehen</button>
       <label class="btn btn-secondary btn-sm" style="cursor:pointer">📷 Ersetzen
-        <input type="file" accept="image/*" style="display:none" onchange="dokErsetzen('${ziel}',${i},this)"></label>
+        <input type="file" accept="image/*,application/pdf,.pdf" style="display:none" onchange="dokErsetzen('${ziel}',${i},this)"></label>
       <button type="button" class="btn btn-secondary btn-sm" style="color:var(--red)" onclick="dokWeg('${ziel}',${i})">🗑 Löschen</button>
       <button type="button" class="btn btn-primary btn-sm" onclick="dokZu()">Fertig</button>
     </div>`;
@@ -975,8 +1019,11 @@ async function dokErsetzen(ziel, i, input) {
   input.value = '';
   if (!datei || !_anh[i]) return;
   try {
-    _anh[i] = { typ: _anh[i].typ, ...(await bildVerkleinern(datei)), datum: heuteIso() };
-  } catch (e) { console.error(e); alert('Dieses Bild konnte nicht gelesen werden. Bitte ein Foto (JPG/PNG) wählen.'); return; }
+    const bilder = await dateiZuBildern(datei);
+    if (!bilder.length) throw new Error('leeres PDF');
+    const typ = _anh[i].typ;
+    _anh.splice(i, 1, ...bilder.map(b => ({ typ, ...b, datum: heuteIso() })));   // weitere PDF-Seiten direkt dahinter
+  } catch (e) { console.error(e); alert(DATEI_FEHLER); return; }
   await dokSichern(ziel);
   dokZeigen(ziel, i);
   showToast('Foto ersetzt');
