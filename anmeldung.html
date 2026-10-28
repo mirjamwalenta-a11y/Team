@@ -2233,9 +2233,9 @@ function anrede(d) {
   const n = [d.vorname, d.nachname].filter(Boolean).join(' ') || '…';
   // wer = Nominativ, wen = Akkusativ, Sie = Subjekt am Satzanfang, sie = Subjekt im Satz, ihr = Dativ,
   // ihren/ihrer = Possessiv (Dativ Plural / Genitiv fem.)
-  if (d.geschlecht === 'w') return { gruss: `Sehr geehrte Frau ${d.nachname || n},`, wer: `Frau ${n}`, wen: `Frau ${n}`, Sie: 'Sie', sie: 'sie', ihr: 'ihr', ihren: 'ihren', ihrer: 'ihrer' };
-  if (d.geschlecht === 'm') return { gruss: `Sehr geehrter Herr ${d.nachname || n},`, wer: `Herr ${n}`, wen: `Herrn ${n}`, Sie: 'Er', sie: 'er', ihr: 'ihm', ihren: 'seinen', ihrer: 'seiner' };
-  return { gruss: `Guten Tag ${n},`, wer: n, wen: n, Sie: n, sie: n, ihr: n, ihren: 'den', ihrer: 'der' };
+  if (d.geschlecht === 'w') return { gruss: `Sehr geehrte Frau ${d.nachname || n},`, wer: `Frau ${n}`, wen: `Frau ${n}`, Sie: 'Sie', sie: 'sie', ihr: 'ihr', ihren: 'ihren', ihrer: 'ihrer', ihre_t: 'ihre' };
+  if (d.geschlecht === 'm') return { gruss: `Sehr geehrter Herr ${d.nachname || n},`, wer: `Herr ${n}`, wen: `Herrn ${n}`, Sie: 'Er', sie: 'er', ihr: 'ihm', ihren: 'seinen', ihrer: 'seiner', ihre_t: 'seine' };
+  return { gruss: `Guten Tag ${n},`, wer: n, wen: n, Sie: n, sie: n, ihr: n, ihren: 'den', ihrer: 'der', ihre_t: 'die' };
 }
 function ortDatum(iso) {
   const ort = (_betrieb.adresse || '').split(',').pop().replace(/\d+/g, '').trim() || 'Wien';
@@ -2301,6 +2301,53 @@ function vorlageText(p, id) {
   return { betreff: '', text: 'Für diese Art gibt es kein Schreiben.', unterschriften: [] };
 }
 
+// Zeugnis nach Noten 1–4 – alle Formulierungen wohlwollend (Erschwerungsverbot, § 1163 ABGB / § 39 AngG).
+// Note 5 gibt es bewusst nicht: bei schwacher Leistung besser ein einfaches Zeugnis ohne Bewertung.
+const NOTEN = [[1, 'sehr gut'], [2, 'gut'], [3, 'befriedigend'], [4, 'genügend']];
+const ZEUGNIS_BEREICHE = [
+  { k: 'gesamt', l: 'Gesamteindruck', s: [
+    A => `${A.Sie} erledigte alle übertragenen Aufgaben stets zu unserer vollsten Zufriedenheit.`,
+    A => `${A.Sie} erledigte alle übertragenen Aufgaben stets zu unserer vollen Zufriedenheit.`,
+    A => `${A.Sie} erledigte die übertragenen Aufgaben zu unserer vollen Zufriedenheit.`,
+    A => `${A.Sie} erledigte die übertragenen Aufgaben zu unserer Zufriedenheit.`] },
+  { k: 'fach', l: 'Fachwissen & Können', s: [
+    A => `${A.Sie} verfügt über ein umfassendes, sehr fundiertes Fachwissen, das ${A.sie} stets sicher und kreativ in der Praxis umsetzte.`,
+    A => `${A.Sie} verfügt über ein fundiertes Fachwissen, das ${A.sie} sicher in der Praxis umsetzte.`,
+    A => `${A.Sie} verfügt über ein solides Fachwissen, das ${A.sie} in der Praxis gut umsetzte.`,
+    A => `${A.Sie} verfügt über die für ${A.ihre_t} Aufgaben erforderlichen Fachkenntnisse.`] },
+  { k: 'arbeit', l: 'Arbeitsweise', s: [
+    A => `${A.Sie} arbeitete stets äußerst sorgfältig, selbstständig und effizient.`,
+    A => `${A.Sie} arbeitete stets sorgfältig und selbstständig.`,
+    A => `${A.Sie} arbeitete sorgfältig und selbstständig.`,
+    A => `${A.Sie} führte die übertragenen Arbeiten ordnungsgemäß aus.`] },
+  { k: 'kunden', l: 'Umgang mit Kund:innen', s: [
+    A => `Bei unseren Kundinnen und Kunden war ${A.sie} wegen ${A.ihrer} herzlichen Art und ${A.ihrer} kompetenten Beratung sehr geschätzt.`,
+    A => `Bei unseren Kundinnen und Kunden war ${A.sie} wegen ${A.ihrer} freundlichen und kompetenten Art geschätzt.`,
+    A => `Im Umgang mit unseren Kundinnen und Kunden war ${A.sie} freundlich und hilfsbereit.`,
+    A => `${A.Sie} begegnete unseren Kundinnen und Kunden freundlich.`] },
+  { k: 'team', l: 'Verhalten im Team', s: [
+    () => 'Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets vorbildlich.',
+    () => 'Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets einwandfrei.',
+    () => 'Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war einwandfrei.',
+    () => 'Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war freundlich und korrekt.'] },
+  { k: 'zuverl', l: 'Zuverlässigkeit', s: [
+    A => `${A.Sie} war stets in höchstem Maße zuverlässig und pünktlich.`,
+    A => `${A.Sie} war stets zuverlässig und pünktlich.`,
+    A => `${A.Sie} war zuverlässig und pünktlich.`,
+    A => `${A.Sie} war zuverlässig.`] },
+  { k: 'lernen', l: 'Lernbereitschaft', nur: 'lehrling', s: [
+    A => `In der Ausbildung zeigte ${A.sie} großes Interesse, eine sehr rasche Auffassungsgabe und eine hohe Lernbereitschaft.`,
+    A => `In der Ausbildung zeigte ${A.sie} Interesse, eine rasche Auffassungsgabe und gute Lernbereitschaft.`,
+    A => `In der Ausbildung zeigte ${A.sie} Interesse und Lernbereitschaft.`,
+    A => `${A.Sie} setzte sich mit den Ausbildungsinhalten auseinander.`] }
+];
+// Gesamtnote (0 = einfaches Zeugnis ohne Bewertung) und Note je Bereich (Standard = Gesamtnote)
+function zeugnisNote(z) {
+  if (z.note !== undefined) return Number(z.note) || 0;
+  return z.bewertung === 'sehr gut' ? 1 : z.bewertung === 'gut' ? 2 : 0;   // ältere Einträge
+}
+function bereichNote(z, k) { return Number((z.bereiche || {})[k]) || zeugnisNote(z); }
+
 function zeugnisText(p) {
   const a = austritt(p), z = a.zeugnis || {}, d = p.daten, A = anrede(d), B = _betrieb;
   const lehrzeugnis = p.art === 'lehrling' && a.art !== 'l_behaltezeit_kuendigung';
@@ -2316,13 +2363,18 @@ function zeugnisText(p) {
     text = `${A.wer}${geb} war vom ${von} bis ${bis} in unserem Friseursalon als ${z.position || d.position || 'Friseur:in'} beschäftigt.` +
       (taet.length ? `\n\nZu ${A.ihren} Aufgaben gehörten insbesondere:${liste}` : '');
   }
-  if (z.bewertung === 'sehr gut') {
-    text += `\n\n${A.Sie} erledigte die übertragenen Aufgaben stets zu unserer vollsten Zufriedenheit. ${A.Sie} verfügt über ein sehr gutes Fachwissen und arbeitet äußerst sorgfältig, selbstständig und kreativ. Bei unseren Kundinnen und Kunden war ${A.sie} wegen ${A.ihrer} freundlichen und kompetenten Art sehr geschätzt. Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets vorbildlich.`;
-  } else if (z.bewertung === 'gut') {
-    text += `\n\n${A.Sie} erledigte die übertragenen Aufgaben stets zu unserer vollen Zufriedenheit. ${A.Sie} verfügt über ein gutes Fachwissen und arbeitet sorgfältig und zuverlässig. Bei unseren Kundinnen und Kunden war ${A.sie} beliebt. Das Verhalten gegenüber Vorgesetzten, Kolleginnen und Kollegen war stets einwandfrei.`;
+  const note = zeugnisNote(z);
+  if (note) {
+    const bereiche = ZEUGNIS_BEREICHE.filter(b => !b.nur || b.nur === p.art);
+    const ohneTeam = bereiche.filter(b => b.k !== 'team' && b.k !== 'zuverl').map(b => b.s[bereichNote(z, b.k) - 1](A));
+    const team = bereiche.filter(b => b.k === 'team' || b.k === 'zuverl').map(b => b.s[bereichNote(z, b.k) - 1](A));
+    text += `\n\n${ohneTeam.join(' ')}\n\n${team.join(' ')}`;
   }
   const eigenerWunsch = ['ma_kuendigung_an', 'l_probezeit_l'].includes(a.art);
-  text += `\n\nDas ${lehrzeugnis ? 'Lehrverhältnis' : 'Dienstverhältnis'} endet am ${bis}${eigenerWunsch ? ' auf eigenen Wunsch' : ''}. Wir danken ${A.wen} für die Zusammenarbeit und wünschen ${A.ihr} für die Zukunft alles Gute${z.bewertung ? ' und weiterhin viel Erfolg' : ''}.`;
+  const zusammenarbeit = note === 1 ? 'die stets sehr gute Zusammenarbeit' : note === 2 ? 'die gute Zusammenarbeit' : 'die Zusammenarbeit';
+  text += `\n\nDas ${lehrzeugnis ? 'Lehrverhältnis' : 'Dienstverhältnis'} endet am ${bis}${eigenerWunsch ? ' auf eigenen Wunsch' : ''}.` +
+    (eigenerWunsch && note && note <= 2 ? ' Wir bedauern dieses Ausscheiden sehr.' : '') +
+    ` Wir danken ${A.wen} für ${zusammenarbeit} und wünschen ${A.ihr} für die Zukunft alles Gute${note && note <= 2 ? ' und weiterhin viel Erfolg' : ''}.`;
   return { betreff: lehrzeugnis ? 'LEHRZEUGNIS' : 'DIENSTZEUGNIS', zeugnis: true, ohneEmpfaenger: true, text, unterschriften: [B.name] };
 }
 
@@ -2422,10 +2474,17 @@ function zeugnisOptionenHtml(p) {
   const z = austritt(p).zeugnis || {};
   const taet = new Set(z.taetigkeiten || []);
   return `<div class="dok"><div class="dok-name" style="margin-bottom:6px">Zeugnis: Inhalt</div>
-    <div class="f voll"><label>Bewertung (ein Zeugnis darf nichts Nachteiliges enthalten)</label><div class="seg">
-      ${[['', 'ohne Bewertung (einfaches Zeugnis)'], ['gut', 'gut'], ['sehr gut', 'sehr gut']].map(([w, l]) =>
-        `<button type="button" class="${(z.bewertung || '') === w ? 'on' : ''}" onclick="zeugnisSetzen('bewertung','${w}')">${l}</button>`).join('')}
-    </div></div>
+    <div class="f voll"><label>Gesamtnote</label><div class="seg">
+      ${[[0, 'ohne Bewertung (einfaches Zeugnis)'], ...NOTEN.map(([n, l]) => [n, n + ' – ' + l])].map(([n, l]) =>
+        `<button type="button" class="${zeugnisNote(z) === n ? 'on' : ''}" onclick="zeugnisNoteSetzen(${n})">${esc(l)}</button>`).join('')}
+    </div>
+    <div class="muted" style="margin-top:6px;line-height:1.45">Alle Formulierungen sind wohlwollend – ein Zeugnis darf nichts enthalten, was die Jobsuche erschwert.
+      Eine Note 5 gibt es deshalb nicht: bei schwacher Leistung lieber das einfache Zeugnis (nur Dauer und Tätigkeit).</div></div>
+    ${zeugnisNote(z) ? `<div class="f voll" style="margin-top:8px"><label>Einzelne Bereiche anpassen (sonst gilt die Gesamtnote)</label>
+      ${ZEUGNIS_BEREICHE.filter(b => b.k !== 'gesamt' && (!b.nur || b.nur === p.art)).map(b => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap">
+        <span style="font-size:14px">${esc(b.l)}</span><div class="seg">${NOTEN.map(([n]) =>
+          `<button type="button" class="${bereichNote(z, b.k) === n ? 'on' : ''}" onclick="zeugnisBereichSetzen('${b.k}',${n})">${n}</button>`).join('')}</div></div>`).join('')}
+    </div>` : ''}
     ${p.art === 'ma' ? `<div class="f voll" style="margin-top:8px"><label for="z-position">Position</label>
       <input id="z-position" type="text" value="${esc(z.position || p.daten.position || '')}" placeholder="Friseur:in" onchange="zeugnisSetzen('position',this.value)"></div>` : ''}
     <div class="f voll" style="margin-top:8px"><label>Tätigkeiten / Ausbildungsinhalte</label>
@@ -2452,6 +2511,17 @@ function austrittSetzen(k, wert) {
   const y = window.scrollY;
   renderAustritt();
   window.scrollTo(0, y);
+}
+function zeugnisNoteSetzen(n) {
+  const p = aktuell(); if (!p) return;
+  const a = austritt(p); a.zeugnis = { ...(a.zeugnis || {}), note: n, bereiche: {} };
+  delete a.zeugnis.bewertung;
+  zeugnisSetzen('note', n);
+}
+function zeugnisBereichSetzen(k, n) {
+  const p = aktuell(); if (!p) return;
+  const z = austritt(p).zeugnis || {};
+  zeugnisSetzen('bereiche', { ...(z.bereiche || {}), [k]: n });
 }
 function zeugnisSetzen(k, wert) {
   const p = aktuell(); if (!p) return;
