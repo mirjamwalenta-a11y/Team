@@ -954,12 +954,19 @@ async function supa(table, method = 'GET', body = null, filter = '') {
 async function teamAdminCall(action, email, password) {
   const { data: { session } } = await sbAuth.auth.getSession();
   const token = session?.access_token;
-  const r = await fetch(TEAM_ADMIN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ action, email, password })
-  });
-  const data = await r.json();
+  let r;
+  try {
+    r = await fetch(TEAM_ADMIN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action, email, password })
+    });
+  } catch (e) {
+    // Netzwerkfehler oder Funktion nicht deployed (404 → CORS-Preflight schlägt fehl)
+    throw new Error('Server-Funktion team-admin nicht erreichbar (nicht deployed?)');
+  }
+  if (r.status === 404) throw new Error('Server-Funktion team-admin ist nicht deployed');
+  const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || 'Unbekannter Fehler bei ' + action);
   return data;
 }
@@ -1837,7 +1844,7 @@ async function doAddPerson() {
     await renderTeam();
   } catch(e) {
     console.error('Person konnte nicht angelegt werden:', e.message);
-    alert('Person konnte nicht angelegt werden. Bitte nochmal versuchen.');
+    alert('Person konnte nicht angelegt werden:\n' + e.message);
   }
 }
 
