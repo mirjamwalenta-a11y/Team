@@ -693,7 +693,12 @@ function volljaehrig(d) {
 const ELTERN_FELDER = ['vertreter_name', 'vertreter_gleiche_adresse', 'vertreter_strasse', 'vertreter_plz', 'vertreter_ort',
   'tel_mutter', 'tel_vater', 'beruf_mutter', 'beruf_vater'];
 function vollerName(p) { return [p.vorname, p.nachname].filter(Boolean).join(' ') || 'Ohne Namen'; }
-function dateiName(s) { return String(s).replace(/[^\p{L}\p{N} _-]+/gu, '').trim().replace(/\s+/g, '-') || 'Anmeldung'; }
+// Umlaute ausschreiben – mit ä/ö/ü/ß im Namen speichert Chrome die Datei teils nur als „download“.
+const UMLAUTE = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss' };
+function dateiName(s) {
+  return String(s).replace(/[äöüÄÖÜß]/g, c => UMLAUTE[c]).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '-') || 'Anmeldung';
+}
 
 // Österreichische SV-Nr.: 10 Ziffern, 4. Ziffer ist Prüfziffer,
 // die letzten 6 meist das Geburtsdatum TTMMJJ.
@@ -1525,12 +1530,15 @@ function renderFormulare() {
   </div>`;
 
   html += `<div class="sec-title" style="margin-top:20px">Einzelne Blätter</div>`;
+  // Teilen nur am Handy anbieten – am Computer öffnet es sonst das Windows-Teilen-Fenster statt zu speichern.
+  const kannTeilen = !!navigator.canShare && matchMedia('(pointer: coarse)').matches;
   for (const f of FORMULARE[p.art]) {
     html += `<div class="card">
       <div class="card-title">${esc(f.titel)}</div>
       <div class="muted" style="margin:2px 0 10px">${esc(f.sub)}</div>
       <div class="btn-row">
-        <button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}')">PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}')">PDF speichern</button>
+        ${kannTeilen ? `<button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}', true)">Teilen</button>` : ''}
         <button class="btn btn-secondary btn-sm" onclick="drucken(['${f.id}'])">Drucken</button>
         <button class="btn btn-secondary btn-sm" onclick="kopieren('${f.id}')">Als Text kopieren</button>
       </div>
@@ -1816,11 +1824,12 @@ async function anSteuerberater() {
 }
 function stbPdfSpeichern() { const datei = stbPdf(); if (datei) herunterladen(datei); }
 
-async function einzelPdf(id) {
+async function einzelPdf(id, alsTeilen) {
   const p = aktuell(); if (!p) return;
   const f = FORMULARE[p.art].find(x => x.id === id);
   const datei = new File([pdfErstellen(p, [id], [])], `${dateiName(f.titel.split('(')[0])}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
-  await teilen(datei, f.titel, '');
+  if (alsTeilen) await teilen(datei, f.titel, '');
+  else herunterladen(datei);
 }
 
 function kopieren(id) {
