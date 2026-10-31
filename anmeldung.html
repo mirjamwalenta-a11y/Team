@@ -1396,12 +1396,23 @@ function pflichtFehlt(p) {
     ['strasse', 'Adresse'], ['beginn', 'Beginn'], ['iban', 'IBAN']];
   if (p.art === 'lehrling') pflicht.push(['letzte_schule', 'letzte Schule']);
   if (p.art === 'lehrling' && !volljaehrig(d)) pflicht.push(['vertreter_name', 'gesetzl. Vertreter']);
-  return pflicht.filter(([k]) => !d[k]).map(([, l]) => l);
+  const fehlt = pflicht.filter(([k]) => !d[k]).map(([, l]) => l);
+  if (p.art === 'lehrling' && !volljaehrig(d) && !telVertreter(d).some(([, v]) => v)) fehlt.push('Tel. Erziehungsberechtigte');
+  return fehlt;
 }
 
 function adresseVertreter(d) {
   if (d.vertreter_gleiche_adresse === 'andere') return [d.vertreter_strasse, [d.vertreter_plz, d.vertreter_ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+// Telefon der Erziehungsberechtigten (Pflichtangabe bei Minderjährigen für die Lehrlingsstelle)
+function telVertreter(d) {
+  if (d.erziehung === 'nur Mutter') return [['Tel. Mutter', d.tel_mutter]];
+  if (d.erziehung === 'nur Vater') return [['Tel. Vater', d.tel_vater]];
+  if (d.erziehung === 'Eltern') return [['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater]];
+  // Heim / Andere: was eingetragen ist, sonst eine leere Zeile zum Ausfüllen
+  const z = [['Tel. Mutter', d.tel_mutter], ['Tel. Vater', d.tel_vater], ['Notfallnummer', d.notfall]].filter(([, v]) => v);
+  return z.length ? z : [['Telefon', '']];
 }
 function adresse(d) { return [d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', '); }
 
@@ -1452,7 +1463,8 @@ function blattInhalt(id, p) {
         ['Geburtsdatum', datumDe(d.geburtsdatum)], ['Geburtsort', [d.geburtsort, d.geburtsstaat].filter(Boolean).join(', ')],
         ['Adresse', adresse(d)], ['E-Mail', d.email], ['Tel.-Nr.', d.tel], ['Staatsbürgerschaft', d.staatsbuergerschaft],
         ['Letzte Schule', d.letzte_schule], ['Letztbesuchte Klasse', d.letzte_klasse], ['Abgeschlossen', d.neunte_stufe]]],
-      ...(volljaehrig(d) ? [] : [['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)]]]]),
+      ...(volljaehrig(d) ? [] : [['Gesetzliche Vertreter', [['Name', d.vertreter_name], ['Adresse', adresseVertreter(d)],
+        ...telVertreter(d)]]]),
       ['Lehrverhältnis', [
         ['Lehrberuf', d.lehrberuf], ['Lehrzeit', [datumDe(d.beginn), datumDe(d.ende)].filter(Boolean).join(' – ')],
         ['Anrechnungen Schul-/Vorlehrzeiten', d.anrechnungen], ['Besondere Vereinbarungen', d.vereinbarungen]]]
