@@ -1530,15 +1530,13 @@ function renderFormulare() {
   </div>`;
 
   html += `<div class="sec-title" style="margin-top:20px">Einzelne Blätter</div>`;
-  // Teilen nur am Handy anbieten – am Computer öffnet es sonst das Windows-Teilen-Fenster statt zu speichern.
-  const kannTeilen = !!navigator.canShare && matchMedia('(pointer: coarse)').matches;
   for (const f of FORMULARE[p.art]) {
     html += `<div class="card">
       <div class="card-title">${esc(f.titel)}</div>
       <div class="muted" style="margin:2px 0 10px">${esc(f.sub)}</div>
       <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="einzelSenden('${f.id}')">Senden</button>
         <button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}')">PDF speichern</button>
-        ${kannTeilen ? `<button class="btn btn-secondary btn-sm" onclick="einzelPdf('${f.id}', true)">Teilen</button>` : ''}
         <button class="btn btn-secondary btn-sm" onclick="drucken(['${f.id}'])">Drucken</button>
         <button class="btn btn-secondary btn-sm" onclick="kopieren('${f.id}')">Als Text kopieren</button>
       </div>
@@ -1824,12 +1822,27 @@ async function anSteuerberater() {
 }
 function stbPdfSpeichern() { const datei = stbPdf(); if (datei) herunterladen(datei); }
 
-async function einzelPdf(id, alsTeilen) {
+function einzelDatei(p, id) {
+  const f = FORMULARE[p.art].find(x => x.id === id);
+  return new File([pdfErstellen(p, [id], [])], `${dateiName(f.titel.split('(')[0])}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
+}
+function einzelPdf(id) {
+  const p = aktuell(); if (!p) return;
+  herunterladen(einzelDatei(p, id));
+}
+// Wie „An Steuerberater:in senden“: Handy-Menü bzw. am Computer PDF speichern + E-Mail vorbereiten.
+async function einzelSenden(id) {
   const p = aktuell(); if (!p) return;
   const f = FORMULARE[p.art].find(x => x.id === id);
-  const datei = new File([pdfErstellen(p, [id], [])], `${dateiName(f.titel.split('(')[0])}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
-  if (alsTeilen) await teilen(datei, f.titel, '');
-  else herunterladen(datei);
+  const datei = einzelDatei(p, id);
+  const titel = f.titel.split('(')[0].trim();
+  const betreff = `${titel} – ${vollerName(p.daten)}`;
+  const text = `Hallo,\n\nanbei ${titel} für ${vollerName(p.daten)}.\n\nLiebe Grüße\n${_betrieb.ausbildungsleiter || ''}\n${_betrieb.name}`;
+  const ergebnis = await teilen(datei, betreff, text);
+  if (ergebnis === 'heruntergeladen') {
+    location.href = `mailto:?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
+    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte Empfänger:in eintragen und das PDF als Anhang hinzufügen.`);
+  }
 }
 
 function kopieren(id) {
