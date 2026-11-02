@@ -4,7 +4,7 @@
 # beiden Branches in den Pages-Einstellungen gerade eingestellt ist.
 #
 # Übernommen werden alle Dateien im Hauptordner mit .html/.js/.json/.png/.svg/.ico/
-# .webmanifest; index.html ist immer eine Kopie von team.html (Startseite /Team/).
+# .webmanifest sowie der Ordner fonts/; index.html ist immer eine Kopie von team.html (Startseite /Team/).
 # Doku (.md) und supabase/ bleiben nur auf „mai“.
 
 name: Live-Abgleich
@@ -52,6 +52,8 @@ jobs:
             cp "$f" live/
           done
           cp quelle/team.html live/index.html
+          # Schriften (fonts/) mitveröffentlichen – sonst fehlt z. B. die Überschrift-Schrift der Übersicht
+          if [ -d quelle/fonts ]; then rm -rf live/fonts; mkdir -p live/fonts; cp -R quelle/fonts/. live/fonts/; fi
 
       - name: Committen und veröffentlichen
         env:
