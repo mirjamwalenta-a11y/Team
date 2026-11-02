@@ -1,0 +1,8 @@
+Schrift in dieser App
+
+- Playfair Display (Claus Eggers Sørensen) – Überschrift der Übersicht
+
+Steht unter der SIL Open Font License, Version 1.1.
+Darf frei verwendet und mit der App bereitgestellt werden.
+Lizenztext: https://openfontlicense.org
+Quelle: Google Fonts (https://fonts.google.com), Datei übernommen aus website.greathairday/fonts
