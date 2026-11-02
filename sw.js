@@ -6,13 +6,14 @@
 // Neue Seiten/Dateien dieser App hier bei `vorab` ergänzen.
 self.GHD_OFFLINE = {
   app: 'team',
-  version: '2026-10-28b',
+  version: '2026-11-02',
   start: './team.html',
   vorab: [
     './',
     './team.html',
     './anmeldung.html',
     './manifest.json',
+    './fonts/playfair.woff2',
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
     'https://mirjamwalenta-a11y.github.io/abwesenheiten-ghd/icon-512.png'
   ]

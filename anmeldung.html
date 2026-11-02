@@ -235,6 +235,7 @@
     </div>
     <label class="btn btn-secondary btn-full" for="antwort-input" style="cursor:pointer;margin-bottom:14px">📥 Ausgefüllte Daten vom Lehrling öffnen</label>
     <input type="file" id="antwort-input" accept="application/json,.json" style="display:none" onchange="importDatei(this)">
+    <div id="austritt-hinweis" class="hinweis" style="display:none"><b>Abmelden:</b> Tippe auf die Person, die austritt – es öffnet sich gleich der Schritt „Austritt“.</div>
     <div id="liste"></div>
     <div class="sec-title" style="margin-top:24px">Einstellungen</div>
     <div class="btn-row">
@@ -691,6 +692,7 @@ function neu(art) {
   speichern();
   oeffnen(p.id);
 }
+let _zielAustritt = false;
 async function oeffnen(id) {
   _aktiv = id;
   _anh = await anhaengeLaden(id);
@@ -699,6 +701,8 @@ async function oeffnen(id) {
   zeigeView('v-detail');
   zeigePane(document.querySelector('.tab[data-pane="p-daten"]'));
   renderDaten();
+  // Direktsprung „Abmelden“ aus der Team-Übersicht: gleich den Schritt „Austritt“ zeigen
+  if (_zielAustritt) { _zielAustritt = false; zeigePane(document.querySelector('.tab[data-pane="p-austritt"]')); }
 }
 function loeschen(id) {
   const p = id ? _alle.find(x => x.id === id) : aktuell(); if (!p) return;
@@ -2669,6 +2673,12 @@ function showToast(msg) {
   renderListe();
   leereAufraeumen();
   wolkeStart().then(leereAufraeumen);
+  // Aus der Team-Übersicht „Abmelden“: Person antippen → direkt zum Austritt
+  if (location.hash === '#austritt') {
+    _zielAustritt = true;
+    history.replaceState(null, '', location.pathname);
+    const h = document.getElementById('austritt-hinweis'); if (h) h.style.display = '';
+  }
 })();
 </script>
 </body>
