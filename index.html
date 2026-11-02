@@ -1268,31 +1268,18 @@ function ueSvg(n) { return `<svg viewBox="0 0 24 24" fill="none" stroke="current
 // Gruppen und Kacheln. ziel: interner Reiter ('tab:feed') oder Adresse (öffnet die App direkt an der Stelle).
 // nur: 'chefin' = nur Inhaberin, 'team' = nur Mitarbeiter:innen, sonst alle.
 function ueGruppen() {
+  // Eine Kachel pro App – was eine App selbst im Menü hat (z. B. Urlaub in der Zeitverwaltung)
+  // und was unten in der Leiste steht (Feed, Team, Protokoll), bekommt keine eigene Kachel.
   return [
-    { titel: 'Zeit & Abwesenheit', kacheln: [
-      { ic:'uhr',       nm:'Stempeluhr',    ds:{ chefin:'Wer ist heute da', team:'Kommen · Pause · Gehen' }, ziel: ZEIT + 'dashboard' },
-      { ic:'liste',     nm:{ chefin:'Zeiterfassung', team:'Meine Zeiten' }, ds:{ chefin:'Zeiten, Korrekturen, Abschluss', team:'Monat ansehen, bestätigen' }, ziel: ZEIT + 'zeit' },
-      { ic:'sonne',     nm:'Urlaub',        ds:{ chefin:'Anträge genehmigen', team:'Beantragen, Resturlaub' }, ziel: ZEIT + 'urlaub' },
-      { ic:'puls',      nm:'Krankenstand',  ds:{ chefin:'Eintragen, Bestätigungen', team:'Krank melden' }, ziel: ZEIT + 'krank' },
-      { ic:'kalender',  nm:'Kalender',      ds:'Wer fehlt wann',                 ziel: ZEIT + 'kalender',    nur:'chefin' },
-      { ic:'diagramm',  nm:'Auswertungen',  ds:'Monats- & Jahresabschluss',      ziel: ZEIT + 'auswertung',  nur:'chefin' },
-      { ic:'sperre',    nm:'Schließtage',   ds:'Salon zu, Urlaubssperre',        ziel: ZEIT + 'einstellung', nur:'chefin' },
+    { titel: 'Im Alltag', kacheln: [
+      { ic:'uhr',        nm:'Zeitverwaltung', ds:{ chefin:'Stempeln, Zeiten, Urlaub, Krankenstand', team:'Stempeln, Zeiten, Urlaub, krank melden' }, ziel: GHD + '/abwesenheiten-ghd/zeitverwaltung.html' },
+      { ic:'checkliste', nm:'Checkliste',     ds:'Heute · Monat · Einkauf', ziel: GHD + '/salon-checklist/salon-checklist.html' },
+      { ic:'buch',       nm:'Handbuch',       ds:'Standards nachschlagen',  ziel: GHD + '/Mitarbeiterhandbuch/Mitarbeiterhandbuch_App.html' },
     ]},
-    { titel: 'Personal', privat: true, nur: 'chefin', kacheln: [
-      { ic:'brief',       nm:'Bewerbungen', ds:'Neu eingegangen & Matcher',    ziel: GHD + '/index.greathairday/bewerbungen.html' },
-      { ic:'personplus',  nm:'Anmelden',    ds:'Neue Mitarbeiterin, Lehrling', ziel: './anmeldung.html', gleichesFenster: true },
-      { ic:'personminus', nm:'Abmelden',    ds:'Austritt eintragen',           ziel: './anmeldung.html#austritt', gleichesFenster: true },
-      { ic:'personen',    nm:'Mitarbeiter', ds:'Profil, Dienstplan, Urlaub',   ziel: ZEIT + 'mitarbeiter' },
-    ]},
-    { titel: 'Team & Kommunikation', kacheln: [
-      { ic:'nachricht',  nm:'Mitteilungen', ds:'Infos & Neuheiten',       ziel: 'tab:feed' },
-      { ic:'mikro',      nm:'Besprechung',  ds:'Protokoll diktieren',     ziel: 'tab:protokoll', nur:'chefin' },
-      { ic:'schluessel', nm:'Team-Zugänge', ds:'Einladen, deaktivieren',  ziel: 'tab:team',      nur:'chefin' },
-      { ic:'haken',      nm:'Aufträge',     ds:'Offene Aufgaben',         ziel: GHD + '/index.greathairday/schaltzentrale.html', nur:'chefin' },
-    ]},
-    { titel: 'Standards', kacheln: [
-      { ic:'checkliste', nm:'Checkliste', ds:'Heute · Monat · Einkauf', ziel: GHD + '/salon-checklist/salon-checklist.html' },
-      { ic:'buch',       nm:'Handbuch',   ds:'Standards nachschlagen',  ziel: GHD + '/Mitarbeiterhandbuch/Mitarbeiterhandbuch_App.html' },
+    { titel: 'Personal & Führung', privat: true, nur: 'chefin', kacheln: [
+      { ic:'brief',      nm:'Bewerbungen', ds:'Neu eingegangen & Matcher',     ziel: GHD + '/index.greathairday/bewerbungen.html' },
+      { ic:'personen',   nm:'Ein- & Austritt', ds:'Mitarbeiter an- und abmelden', ziel: './anmeldung.html', gleichesFenster: true },
+      { ic:'haken',      nm:'Aufträge',    ds:'Offene Aufgaben',               ziel: GHD + '/index.greathairday/schaltzentrale.html' },
     ]},
   ];
 }
@@ -1321,7 +1308,7 @@ function renderUebersicht() {
     <h1>Team &amp; Organisation</h1>
     <div class="ue-unter">Abwesenheiten, Infos und Standards im Alltag</div>
     ${gruppen}
-    <div class="ue-fuss">Zeiten, Urlaub und Krankenstand öffnen die Zeitverwaltung direkt an der richtigen Stelle. Beim ersten Mal kann sie nach deinem Namen und PIN fragen.</div>
+    <div class="ue-fuss">Mitteilungen, Team und Protokoll findest du unten in der Leiste.</div>
   </div>`;
 }
 function ueOeffnen(i) {
