@@ -497,7 +497,10 @@
   .ue-nm { font-size: 13px; font-weight: 600; margin-top: 11px; letter-spacing: -.005em; }
   .ue-ds { font-size: 11px; color: rgba(33,29,23,.55); margin-top: 2px; line-height: 1.4; }
   .ue-fuss { font-size: 11px; color: rgba(33,29,23,.5); line-height: 1.6; border-top: 1px solid rgba(137,108,50,.28); padding-top: 14px; }
-  .nav-icon svg { width: 20px; height: 20px; display: block; }
+  /* Untere Leiste: feine Gold-Symbole, aktiver Punkt kräftiger */
+  .nav-icon { color: #896C32; opacity: .55; transition: opacity .15s; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-icon svg { width: 21px; height: 21px; display: block; }
 </style>
 </head>
 <body>
@@ -759,24 +762,24 @@
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottom-nav">
     <button class="nav-item" id="nav-start" onclick="switchTab('start')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>
       <span>Übersicht</span>
     </button>
     <button class="nav-item active" id="nav-feed" onclick="switchTab('feed')">
-      <span class="nav-icon">📋</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4.5 3.5V16.5H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M7.5 10h9M7.5 13h6"/></svg></span>
       <span>Feed</span>
       <span class="nav-badge" id="badge-feed"></span>
     </button>
     <button class="nav-item" id="nav-team" onclick="switchTab('team')">
-      <span class="nav-icon">👥</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M15.5 4.9a3.2 3.2 0 0 1 0 6.2M17.5 14.8c2 .7 3.5 2.6 3.5 5.2"/></svg></span>
       <span>Team</span>
     </button>
     <button class="nav-item" id="nav-profil" onclick="switchTab('profil')">
-      <span class="nav-icon">👤</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/></svg></span>
       <span>Profil</span>
     </button>
     <button class="nav-item" id="nav-protokoll" onclick="switchTab('protokoll')">
-      <span class="nav-icon">🎤</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/></svg></span>
       <span>Protokoll</span>
     </button>
   </nav>
