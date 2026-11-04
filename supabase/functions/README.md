@@ -97,3 +97,35 @@ supabase functions deploy team-sso
 Danach testen: auf der Startseite als Mitarbeiter:in über „Team-Login“
 anmelden → Kachel „Team“ → die Team-App muss sich ohne E-Mail-Abfrage
 mit dem Namen dieser Person öffnen.
+
+## bewerbung-ki — KI-Gesprächsleitfaden für Bewerbungen
+
+Neu (2026-11-04). Aufgerufen aus `bewerbungen.html` in `index.greathairday`
+(Karte „Gesprächsleitfaden (KI-Vorschlag)“). Der Browser schickt nur die
+Bewerbungs-ID. Die Funktion holt die Daten mit dem Token der angemeldeten
+Person über `bewerbung_ki_eingabe` (prüft selbst `rolle = 'inhaberin'`, gibt
+keinen Namen und keine Kontaktdaten heraus), lässt Claude 5–6 Fragen
+vorschlagen und speichert sie über `bewerbung_ki_leitfaden_speichern`.
+
+Reihenfolge:
+
+1. In `index.greathairday` die Migration
+   `supabase/migrations/20261104120000_ki_gespraechsleitfaden.sql` im
+   SQL-Editor ausführen.
+2. `supabase functions deploy bewerbung-ki` (nutzt dasselbe Secret
+   `ANTHROPIC_API_KEY` wie `rapid-service`).
+3. Die Seiten aus `index.greathairday` live stellen (PR mergen).
+
+Test nach Deploy:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  "https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/bewerbung-ki" \
+  -H "Content-Type: application/json" -H "apikey: <anon-key>" \
+  -d '{"id":"00000000-0000-0000-0000-000000000000"}'
+# Erwartung: 401 (kein gültiges User-Token)
+```
+
+Dann in `bewerbungen.html` als Inhaberin bei einer grünen oder gelben
+Bewerbung „Leitfaden erstellen“ drücken: Nach bis zu einer Minute stehen die
+Fragen in der Karte, im Verlauf steht „KI-Gesprächsleitfaden erstellt“.
