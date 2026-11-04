@@ -1053,6 +1053,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     await handleInvite(token);
     return;
   }
+  // Über den Team-Login der Startseite (Kennung + PIN) angemeldet? Dann direkt hinein,
+  // ohne E-Mail-Login. Hat Vorrang vor einer evtl. noch vorhandenen anderen Sitzung
+  // auf dem Gerät (z. B. der Chefin), damit niemand mit fremden Rechten arbeitet.
+  if (teamLoginAktiv()) {
+    if (await teamLoginEinstieg()) return;
+    sessionStorage.removeItem('teamapp_person');
+    showScreen('screen-login');
+    return;
+  }
   // Auto-Login nur wenn wirklich eine gültige Supabase-Session vorhanden ist
   // (vorher wurde hier nur sessionStorage vertraut, ohne echte Prüfung)
   const { data: { session } } = await sbAuth.auth.getSession();
@@ -1069,6 +1078,56 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ═══════════════════════════════════════════
+// EINSTIEG ÜBER DEN TEAM-LOGIN DER STARTSEITE
+// ═══════════════════════════════════════════
+// Die Startseite (apps.html) legt beim Team-Login einen zufälligen, ablaufenden
+// Sitzungs-Token ab. Die Server-Funktion team-sso prüft ihn, sucht die passende
+// Person (nie die Inhaberin) und liefert einen einmaligen Anmelde-Code für deren
+// Team-App-Konto. Rolle und Rechte kommen danach wie beim E-Mail-Login aus der
+// Datenbank (teamapp_persons + RLS), nicht aus dem Gerät.
+const TEAM_SSO_URL = 'https://wrxlaltgtgkdomklgrlj.supabase.co/functions/v1/team-sso';
+
+function teamLoginAktiv() {
+  try {
+    if (!localStorage.getItem('ghd_session_token')) return false;
+    const s = JSON.parse(localStorage.getItem('ghd_session') || 'null');
+    return !(s && s.rolle === 'chefin');
+  } catch (e) { return false; }
+}
+
+async function teamLoginEinstieg() {
+  const err = document.getElementById('login-general-err');
+  const fehler = (text) => { if (err) { err.textContent = text; showErr('login-general-err'); } };
+  try {
+    const r = await fetch(TEAM_SSO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify({ token: localStorage.getItem('ghd_session_token') })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.token_hash) { fehler(d.error || 'Anmeldung über den Team-Login nicht möglich.'); return false; }
+    // Steht noch eine andere Person im Gerät, gilt ab jetzt die Person vom Team-Login
+    const { data: { session } } = await sbAuth.auth.getSession();
+    if (session && String(session.user?.email || '').toLowerCase() !== String(d.email || '').toLowerCase()) {
+      await sbAuth.auth.signOut({ scope: 'local' });
+    }
+    const { error } = await sbAuth.auth.verifyOtp({ token_hash: d.token_hash, type: 'magiclink' });
+    if (error) { fehler('Anmeldung über den Team-Login nicht möglich.'); return false; }
+    const rows = await supaGet('teamapp_persons', `email=eq.${encodeURIComponent(d.email)}`);
+    const person = rows && rows[0];
+    if (!person) { fehler('Für dich ist in der Team-App noch kein Zugang eingerichtet – bitte Mirjam Bescheid geben.'); return false; }
+    if (!person.aktiv) { showScreen('screen-inaktiv'); return true; }
+    _me = person;
+    sessionStorage.setItem('teamapp_person', JSON.stringify(_me));
+    await startApp();
+    return true;
+  } catch (e) {
+    fehler(navigator.onLine ? 'Anmeldung über den Team-Login nicht möglich.' : 'Keine Internetverbindung.');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
 async function doLogin() {
@@ -1076,6 +1135,7 @@ async function doLogin() {
   const pw = document.getElementById('login-pw').value;
   let ok = true;
   hideErr('login-email-err'); hideErr('login-pw-err'); hideErr('login-general-err');
+  document.getElementById('login-general-err').textContent = 'E-Mail oder Passwort nicht korrekt.';
   if (!email) { showErr('login-email-err'); ok = false; }
   if (!pw) { showErr('login-pw-err'); ok = false; }
   if (!ok) return;

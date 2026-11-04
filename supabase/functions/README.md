@@ -78,3 +78,22 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   -d '{"zweck":"checkliste","text":"test"}'
 # Erwartung: 401 (kein gültiges User-Token)
 ```
+
+## team-sso — Einstieg in die Team-App über den Team-Login (Kennung + PIN)
+
+Neu (2026-11-04). Wer sich auf der Startseite über „Team-Login“ anmeldet,
+kommt damit direkt in die Team-App, ohne E-Mail-Login. Die Funktion prüft
+den Team-Login-Token serverseitig (`session_by_token`), sucht die passende
+aktive Person in `teamapp_persons` (über den Namen, nie `rolle='inhaberin'`)
+und gibt einen einmaligen Anmelde-Code für deren bestehendes Konto zurück
+(es wird keine Mail verschickt). Personen ohne Team-App-Konto bekommen eine
+Meldung „bitte Mirjam Bescheid geben“ – Konten legt weiterhin nur die
+Chefin an (`team-admin`).
+
+```bash
+supabase functions deploy team-sso
+```
+
+Danach testen: auf der Startseite als Mitarbeiter:in über „Team-Login“
+anmelden → Kachel „Team“ → die Team-App muss sich ohne E-Mail-Abfrage
+mit dem Namen dieser Person öffnen.
