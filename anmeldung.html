@@ -602,21 +602,59 @@ function b64urlLesen(s) {
   return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
 }
 
-function herunterladen(datei) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(datei);
-  a.download = datei.name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+// Handy/Tablet: Teilen-Menü (WhatsApp, Gmail …). Am Computer: immer normal herunterladen –
+// sonst öffnet Chrome/Edge am PC das Windows-/Mac-Teilen-Fenster, in dem weder „Speichern“ noch Gmail vorkommt.
+const IST_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IST_HANDY = IST_IOS || /Android|Mobi/i.test(navigator.userAgent);
+function kannTeilen(datei) {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [datei] })); } catch (e) { return false; }
 }
-// Teilen über das Handy-Menü (WhatsApp, Mail …), sonst herunterladen.
+function linkDownload(datei) {
+  const url = URL.createObjectURL(datei);
+  const a = document.createElement('a');
+  a.href = url; a.download = datei.name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);   // nicht zu früh freigeben, sonst bricht der Download ab
+}
+function herunterladen(datei) {
+  // iPhone/iPad: in der installierten App funktioniert der Download-Link nicht → Teilen-Menü („In Dateien sichern“).
+  if (IST_IOS && kannTeilen(datei)) {
+    navigator.share({ files: [datei], title: datei.name })
+      .catch(e => { if (e.name !== 'AbortError') linkDownload(datei); });
+    return;
+  }
+  linkDownload(datei);
+}
+// Teilen über das Handy-Menü (WhatsApp, Gmail …), sonst herunterladen.
 async function teilen(datei, titel, text) {
-  if (navigator.canShare && navigator.canShare({ files: [datei] })) {
+  if (IST_HANDY && kannTeilen(datei)) {
     try { await navigator.share({ files: [datei], title: titel, text }); return 'geteilt'; }
     catch (e) { if (e.name === 'AbortError') return 'abgebrochen'; console.error(e); }
   }
-  herunterladen(datei);
+  linkDownload(datei);
   return 'heruntergeladen';
+}
+// Am Computer nach dem Download: Auswahl Gmail (im Browser) oder Mail-Programm.
+// Ein Anhang lässt sich per Link nicht mitgeben – die Datei liegt in „Downloads“ und wird dazugezogen.
+let _mailDatei = null;
+function mailDialog(datei, an, betreff, text) {
+  _mailDatei = datei;
+  const body = text + '\n\n(PDF im Anhang: ' + datei.name + ')';
+  const gmail = 'https://mail.google.com/mail/?view=cm&fs=1' + (an ? '&to=' + encodeURIComponent(an) : '') +
+    '&su=' + encodeURIComponent(betreff) + '&body=' + encodeURIComponent(body);
+  const mailto = 'mailto:' + encodeURIComponent(an || '') + '?subject=' + encodeURIComponent(betreff) + '&body=' + encodeURIComponent(body);
+  const el = document.getElementById('dok-ansicht');
+  el.innerHTML = `<div class="bild"><div class="card" style="max-width:440px;width:100%;margin:0">
+      <div class="sec-title">E-Mail schreiben</div>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.45">Das PDF <b>${esc(datei.name)}</b> ist gespeichert (Ordner „Downloads“).
+        Im nächsten Schritt öffnet sich die E-Mail – dort bitte das PDF als Anhang dazugeben (Büroklammer bzw. Datei ins Mailfenster ziehen).</p>
+      <div class="btn-row" style="flex-direction:column;gap:8px">
+        <a class="btn btn-primary btn-full" style="text-decoration:none" href="${esc(gmail)}" target="_blank" rel="noopener" onclick="setTimeout(dokZu,300)">✉️ In Gmail öffnen</a>
+        <a class="btn btn-secondary btn-full" style="text-decoration:none" href="${esc(mailto)}" onclick="setTimeout(dokZu,300)">Mail-Programm öffnen (Outlook, Apple Mail …)</a>
+        <button type="button" class="btn btn-secondary btn-full" onclick="linkDownload(_mailDatei)">⬇️ PDF nochmal herunterladen</button>
+        <button type="button" class="btn btn-secondary btn-full" onclick="dokZu()">Schließen</button>
+      </div></div></div>`;
+  el.classList.add('offen');
 }
 
 // ── Navigation ───────────────────────────────────────────────
@@ -1668,9 +1706,7 @@ async function anSteuerberater() {
   const ergebnis = await teilen(datei, betreff, text);
   if (ergebnis === 'abgebrochen') return;
   if (ergebnis === 'heruntergeladen') {
-    // Am Computer: PDF ist gespeichert, Mail wird vorbereitet – Anhang muss man selbst dazugeben.
-    location.href = `mailto:${encodeURIComponent(_betrieb.stb_email || '')}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
-    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte das PDF noch als Anhang hinzufügen.`);
+    mailDialog(datei, _betrieb.stb_email, betreff, text);   // am Computer: Gmail oder Mail-Programm
   }
   if (!p.erledigt.v_lohn) { p.erledigt.v_lohn = heuteIso(); speichern(); }
   showToast('An Steuerberater:in übergeben – in der Checkliste abgehakt');
@@ -1695,8 +1731,7 @@ async function einzelSenden(id) {
   const text = `Hallo,\n\nanbei ${titel} für ${vollerName(p.daten)}.\n\nLiebe Grüße\n${_betrieb.ausbildungsleiter || ''}\n${_betrieb.name}`;
   const ergebnis = await teilen(datei, betreff, text);
   if (ergebnis === 'heruntergeladen') {
-    location.href = `mailto:?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
-    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte Empfänger:in eintragen und das PDF als Anhang hinzufügen.`);
+    mailDialog(datei, '', betreff, text);
   }
 }
 
@@ -2625,7 +2660,7 @@ async function vorlagePdf(id) {
   if (id === 'stb') blattInsPdf(doc, austrittBlatt(p), p);
   else briefInsPdf(doc, p, vorlageMitText(p, id), titel);
   const datei = new File([doc.bytes()], `${dateiName(titel)}-${dateiName(vollerName(p.daten))}.pdf`, { type: 'application/pdf' });
-  await teilen(datei, titel + ' – ' + vollerName(p.daten), '');
+  herunterladen(datei);   // „PDF“ = speichern; versenden über „An Steuerberater:in senden“
 }
 async function austrittStb() {
   const p = aktuell(); if (!p) return;
@@ -2639,8 +2674,7 @@ async function austrittStb() {
   const ergebnis = await teilen(datei, 'Austritt ' + vollerName(p.daten), text);
   if (ergebnis === 'abgebrochen') return;
   if (ergebnis === 'heruntergeladen') {
-    location.href = `mailto:${encodeURIComponent(_betrieb.stb_email || '')}?subject=${encodeURIComponent('Austritt ' + vollerName(p.daten))}&body=${encodeURIComponent(text + '\n\n(PDF im Anhang)')}`;
-    alert(`Das PDF „${datei.name}“ ist gespeichert (Downloads) und die E-Mail ist vorbereitet.\n\nBitte das PDF noch als Anhang hinzufügen.`);
+    mailDialog(datei, _betrieb.stb_email, 'Austritt ' + vollerName(p.daten), text);
   }
   if (!p.erledigt.a_stb) { p.erledigt.a_stb = heuteIso(); speichern(); renderAustritt(); }
 }
