@@ -759,6 +759,20 @@
     <div class="profil-content" id="profil-content"></div>
   </div>
 
+  <!-- LOHNZETTEL (über die Kachel auf der Übersicht) -->
+  <div id="tab-lohnzettel" class="screen" style="flex:1;flex-direction:column;min-height:0">
+    <div class="header">
+      <div class="header-row">
+        <div class="header-brand">
+          <div class="header-title">Lohnzettel</div>
+          <div class="header-sub">Nur für dich sichtbar</div>
+        </div>
+        <div class="logo-mark">MW</div>
+      </div>
+    </div>
+    <div class="subscreen" id="lz-inhalt"></div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottom-nav">
     <button class="nav-item" id="nav-start" onclick="switchTab('start')">
@@ -1261,7 +1275,7 @@ function showScreen(id) {
 function switchTab(tab) {
   _currentTab = tab;
   // Alle Tabs im main verstecken
-  ['tab-start','tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll'].forEach(t => {
+  ['tab-start','tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-protokoll','tab-lohnzettel'].forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   // Nav aktualisieren
@@ -1291,6 +1305,11 @@ function switchTab(tab) {
     document.getElementById('nav-protokoll').classList.add('active');
     document.getElementById('fab-container').style.display = 'none';
     protRender();
+  } else if (tab === 'lohnzettel') {
+    document.getElementById('tab-lohnzettel').classList.add('active');
+    document.getElementById('nav-start').classList.add('active');
+    document.getElementById('fab-container').style.display = 'none';
+    renderLohnzettel();
   }
 }
 
@@ -1321,6 +1340,7 @@ const UE_IC = {
   schluessel:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
   haken:'<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.5l2.8 2.8L16.5 9"/>',
   checkliste:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM8.5 12l2 2 4-4M8.5 17h7"/>',
+  dokument:'<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4M9.5 12.5h5M9.5 16h5"/>',
   buch:'<path d="M12 6.5C10 5 7 4.5 3.5 5v13.5c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5zM12 6.5V20"/>'
 };
 function ueSvg(n) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${UE_IC[n]}</svg>`; }
@@ -1335,6 +1355,7 @@ function ueGruppen() {
       { ic:'uhr',        nm:'Zeitverwaltung', ds:{ chefin:'Stempeln, Zeiten, Urlaub, Krankenstand', team:'Stempeln, Zeiten, Urlaub, krank melden' }, ziel: GHD + '/abwesenheiten-ghd/zeitverwaltung.html' },
       { ic:'checkliste', nm:'Checkliste',     ds:'Heute · Monat · Einkauf', ziel: GHD + '/salon-checklist/salon-checklist.html' },
       { ic:'buch',       nm:'Handbuch',       ds:'Standards nachschlagen',  ziel: GHD + '/Mitarbeiterhandbuch/Mitarbeiterhandbuch_App.html' },
+      { ic:'dokument',   nm:'Lohnzettel',     ds:{ chefin:'Sammel-PDF verteilen, Abrufe sehen', team:'Deine Abrechnungen herunterladen' }, ziel: 'tab:lohnzettel' },
     ]},
     { titel: 'Personal & Führung', privat: true, nur: 'chefin', kacheln: [
       { ic:'brief',      nm:'Bewerbungen', ds:'Neu eingegangen & Matcher',     ziel: GHD + '/index.greathairday/bewerbungen.html' },
@@ -1395,7 +1416,7 @@ function showCreate() {
 }
 
 function showInnerTab(tabId) {
-  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil'].forEach(t => {
+  ['tab-feed','tab-detail','tab-create','tab-edit','tab-team','tab-profil','tab-lohnzettel'].forEach(t => {
     document.getElementById(t).classList.remove('active');
   });
   document.getElementById(tabId).classList.add('active');
@@ -2167,7 +2188,8 @@ function renderProfil() {
     </div>`;
 }
 
-function doLogout() {
+async function doLogout() {
+  await lzBeimAbmelden();   // Lohnzettel-Freischaltung dieser Sitzung sofort beenden
   sbAuth.auth.signOut();
   sessionStorage.removeItem('teamapp_person');
   _me = null;
@@ -2387,6 +2409,473 @@ function protMikroToggle() {
   erk.start();
 }
 
+</script>
+<script>
+// ═══════════════════════════════════════════
+// LOHNZETTEL
+// Mitarbeiter:innen: eigene Lohnzettel herunterladen, erst nach Eingabe des
+// Lohnzettel-Passworts (gilt 10 Minuten für diese Anmeldung).
+// Inhaberin: Sammel-PDF vom Steuerberater hochladen → der Browser teilt sie in
+// einzelne Seiten, ordnet sie über die Dienstnehmer-Nummer zu → Speichern.
+// Die Sammeldatei verlässt das Gerät nie; gespeichert werden nur die Einzel-PDFs.
+// Wer was sehen darf, entscheidet der Server (RLS + Funktionen in
+// supabase/migrations/20261112120000_lohnzettel.sql) — hier wird nur angezeigt.
+// Alle Abfragen laufen über RPC-Funktionen bzw. Storage-Links: die landen nie im
+// Offline-Speicher der App (ghd-offline-sw.js speichert RPCs bewusst nicht).
+// ═══════════════════════════════════════════
+const LZ_BUCKET = 'lohnzettel';
+const LZ_MONATE_NAMEN = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const LZ_MONATE = { 'jänner':1,'januar':1,'jaenner':1,'februar':2,'feber':2,'märz':3,'maerz':3,'april':4,'mai':5,'juni':6,'juli':7,'august':8,'september':9,'oktober':10,'november':11,'dezember':12 };
+// Bibliotheken nur für das Hochladen, mit Prüfsumme (SRI) — eine veränderte Datei vom CDN wird nicht ausgeführt.
+// pdf.worker wird als normales Skript geladen: pdf.js arbeitet dann ohne eigenen Worker im Hauptfenster.
+const LZ_LIBS = [
+  { src: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', sri: 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e', da: () => window.pdfjsLib },
+  { src: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js', sri: 'sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2', da: () => window.pdfjsWorker },
+  { src: 'https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.3.2/dist/pdf-lib.min.js', sri: 'sha384-efrYiIOZVx/z6FwzQ4YHz9HQQSNM6M8//Qt5tToZqfqqS0qazRX/CMz9IcN83p4y', da: () => window.PDFLib }
+];
+
+let _lzStatus = null;
+let _lzEntwurf = null;       // Chefin: aufgeteilte Sammeldatei, nur im Speicher
+let _lzSperrTimer = null;
+let _lzUebersicht = [];      // Chefin: zuletzt geladene Übersicht (Knöpfe verweisen per Index)
+let _lzTeam = [];
+
+async function lzRpc(fn, args) {
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if (!session?.access_token) throw new Error('Nicht angemeldet');
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args || {})
+  });
+  const t = await r.text();
+  if (!r.ok) {
+    let msg = 'Fehler beim Server.';
+    try { msg = JSON.parse(t).message || msg; } catch (e) { /* egal */ }
+    throw new Error(msg);
+  }
+  return t ? JSON.parse(t) : null;
+}
+
+function lzMonatText(m) {   // '2026-10-01' oder '2026-10' → 'Oktober 2026'
+  const [j, mo] = String(m).split('-');
+  return (LZ_MONATE_NAMEN[parseInt(mo, 10) - 1] || '?') + ' ' + j;
+}
+function lzZeit(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function lzEl() { return document.getElementById('lz-inhalt'); }
+function lzLaedt() { lzEl().innerHTML = '<div class="loading-screen"><div class="spinner-dark"></div></div>'; }
+
+async function renderLohnzettel() {
+  const el = lzEl(); if (!el || !_me) return;
+  lzLaedt();
+  try {
+    _lzStatus = await lzRpc('lohnzettel_status');
+  } catch (e) {
+    el.innerHTML = `<div class="feed-empty">${navigator.onLine ? 'Lohnzettel konnten nicht geladen werden.' : 'Lohnzettel gibt es nur mit Internetverbindung.'}<br><button class="btn btn-secondary mt-8" onclick="renderLohnzettel()">Erneut versuchen</button></div>`;
+    return;
+  }
+  if (_lzStatus.ist_inhaberin) return lzChefinRendern();
+  if (!_lzStatus.passwort_gesetzt) return lzEinrichtenRendern();
+  if (!_lzStatus.freigeschaltet_bis) return lzEntsperrenRendern();
+  return lzListeRendern();
+}
+
+// ── Mitarbeiter:in: Passwort einrichten ──
+function lzEinrichtenRendern() {
+  lzEl().innerHTML = `
+    <div class="team-card">
+      <div class="team-name" style="margin-bottom:6px">Lohnzettel-Passwort einrichten</div>
+      <div class="team-rolle" style="margin-bottom:14px">Deine Lohnzettel sind extra geschützt. Lege einmal ein eigenes Passwort fest (mindestens 8 Zeichen) – nicht deine PIN. Du brauchst es jedes Mal, wenn du Lohnzettel öffnest.</div>
+      <div class="form-group"><label for="lz-pw1">Neues Lohnzettel-Passwort</label><input type="password" id="lz-pw1" autocomplete="new-password"></div>
+      <div class="form-group"><label for="lz-pw2">Passwort wiederholen</label><input type="password" id="lz-pw2" autocomplete="new-password"></div>
+      <div class="form-error" id="lz-err" style="margin-bottom:12px"></div>
+      <button class="btn btn-primary" id="lz-btn" onclick="lzEinrichten()">Passwort speichern</button>
+    </div>`;
+}
+async function lzEinrichten() {
+  const p1 = document.getElementById('lz-pw1').value, p2 = document.getElementById('lz-pw2').value;
+  const err = document.getElementById('lz-err');
+  const zeige = t => { err.textContent = t; err.classList.add('visible'); };
+  if (p1.length < 8) return zeige('Mindestens 8 Zeichen.');
+  if (/^\d{1,6}$/.test(p1)) return zeige('Bitte nicht nur Ziffern – nimm ein richtiges Passwort, nicht deine PIN.');
+  if (p1 !== p2) return zeige('Die Passwörter stimmen nicht überein.');
+  const btn = document.getElementById('lz-btn'); btn.disabled = true;
+  try {
+    const r = await lzRpc('lohnzettel_passwort_setzen', { p_neu: p1 });
+    if (!r || !r.ok) return zeige('Passwort konnte nicht gespeichert werden.');
+    showToast('Lohnzettel-Passwort gespeichert');
+    renderLohnzettel();
+  } catch (e) { zeige(e.message); } finally { btn.disabled = false; }
+}
+
+// ── Mitarbeiter:in: entsperren ──
+function lzEntsperrenRendern(hinweis) {
+  const gesperrt = _lzStatus && _lzStatus.gesperrt_bis;
+  lzEl().innerHTML = `
+    <div class="team-card">
+      <div class="team-name" style="margin-bottom:6px">Lohnzettel öffnen</div>
+      <div class="team-rolle" style="margin-bottom:14px">Bitte gib dein Lohnzettel-Passwort ein. Danach bleiben deine Lohnzettel 10 Minuten offen.</div>
+      <div class="form-group"><label for="lz-pw">Lohnzettel-Passwort</label><input type="password" id="lz-pw" autocomplete="current-password" onkeydown="if(event.key==='Enter')lzEntsperren()"></div>
+      <div class="form-error${gesperrt || hinweis ? ' visible' : ''}" id="lz-err" style="margin-bottom:12px">${gesperrt ? 'Zu viele Fehlversuche – gesperrt bis ' + esc(lzZeit(gesperrt)) + '.' : esc(hinweis || '')}</div>
+      <button class="btn btn-primary" id="lz-btn" onclick="lzEntsperren()">Öffnen</button>
+      <div class="team-rolle" style="margin-top:14px">Passwort vergessen? Mirjam kann es zurücksetzen, dann legst du ein neues fest.</div>
+    </div>`;
+}
+async function lzEntsperren() {
+  const pw = document.getElementById('lz-pw').value;
+  if (!pw) return;
+  const btn = document.getElementById('lz-btn'); btn.disabled = true;
+  try {
+    const r = await lzRpc('lohnzettel_entsperren', { p_passwort: pw });
+    if (r && r.ok) { renderLohnzettel(); return; }
+    _lzStatus.gesperrt_bis = r && r.gesperrt_bis;
+    lzEntsperrenRendern(r && r.gesperrt_bis ? '' : 'Passwort nicht korrekt.');
+  } catch (e) {
+    lzEntsperrenRendern(e.message);
+  } finally { const b = document.getElementById('lz-btn'); if (b) b.disabled = false; }
+}
+
+// ── Mitarbeiter:in: Liste ──
+async function lzListeRendern() {
+  let liste = [];
+  try { liste = await lzRpc('lohnzettel_meine'); }
+  catch (e) { return lzEntsperrenRendern(e.message); }
+  // Ansicht sperren, sobald die Freischaltung am Server abläuft
+  clearTimeout(_lzSperrTimer);
+  const rest = new Date(_lzStatus.freigeschaltet_bis).getTime() - Date.now();
+  _lzSperrTimer = setTimeout(() => { if (_currentTab === 'lohnzettel') renderLohnzettel(); else if (lzEl()) lzEl().innerHTML = ''; }, Math.max(rest, 1000));
+  const zeilen = liste.map(l => `
+    <div class="team-card" style="display:flex;align-items:center;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div class="team-name">${esc(lzMonatText(l.monat))}</div>
+        <div class="team-rolle">${l.zuletzt_abgerufen ? 'Zuletzt geladen ' + esc(lzZeit(l.zuletzt_abgerufen)) : 'Neu'}</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="lzHerunterladen('${esc(l.id)}')">Herunterladen</button>
+    </div>`).join('');
+  lzEl().innerHTML = `
+    <div class="team-rolle" style="margin-bottom:12px">Offen bis ${esc(lzZeit(_lzStatus.freigeschaltet_bis))}.
+      <button class="btn btn-ghost btn-sm" onclick="lzSperren()">Jetzt sperren</button></div>
+    <div class="team-list">${zeilen || '<div class="feed-empty">Noch keine Lohnzettel.</div>'}</div>
+    <div style="margin-top:20px"><button class="btn btn-ghost btn-sm" onclick="lzPwAendernRendern()">Lohnzettel-Passwort ändern</button></div>`;
+}
+async function lzSperren() {
+  try { await lzRpc('lohnzettel_sperren'); } catch (e) { /* läuft ohnehin ab */ }
+  clearTimeout(_lzSperrTimer);
+  renderLohnzettel();
+}
+// Beim Abmelden: Freischaltung dieser Sitzung sofort beenden
+async function lzBeimAbmelden() {
+  clearTimeout(_lzSperrTimer);
+  _lzEntwurf = null;
+  const el = lzEl(); if (el) el.innerHTML = '';
+  try { await Promise.race([lzRpc('lohnzettel_sperren'), new Promise(r => setTimeout(r, 2000))]); } catch (e) { /* egal */ }
+}
+
+function lzPwAendernRendern() {
+  lzEl().innerHTML = `
+    <div class="team-card">
+      <div class="team-name" style="margin-bottom:14px">Lohnzettel-Passwort ändern</div>
+      <div class="form-group"><label for="lz-alt">Aktuelles Lohnzettel-Passwort</label><input type="password" id="lz-alt" autocomplete="current-password"></div>
+      <div class="form-group"><label for="lz-pw1">Neues Passwort (mind. 8 Zeichen)</label><input type="password" id="lz-pw1" autocomplete="new-password"></div>
+      <div class="form-group"><label for="lz-pw2">Neues Passwort wiederholen</label><input type="password" id="lz-pw2" autocomplete="new-password"></div>
+      <div class="form-error" id="lz-err" style="margin-bottom:12px"></div>
+      <button class="btn btn-primary" id="lz-btn" onclick="lzPwAendern()">Speichern</button>
+      <button class="btn btn-secondary btn-full mt-8" onclick="renderLohnzettel()">Abbrechen</button>
+    </div>`;
+}
+async function lzPwAendern() {
+  const alt = document.getElementById('lz-alt').value, p1 = document.getElementById('lz-pw1').value, p2 = document.getElementById('lz-pw2').value;
+  const err = document.getElementById('lz-err');
+  const zeige = t => { err.textContent = t; err.classList.add('visible'); };
+  if (p1.length < 8) return zeige('Mindestens 8 Zeichen.');
+  if (/^\d{1,6}$/.test(p1)) return zeige('Bitte nicht nur Ziffern.');
+  if (p1 !== p2) return zeige('Die neuen Passwörter stimmen nicht überein.');
+  const btn = document.getElementById('lz-btn'); btn.disabled = true;
+  try {
+    const r = await lzRpc('lohnzettel_passwort_setzen', { p_neu: p1, p_alt: alt });
+    if (r && r.ok) { showToast('Lohnzettel-Passwort geändert'); renderLohnzettel(); return; }
+    zeige(r && r.gesperrt_bis ? 'Zu viele Fehlversuche – gesperrt bis ' + lzZeit(r.gesperrt_bis) + '.' : 'Aktuelles Passwort nicht korrekt.');
+  } catch (e) { zeige(e.message); } finally { btn.disabled = false; }
+}
+
+// ── Herunterladen (beide Rollen) ──
+// 1. Server prüft + protokolliert den Abruf und nennt den Pfad,
+// 2. Storage erzeugt einen Link, der 60 Sekunden gilt (Storage-Policy prüft erneut),
+// 3. Datei wird direkt gespeichert, nichts bleibt im App-Speicher.
+async function lzHerunterladen(id) {
+  try {
+    const pfad = await lzRpc('lohnzettel_abruf', { p_id: id });
+    const { data: { session } } = await sbAuth.auth.getSession();
+    const sr = await fetch(`${SUPA_URL}/storage/v1/object/sign/${LZ_BUCKET}/${pfad.split('/').map(encodeURIComponent).join('/')}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expiresIn: 60 })
+    });
+    const sd = await sr.json().catch(() => ({}));
+    if (!sr.ok || !sd.signedURL) throw new Error('Kein Zugriff (bitte neu öffnen).');
+    const monat = (pfad.split('/')[1] || '').slice(0, 7);
+    const name = `Lohnzettel_${monat}.pdf`;
+    const dr = await fetch(`${SUPA_URL}/storage/v1${sd.signedURL}`, { cache: 'no-store' });
+    if (!dr.ok) throw new Error('Download fehlgeschlagen.');
+    const url = URL.createObjectURL(new Blob([await dr.arrayBuffer()], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    alert(e.message || 'Download fehlgeschlagen.');
+    if (_lzStatus && !_lzStatus.ist_inhaberin) renderLohnzettel();
+  }
+}
+
+// ── Inhaberin ──
+async function lzChefinRendern() {
+  const el = lzEl();
+  let uebersicht = [], pwListe = [];
+  try {
+    [uebersicht, pwListe] = await Promise.all([lzRpc('lohnzettel_uebersicht'), lzRpc('lohnzettel_passwort_liste')]);
+    if (!_persons || !_persons.length) _persons = await supaGet('teamapp_persons');
+  } catch (e) {
+    el.innerHTML = `<div class="feed-empty">Fehler beim Laden.<br><button class="btn btn-secondary mt-8" onclick="renderLohnzettel()">Erneut versuchen</button></div>`;
+    return;
+  }
+  _lzUebersicht = uebersicht;
+  // nach Monat gruppieren
+  const monate = {};
+  uebersicht.forEach((l, i) => { l._i = i; (monate[l.monat] = monate[l.monat] || []).push(l); });
+  const verteilt = Object.keys(monate).sort().reverse().map(m => `
+    <div class="detail-section-title" style="margin-top:18px">${esc(lzMonatText(m))}</div>
+    <div class="team-list">${monate[m].map(l => `
+      <div class="team-card" style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+        <div style="flex:1;min-width:0">
+          <div class="team-name">${esc(l.person_name)}</div>
+          <div class="team-rolle" style="color:${l.abrufe > 0 ? 'var(--green)' : 'var(--text-2)'}">${l.abrufe > 0 ? 'Abgerufen ' + esc(lzZeit(l.zuletzt_abgerufen)) : 'Noch nicht abgerufen'}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="lzHerunterladen('${esc(l.id)}')">Ansehen</button>
+        <button class="btn btn-ghost btn-sm" title="Löschen" onclick="lzLoeschen(${l._i})">🗑</button>
+      </div>`).join('')}</div>`).join('');
+
+  const pwVon = {}; pwListe.forEach(p => { pwVon[p.person_id] = p; });
+  const team = _lzTeam = _persons.filter(p => p.aktiv && p.rolle !== 'inhaberin');
+  const pwZeilen = team.map((p, i) => {
+    const pw = pwVon[p.id];
+    return `<div class="best-item" style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1"><span class="best-person">${esc(p.name)}</span><br>
+        <span class="${pw ? 'best-status-ok' : 'best-status-no'}">${pw ? 'eingerichtet ' + esc(lzZeit(pw.gesetzt_am)) + (pw.gesperrt_bis && new Date(pw.gesperrt_bis) > new Date() ? ' · gerade gesperrt' : '') : 'noch nicht eingerichtet'}</span></div>
+      ${pw ? `<button class="btn btn-ghost btn-sm" onclick="lzPwZuruecksetzen(${i})">Zurücksetzen</button>` : ''}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="team-card">
+      <div class="team-name" style="margin-bottom:6px">Neue Lohnzettel verteilen</div>
+      <div class="team-rolle" style="margin-bottom:12px">Sammel-PDF vom Steuerberater auswählen. Sie wird hier auf dem Gerät in einzelne Lohnzettel geteilt – die Sammeldatei selbst wird nicht hochgeladen.</div>
+      <input type="file" id="lz-datei" accept="application/pdf,.pdf" onchange="lzDateiGewaehlt(this)" style="padding:9px">
+      <div id="lz-entwurf"></div>
+    </div>
+    <div class="detail-section-title" style="margin-top:22px">Bereits verteilt</div>
+    ${verteilt || '<div class="team-rolle">Noch keine Lohnzettel verteilt.</div>'}
+    <div class="detail-section-title" style="margin-top:26px">Lohnzettel-Passwörter</div>
+    <div class="team-card" style="padding:4px 14px">${pwZeilen || '<div class="team-rolle" style="padding:10px 0">Keine Mitarbeiter:innen.</div>'}</div>
+    <div class="team-rolle" style="margin-top:8px">Hat jemand ein Passwort, das die Person selbst nicht eingerichtet hat? Sofort zurücksetzen – dann legt sie ein neues fest.</div>`;
+  if (_lzEntwurf) lzEntwurfRendern();
+}
+
+function lzSkriptLaden(lib) {
+  if (lib.da()) return Promise.resolve();
+  return new Promise((ok, fehler) => {
+    const s = document.createElement('script');
+    s.src = lib.src; s.integrity = lib.sri; s.crossOrigin = 'anonymous';
+    s.onload = () => lib.da() ? ok() : fehler(new Error('Bibliothek unvollständig'));
+    s.onerror = () => fehler(new Error('PDF-Werkzeug konnte nicht geladen werden.'));
+    document.head.appendChild(s);
+  });
+}
+async function lzLibsLaden() {
+  for (const lib of LZ_LIBS) await lzSkriptLaden(lib);   // Reihenfolge: pdf.js vor dem Worker-Teil
+}
+
+// Text einer Seite zu Zeilen zusammensetzen (gleiche Höhe = gleiche Zeile)
+function lzZeilen(items) {
+  const z = [];
+  items.filter(i => i.str && i.str.trim()).forEach(i => {
+    const y = i.transform[5], x = i.transform[4];
+    let zeile = z.find(l => Math.abs(l.y - y) < 3);
+    if (!zeile) { zeile = { y, teile: [] }; z.push(zeile); }
+    zeile.teile.push({ x, s: i.str });
+  });
+  z.sort((a, b) => b.y - a.y);
+  return z.map(l => l.teile.sort((a, b) => a.x - b.x).map(t => t.s).join(' ').replace(/\s+/g, ' ').trim());
+}
+// RZL-Lohnzettel: „DN: 30  Vorname NACHNAME, Adresse …“ und Kopfzeile „L O H N - G E H A L T S A B R E C H N U N G  Oktober 2026“
+function lzSeiteLesen(zeilen) {
+  let dn = null, name = null, monat = null;
+  for (const z of zeilen) {
+    const d = /^DN:\s*(\d{1,6})\s+([^,]+),/.exec(z);
+    if (d && !dn) { dn = d[1]; name = d[2].trim(); }
+    if (!monat && /ABRECHNUNG/i.test(z.replace(/\s+/g, ''))) {
+      const m = /([A-Za-zÄÖÜäöü]{3,})\s+(\d{4})\s*$/.exec(z);
+      const n = m && LZ_MONATE[m[1].toLowerCase()];
+      if (n) monat = m[2] + '-' + String(n).padStart(2, '0');
+    }
+  }
+  return { dn, name, monat };
+}
+
+async function lzDateiGewaehlt(input) {
+  const datei = input.files && input.files[0];
+  const box = document.getElementById('lz-entwurf');
+  _lzEntwurf = null;
+  if (!datei) { box.innerHTML = ''; return; }
+  if (!navigator.onLine) { box.innerHTML = '<div class="form-error visible">Bitte mit Internetverbindung verteilen.</div>'; return; }
+  box.innerHTML = '<div class="team-rolle" style="margin-top:12px"><span class="spinner-dark" style="display:inline-block;width:14px;height:14px;vertical-align:middle"></span> Wird gelesen …</div>';
+  try {
+    await lzLibsLaden();
+    const bytes = new Uint8Array(await datei.arrayBuffer());
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
+    const seiten = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const tc = await (await doc.getPage(i)).getTextContent();
+      seiten.push(lzSeiteLesen(lzZeilen(tc.items)));
+    }
+    await doc.destroy();
+    // Seiten zu Lohnzetteln gruppieren: neue Person beginnt bei jeder Seite mit „DN:“
+    const stuecke = [];
+    seiten.forEach((s, i) => {
+      if (s.dn || !stuecke.length) stuecke.push({ seiten: [i], dn: s.dn, name: s.name, monat: s.monat });
+      else stuecke[stuecke.length - 1].seiten.push(i);
+    });
+    const [dnListe, uebersicht] = await Promise.all([lzRpc('lohnzettel_dn_liste'), lzRpc('lohnzettel_uebersicht')]);
+    const dnPerson = {}; dnListe.forEach(z => { dnPerson[z.dn_nr] = z.person_id; });
+    const team = _persons.filter(p => p.aktiv && p.rolle !== 'inhaberin');
+    stuecke.forEach(st => {
+      st.person = (st.dn && dnPerson[st.dn] && team.some(p => p.id === dnPerson[st.dn])) ? dnPerson[st.dn] : '';
+      st.automatisch = !!st.person;
+      if (!st.person && st.name) {
+        // Vorschlag über den Vornamen — muss bestätigt werden
+        const teile = st.name.toLowerCase().split(/\s+/);
+        const treffer = team.filter(p => teile.includes(String(p.name).trim().toLowerCase().split(/\s+/)[0]));
+        if (treffer.length === 1) st.person = treffer[0].id;
+      }
+    });
+    _lzEntwurf = { bytes, stuecke, uebersicht };
+    lzEntwurfRendern();
+  } catch (e) {
+    box.innerHTML = `<div class="form-error visible" style="margin-top:12px">Die Datei konnte nicht gelesen werden (${esc(e.message || 'unbekannt')}).</div>`;
+  }
+}
+
+function lzEntwurfRendern() {
+  const box = document.getElementById('lz-entwurf'); if (!box || !_lzEntwurf) return;
+  const team = _persons.filter(p => p.aktiv && p.rolle !== 'inhaberin');
+  const zeilen = _lzEntwurf.stuecke.map((st, i) => {
+    const vorhanden = st.person && _lzEntwurf.uebersicht.some(l => l.person_id === st.person && String(l.monat).slice(0, 7) === st.monat);
+    const optionen = ['<option value="">– nicht verteilen –</option>'].concat(team.map(p =>
+      `<option value="${esc(p.id)}"${p.id === st.person ? ' selected' : ''}>${esc(p.name)}</option>`)).join('');
+    const seitenText = st.seiten.length > 1 ? `Seiten ${st.seiten[0] + 1}–${st.seiten[st.seiten.length - 1] + 1}` : `Seite ${st.seiten[0] + 1}`;
+    return `<div class="best-item" style="display:block">
+      <div class="team-rolle">${seitenText}${st.dn ? ' · DN ' + esc(st.dn) : ''}${st.name ? ' · ' + esc(st.name) : ' · kein Name erkannt'}</div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <select onchange="lzStueckAendern(${i},'person',this.value)" style="flex:1.4">${optionen}</select>
+        <input type="month" value="${esc(st.monat || '')}" onchange="lzStueckAendern(${i},'monat',this.value)" style="flex:1">
+      </div>
+      ${st.person && !st.automatisch ? '<div class="team-rolle" style="color:var(--red);margin-top:4px">Neu zugeordnet – bitte prüfen. Wird für nächstes Mal gemerkt.</div>' : ''}
+      ${vorhanden ? '<div class="team-rolle" style="color:var(--red);margin-top:4px">Für diesen Monat gibt es schon einen Lohnzettel – dieser kommt zusätzlich dazu (z. B. Korrektur).</div>' : ''}
+    </div>`;
+  }).join('');
+  const anzahl = _lzEntwurf.stuecke.filter(st => st.person && /^\d{4}-\d{2}$/.test(st.monat || '')).length;
+  box.innerHTML = `
+    <div style="margin-top:14px">${zeilen}</div>
+    <div class="form-error" id="lz-err" style="margin:10px 0"></div>
+    <button class="btn btn-primary mt-8" id="lz-speichern" onclick="lzVerteilen()"${anzahl ? '' : ' disabled'}>${anzahl} Lohnzettel speichern</button>
+    <button class="btn btn-secondary btn-full mt-8" onclick="lzEntwurfVerwerfen()">Abbrechen</button>`;
+}
+function lzStueckAendern(i, feld, wert) {
+  const st = _lzEntwurf && _lzEntwurf.stuecke[i]; if (!st) return;
+  st[feld] = wert;
+  if (feld === 'person') st.automatisch = false;
+  lzEntwurfRendern();
+}
+function lzEntwurfVerwerfen() {
+  _lzEntwurf = null;
+  const inp = document.getElementById('lz-datei'); if (inp) inp.value = '';
+  const box = document.getElementById('lz-entwurf'); if (box) box.innerHTML = '';
+}
+
+async function lzVerteilen() {
+  if (!_lzEntwurf) return;
+  const err = document.getElementById('lz-err');
+  const btn = document.getElementById('lz-speichern');
+  const zuSpeichern = _lzEntwurf.stuecke.filter(st => st.person && /^\d{4}-\d{2}$/.test(st.monat || ''));
+  if (!navigator.onLine) { err.textContent = 'Keine Internetverbindung.'; err.classList.add('visible'); return; }
+  const namen = zuSpeichern.map(st => (_persons.find(p => p.id === st.person) || {}).name + ' – ' + lzMonatText(st.monat)).join('\n');
+  if (!confirm('Diese Lohnzettel verteilen?\n\n' + namen)) return;
+  btn.disabled = true;
+  let fertig = 0;
+  try {
+    await lzLibsLaden();
+    // Lohnprogramm sperrt die PDF gegen Bearbeiten (Besitzer-Passwort) → mit leerem Passwort öffnen
+    const quelle = await PDFLib.PDFDocument.load(_lzEntwurf.bytes, { password: '' });
+    const { data: { session } } = await sbAuth.auth.getSession();
+    for (const st of zuSpeichern) {
+      btn.textContent = `Speichere ${fertig + 1} von ${zuSpeichern.length} …`;
+      const neu = await PDFLib.PDFDocument.create();
+      neu.setTitle('Lohnzettel ' + lzMonatText(st.monat));
+      (await neu.copyPages(quelle, st.seiten)).forEach(p => neu.addPage(p));
+      const pdf = await neu.save();
+      if (pdf.byteLength > 5242880) throw new Error('Ein Lohnzettel ist größer als 5 MB.');
+      const pfad = `${st.person}/${st.monat}_${crypto.randomUUID()}.pdf`;
+      const up = await fetch(`${SUPA_URL}/storage/v1/object/${LZ_BUCKET}/${pfad}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/pdf', 'x-upsert': 'false' },
+        body: new Blob([pdf], { type: 'application/pdf' })
+      });
+      if (!up.ok) throw new Error('Hochladen fehlgeschlagen (' + up.status + ').');
+      await lzRpc('lohnzettel_eintragen', {
+        p_person: st.person, p_monat: st.monat + '-01', p_pfad: pfad,
+        p_dateiname: `Lohnzettel_${st.monat}.pdf`, p_groesse: pdf.byteLength, p_dn_nr: st.dn || null
+      });
+      st.person = ''; fertig++;   // bei Fehler danach nicht doppelt speichern
+    }
+    lzEntwurfVerwerfen();
+    showToast(`${fertig} Lohnzettel verteilt`);
+    lzChefinRendern();
+  } catch (e) {
+    lzEntwurfRendern();   // schon gespeicherte sind jetzt „nicht verteilen“
+    const e2 = document.getElementById('lz-err');
+    if (e2) { e2.textContent = `${fertig ? fertig + ' gespeichert, dann ' : ''}Fehler: ${e.message}`; e2.classList.add('visible'); }
+  }
+}
+
+async function lzLoeschen(i) {
+  const l = _lzUebersicht[i]; if (!l) return;
+  const id = l.id, name = l.person_name, monat = lzMonatText(l.monat);
+  if (!confirm(`Lohnzettel ${monat} von ${name} löschen?\n\nDie Person kann ihn danach nicht mehr herunterladen. Deine eigene Kopie (Steuerberater) bleibt davon unberührt.`)) return;
+  try {
+    const pfad = await lzRpc('lohnzettel_loeschen', { p_id: id });
+    if (pfad) {
+      const { data: { session } } = await sbAuth.auth.getSession();
+      await fetch(`${SUPA_URL}/storage/v1/object/${LZ_BUCKET}`, {
+        method: 'DELETE',
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: [pfad] })
+      });
+    }
+    showToast('Gelöscht');
+    lzChefinRendern();
+  } catch (e) { alert('Löschen fehlgeschlagen: ' + e.message); }
+}
+
+async function lzPwZuruecksetzen(i) {
+  const p = _lzTeam[i]; if (!p) return;
+  const id = p.id, name = p.name;
+  if (!confirm(`Lohnzettel-Passwort von ${name} zurücksetzen?\n\n${name} legt beim nächsten Öffnen der Lohnzettel ein neues fest.`)) return;
+  try { await lzRpc('lohnzettel_passwort_zuruecksetzen', { p_person: id }); showToast('Zurückgesetzt'); lzChefinRendern(); }
+  catch (e) { alert('Fehler: ' + e.message); }
+}
 </script>
 <script>
 // ── Wörni / Claude – sicherer Proxy ──
